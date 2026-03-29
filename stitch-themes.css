@@ -1,0 +1,297 @@
+/**
+ * Stitch 全域外觀：與 localStorage stitch_ui_theme 的 html class 對應。
+ * hearth：無額外 class（沿用各頁 Tailwind 預設）
+ * midnight：html.dark
+ * frost / sakura / terracotta / forest：html.theme-*
+ */
+
+/* --- Frost（與原專案一致）--- */
+html.theme-frost:not(.dark) body {
+  background-color: #edf4fc !important;
+}
+
+/* ========== 櫻粉 Sakura ========== */
+html.theme-sakura:not(.dark) body,
+html.theme-sakura:not(.dark) .bg-surface,
+html.theme-sakura:not(.dark) .bg-background {
+  background-color: #fcf6f8 !important;
+}
+
+html.theme-sakura:not(.dark) .bg-surface-container-low,
+html.theme-sakura:not(.dark) .bg-surface-container-highest,
+html.theme-sakura:not(.dark) .bg-surface-container,
+html.theme-sakura:not(.dark) .bg-surface-container-high,
+html.theme-sakura:not(.dark) .bg-surface-container-lowest,
+html.theme-sakura:not(.dark) .bg-surface-variant,
+html.theme-sakura:not(.dark) .bg-surface-bright,
+html.theme-sakura:not(.dark) .bg-surface-dim {
+  background-color: #f7eef2 !important;
+}
+
+html.theme-sakura:not(.dark) .bg-primary {
+  background-color: #954a5f !important;
+}
+html.theme-sakura:not(.dark) .text-primary,
+html.theme-sakura:not(.dark) .text-on-primary-container {
+  color: #6b3445 !important;
+}
+html.theme-sakura:not(.dark) .text-on-primary {
+  color: #fff8fa !important;
+}
+html.theme-sakura:not(.dark) .bg-primary-container,
+html.theme-sakura:not(.dark) .selection\:bg-primary-container {
+  background-color: #f3d5de !important;
+}
+html.theme-sakura:not(.dark) .border-primary,
+html.theme-sakura:not(.dark) .ring-primary,
+html.theme-sakura:not(.dark) .border-primary\/15,
+html.theme-sakura:not(.dark) .border-primary\/20,
+html.theme-sakura:not(.dark) .border-primary\/25,
+html.theme-sakura:not(.dark) .border-primary\/30,
+html.theme-sakura:not(.dark) .border-primary\/35,
+html.theme-sakura:not(.dark) .border-primary\/40 {
+  border-color: rgba(149, 74, 95, 0.35) !important;
+  --tw-ring-color: rgba(149, 74, 95, 0.35) !important;
+}
+
+html.theme-sakura:not(.dark) .bg-secondary {
+  background-color: #4f6f5e !important;
+}
+html.theme-sakura:not(.dark) .text-secondary,
+html.theme-sakura:not(.dark) .text-on-secondary-container {
+  color: #3d5645 !important;
+}
+html.theme-sakura:not(.dark) .text-on-secondary {
+  color: #e8f5ef !important;
+}
+html.theme-sakura:not(.dark) .bg-secondary-container {
+  background-color: #d5e8dd !important;
+}
+
+html.theme-sakura:not(.dark) .text-on-surface {
+  color: #2e282b !important;
+}
+html.theme-sakura:not(.dark) .text-on-surface-variant {
+  color: #6b5c62 !important;
+}
+
+html.theme-sakura:not(.dark) .from-primary-container {
+  --tw-gradient-from: #f3d5de var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html.theme-sakura:not(.dark) .to-secondary-container {
+  --tw-gradient-to: #d5e8dd var(--tw-gradient-to-position);
+}
+
+html.theme-sakura:not(.dark) .organic-cloud {
+  background: linear-gradient(135deg, #f3d5de 0%, #d5e8dd 100%) !important;
+}
+
+html.theme-sakura:not(.dark) .glass-nav {
+  background: rgba(252, 246, 248, 0.88) !important;
+  border-bottom-color: rgba(149, 74, 95, 0.1) !important;
+}
+
+html.theme-sakura:not(.dark) [class*="text-[#725638]"] {
+  color: #954a5f !important;
+}
+html.theme-sakura:not(.dark) [class*="text-[#5c5c58]"] {
+  color: #6b5c62 !important;
+}
+html.theme-sakura:not(.dark) [class*="bg-[#fdd6af]"] {
+  background-color: #f3d5de !important;
+}
+html.theme-sakura:not(.dark) [class*="bg-[#ffffffcc]"],
+html.theme-sakura:not(.dark) [class*="bg-[#f8f6f1]/80"] {
+  background-color: rgba(252, 246, 248, 0.88) !important;
+}
+
+/* ========== 赤陶 Terracotta ========== */
+html.theme-terracotta:not(.dark) body,
+html.theme-terracotta:not(.dark) .bg-surface,
+html.theme-terracotta:not(.dark) .bg-background {
+  background-color: #faf6f0 !important;
+}
+
+html.theme-terracotta:not(.dark) .bg-surface-container-low,
+html.theme-terracotta:not(.dark) .bg-surface-container-highest,
+html.theme-terracotta:not(.dark) .bg-surface-container,
+html.theme-terracotta:not(.dark) .bg-surface-container-high,
+html.theme-terracotta:not(.dark) .bg-surface-container-lowest,
+html.theme-terracotta:not(.dark) .bg-surface-variant,
+html.theme-terracotta:not(.dark) .bg-surface-bright,
+html.theme-terracotta:not(.dark) .bg-surface-dim {
+  background-color: #f3ece4 !important;
+}
+
+html.theme-terracotta:not(.dark) .bg-primary {
+  background-color: #b85c38 !important;
+}
+html.theme-terracotta:not(.dark) .text-primary,
+html.theme-terracotta:not(.dark) .text-on-primary-container {
+  color: #8a4328 !important;
+}
+html.theme-terracotta:not(.dark) .text-on-primary {
+  color: #fff9f4 !important;
+}
+html.theme-terracotta:not(.dark) .bg-primary-container {
+  background-color: #f0c9a8 !important;
+}
+html.theme-terracotta:not(.dark) .border-primary,
+html.theme-terracotta:not(.dark) .ring-primary,
+html.theme-terracotta:not(.dark) .border-primary\/15,
+html.theme-terracotta:not(.dark) .border-primary\/20,
+html.theme-terracotta:not(.dark) .border-primary\/25,
+html.theme-terracotta:not(.dark) .border-primary\/30,
+html.theme-terracotta:not(.dark) .border-primary\/35,
+html.theme-terracotta:not(.dark) .border-primary\/40 {
+  border-color: rgba(184, 92, 56, 0.4) !important;
+  --tw-ring-color: rgba(184, 92, 56, 0.35) !important;
+}
+
+html.theme-terracotta:not(.dark) .bg-secondary {
+  background-color: #6b7c3d !important;
+}
+html.theme-terracotta:not(.dark) .text-secondary,
+html.theme-terracotta:not(.dark) .text-on-secondary-container {
+  color: #4d5a2c !important;
+}
+html.theme-terracotta:not(.dark) .text-on-secondary {
+  color: #f4f8e8 !important;
+}
+html.theme-terracotta:not(.dark) .bg-secondary-container {
+  background-color: #dde6c8 !important;
+}
+
+html.theme-terracotta:not(.dark) .text-on-surface {
+  color: #2e2a26 !important;
+}
+html.theme-terracotta:not(.dark) .text-on-surface-variant {
+  color: #6b6258 !important;
+}
+
+html.theme-terracotta:not(.dark) .from-primary-container {
+  --tw-gradient-from: #f0c9a8 var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html.theme-terracotta:not(.dark) .to-secondary-container {
+  --tw-gradient-to: #dde6c8 var(--tw-gradient-to-position);
+}
+
+html.theme-terracotta:not(.dark) .organic-cloud {
+  background: linear-gradient(135deg, #f0c9a8 0%, #dde6c8 100%) !important;
+}
+
+html.theme-terracotta:not(.dark) .glass-nav {
+  background: rgba(255, 252, 248, 0.9) !important;
+  border-bottom-color: rgba(184, 92, 56, 0.12) !important;
+}
+
+html.theme-terracotta:not(.dark) [class*="text-[#725638]"] {
+  color: #b85c38 !important;
+}
+html.theme-terracotta:not(.dark) [class*="text-[#5c5c58]"] {
+  color: #6b6258 !important;
+}
+html.theme-terracotta:not(.dark) [class*="bg-[#fdd6af]"] {
+  background-color: #f0c9a8 !important;
+}
+html.theme-terracotta:not(.dark) [class*="bg-[#ffffffcc]"],
+html.theme-terracotta:not(.dark) [class*="bg-[#f8f6f1]/80"] {
+  background-color: rgba(255, 252, 248, 0.9) !important;
+}
+
+/* ========== 森綠 Forest ========== */
+html.theme-forest:not(.dark) body,
+html.theme-forest:not(.dark) .bg-surface,
+html.theme-forest:not(.dark) .bg-background {
+  background-color: #f2f6f3 !important;
+}
+
+html.theme-forest:not(.dark) .bg-surface-container-low,
+html.theme-forest:not(.dark) .bg-surface-container-highest,
+html.theme-forest:not(.dark) .bg-surface-container,
+html.theme-forest:not(.dark) .bg-surface-container-high,
+html.theme-forest:not(.dark) .bg-surface-container-lowest,
+html.theme-forest:not(.dark) .bg-surface-variant,
+html.theme-forest:not(.dark) .bg-surface-bright,
+html.theme-forest:not(.dark) .bg-surface-dim {
+  background-color: #e8f0eb !important;
+}
+
+html.theme-forest:not(.dark) .bg-primary {
+  background-color: #3d5c45 !important;
+}
+html.theme-forest:not(.dark) .text-primary,
+html.theme-forest:not(.dark) .text-on-primary-container {
+  color: #2a4030 !important;
+}
+html.theme-forest:not(.dark) .text-on-primary {
+  color: #f4faf5 !important;
+}
+html.theme-forest:not(.dark) .bg-primary-container {
+  background-color: #c8e0cd !important;
+}
+html.theme-forest:not(.dark) .border-primary,
+html.theme-forest:not(.dark) .ring-primary,
+html.theme-forest:not(.dark) .border-primary\/15,
+html.theme-forest:not(.dark) .border-primary\/20,
+html.theme-forest:not(.dark) .border-primary\/25,
+html.theme-forest:not(.dark) .border-primary\/30,
+html.theme-forest:not(.dark) .border-primary\/35,
+html.theme-forest:not(.dark) .border-primary\/40 {
+  border-color: rgba(61, 92, 69, 0.4) !important;
+  --tw-ring-color: rgba(61, 92, 69, 0.35) !important;
+}
+
+html.theme-forest:not(.dark) .bg-secondary {
+  background-color: #8b6914 !important;
+}
+html.theme-forest:not(.dark) .text-secondary,
+html.theme-forest:not(.dark) .text-on-secondary-container {
+  color: #6b4f10 !important;
+}
+html.theme-forest:not(.dark) .text-on-secondary {
+  color: #fff9e6 !important;
+}
+html.theme-forest:not(.dark) .bg-secondary-container {
+  background-color: #efe4c6 !important;
+}
+
+html.theme-forest:not(.dark) .text-on-surface {
+  color: #243028 !important;
+}
+html.theme-forest:not(.dark) .text-on-surface-variant {
+  color: #566358 !important;
+}
+
+html.theme-forest:not(.dark) .from-primary-container {
+  --tw-gradient-from: #c8e0cd var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+html.theme-forest:not(.dark) .to-secondary-container {
+  --tw-gradient-to: #efe4c6 var(--tw-gradient-to-position);
+}
+
+html.theme-forest:not(.dark) .organic-cloud {
+  background: linear-gradient(135deg, #c8e0cd 0%, #efe4c6 100%) !important;
+}
+
+html.theme-forest:not(.dark) .glass-nav {
+  background: rgba(242, 246, 243, 0.9) !important;
+  border-bottom-color: rgba(61, 92, 69, 0.12) !important;
+}
+
+html.theme-forest:not(.dark) [class*="text-[#725638]"] {
+  color: #3d5c45 !important;
+}
+html.theme-forest:not(.dark) [class*="text-[#5c5c58]"] {
+  color: #566358 !important;
+}
+html.theme-forest:not(.dark) [class*="bg-[#fdd6af]"] {
+  background-color: #c8e0cd !important;
+}
+html.theme-forest:not(.dark) [class*="bg-[#ffffffcc]"],
+html.theme-forest:not(.dark) [class*="bg-[#f8f6f1]/80"] {
+  background-color: rgba(242, 246, 243, 0.92) !important;
+}
