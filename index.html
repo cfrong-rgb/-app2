@@ -730,17 +730,10 @@ html.stitch-single-app body {
 <main class="wrap">
   <div class="stitch-stage" id="stitch-stage">
 <div class="stitch-view" data-stitch-view="home" hidden>
-<!-- TopAppBar（對齊 peach_mint_hearth_home） -->
+<!-- TopAppBar（精簡：標題 + 捷徑） -->
 <header class="glass-nav w-full top-0 z-40 sticky">
-<div class="flex justify-between items-center gap-3 w-full max-w-screen-xl mx-auto px-6 py-4">
-<div class="flex items-center gap-3 min-w-0 flex-1">
-<button type="button" class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container shrink-0 bg-surface-container-low p-0 cursor-pointer hover:opacity-95 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" id="home-header-avatar-btn" aria-label="個人檔案 · 修改名稱與大頭貼">
-<img class="w-full h-full object-cover pointer-events-none" alt="" width="40" height="40" id="home-header-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuQKDJ8XZNHzoPZozbaoXI_ugNAE3v_TsacOe_gyKxtYp_ZzMQ6cLyrQ7wfdBbnMgfZ4yrnRXZGPl1w5IlRboZ7zRottlt6iq2iqnDAxdspvWOzYJ4qVvmDW2xW68SFoyuQoS3JY_O4-nTMMjdC1a2xgy5gIrvDxGZ7508mSppIesSTFOPQJGqLdGjglbjZlXPCDtU7FN3wBMvjSEOve-uOrEzuIw-4ePE9F-xFmezMZVpj_8x58f6hR6J1ItMkwK7U1vFe0pHToE"/>
-</button>
-<div class="min-w-0 flex-1">
-<h1 class="font-['Plus_Jakarta_Sans'] text-lg font-semibold tracking-tight text-[#725638] truncate" id="home-greeting-title">早安，我的私人帳本</h1>
-</div>
-</div>
+<div class="flex justify-between items-center gap-3 w-full max-w-screen-xl mx-auto px-6 py-3">
+<span class="text-sm font-extrabold tracking-tight text-[#725638]">私人帳本</span>
 <div class="flex items-center gap-1 shrink-0 relative z-10">
 <button type="button" class="p-2 rounded-full hover:bg-surface-container-low text-[#725638] active:scale-95 transition cursor-pointer touch-manipulation" id="home-profile-btn" aria-label="個人檔案 · 修改名稱與大頭貼">
 <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0, 'wght' 500, 'opsz' 24;">person</span>
@@ -765,42 +758,15 @@ html.stitch-single-app body {
 <button type="button" class="mt-5 w-full py-3 rounded-xl font-bold text-on-primary bg-primary" id="home-notifications-goto-profile">前往個人檔案</button>
 </div>
 </div>
-<main class="max-w-screen-xl mx-auto px-6 pt-4 space-y-12">
-<!-- Today Total Spending (from LocalStorage) -->
-<section class="mt-6">
-<div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)]">
-<div class="flex items-center justify-between gap-6">
-<div>
-<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">今日總支出</p>
-<div class="flex items-baseline gap-2">
-<span class="text-2xl font-extrabold text-primary">$</span>
-<span class="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface" id="today-total-amount">0.00</span>
-</div>
-<p class="text-sm text-on-surface-variant mt-2">自動從本機紀錄加總（重新整理不會消失）</p>
-</div>
-<div class="w-14 h-14 rounded-2xl bg-primary-container/60 flex items-center justify-center">
-<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1, 'wght' 600, 'opsz' 24;">payments</span>
-</div>
-</div>
-</div>
-</section>
-<!-- 本月淨結餘（收入 − 支出） -->
-<section>
-<div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)] border border-secondary/10">
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-<div>
-<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">本月淨結餘</p>
-<p class="text-sm text-on-surface-variant mb-1">收入減去支出（不含預算設定）</p>
-<div class="flex items-baseline gap-2">
-<span class="text-2xl font-extrabold text-secondary">$</span>
-<span class="text-4xl md:text-5xl font-extrabold tracking-tighter text-secondary" id="month-net-amount">0.00</span>
-</div>
-<p class="text-sm text-on-surface-variant mt-3" id="month-flow-detail">本月收入 $0.00 · 本月支出 $0.00</p>
-</div>
-<div class="w-14 h-14 rounded-2xl bg-secondary-container/70 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">balance</span>
-</div>
-</div>
+<main class="max-w-screen-xl mx-auto px-6 pt-4 pb-10 space-y-10">
+<!-- 個人問候與大頭貼（置頂） -->
+<section class="mt-2">
+<div class="flex flex-col items-center text-center">
+<button type="button" class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden border-[3px] border-primary-container shadow-[0_12px_40px_rgba(114,86,56,0.18)] ring-4 ring-primary/10 bg-surface-container-low p-0 cursor-pointer hover:opacity-95 active:scale-[0.98] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" id="home-header-avatar-btn" aria-label="個人檔案 · 修改名稱與大頭貼">
+<img class="w-full h-full object-cover pointer-events-none" alt="" width="144" height="144" id="home-header-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuQKDJ8XZNHzoPZozbaoXI_ugNAE3v_TsacOe_gyKxtYp_ZzMQ6cLyrQ7wfdBbnMgfZ4yrnRXZGPl1w5IlRboZ7zRottlt6iq2iqnDAxdspvWOzYJ4qVvmDW2xW68SFoyuQoS3JY_O4-nTMMjdC1a2xgy5gIrvDxGZ7508mSppIesSTFOPQJGqLdGjglbjZlXPCDtU7FN3wBMvjSEOve-uOrEzuIw-4ePE9F-xFmezMZVpj_8x58f6hR6J1ItMkwK7U1vFe0pHToE"/>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight text-[#725638] mt-5 px-2 leading-snug max-w-md" id="home-greeting-title">早安，我的私人帳本</h1>
+<p class="text-xs text-on-surface-variant mt-2 max-w-sm leading-relaxed">點頭像或右上角人像可編輯名稱與照片</p>
 </div>
 </section>
 <!-- Monthly Category Pie (Chart.js) -->
@@ -822,28 +788,8 @@ html.stitch-single-app body {
 </div>
 </div>
 </section>
-<!-- Signature Component: The Safe-to-Spend Cloud -->
-<section class="relative mt-8">
-<div class="absolute -top-12 -right-8 w-64 h-64 bg-secondary-container/30 blur-[80px] rounded-full"></div>
-<div class="absolute -bottom-12 -left-8 w-64 h-64 bg-primary-container/30 blur-[80px] rounded-full"></div>
-<div class="relative bg-gradient-to-br from-primary-container to-secondary-container p-8 rounded-xl shadow-[0_20px_60px_rgba(114,86,56,0.08)] overflow-hidden">
-<div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-<div>
-<span class="text-on-primary-container font-medium text-sm tracking-wide block mb-2" id="balance-label">本月累計支出</span>
-<h2 class="text-5xl font-extrabold text-on-primary-container tracking-tighter" id="balance-main-amount">$0.00</h2>
-<p class="text-sm text-on-primary-container/90 mt-3 font-medium" id="balance-sub"></p>
-</div>
-<div class="flex -space-x-3">
-<div class="w-12 h-12 rounded-full border-4 border-white/30 bg-white/20 backdrop-blur-sm flex items-center justify-center">
-<span class="material-symbols-outlined text-on-primary-container" data-icon="account_balance_wallet">account_balance_wallet</span>
-</div>
-</div>
-</div>
-<!-- Decorative abstract organic shape -->
-<div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-</div>
-</section>
-<section class="mt-8">
+<!-- 發票記帳 -->
+<section>
 <button type="button" class="w-full glass-card rounded-3xl p-5 flex items-center justify-between gap-4 text-left hover:bg-white/90 transition border border-primary/10 shadow-[0_8px_28px_rgba(114,86,56,0.06)]" id="home-goto-invoice-btn" aria-label="開啟發票記帳">
 <div class="flex items-center gap-4 min-w-0">
 <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
@@ -857,6 +803,63 @@ html.stitch-single-app body {
 </div>
 <span class="material-symbols-outlined text-on-surface-variant shrink-0">chevron_right</span>
 </button>
+</section>
+<!-- 今日總支出 -->
+<section>
+<div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)]">
+<div class="flex items-center justify-between gap-6">
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">今日總支出</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-extrabold text-primary">$</span>
+<span class="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface" id="today-total-amount">0.00</span>
+</div>
+<p class="text-sm text-on-surface-variant mt-2">自動從本機紀錄加總（重新整理不會消失）</p>
+</div>
+<div class="w-14 h-14 rounded-2xl bg-primary-container/60 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1, 'wght' 600, 'opsz' 24;">payments</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 本月累計支出（預算雲） -->
+<section class="relative">
+<div class="absolute -top-12 -right-8 w-64 h-64 bg-secondary-container/30 blur-[80px] rounded-full pointer-events-none"></div>
+<div class="absolute -bottom-12 -left-8 w-64 h-64 bg-primary-container/30 blur-[80px] rounded-full pointer-events-none"></div>
+<div class="relative bg-gradient-to-br from-primary-container to-secondary-container p-8 rounded-3xl shadow-[0_20px_60px_rgba(114,86,56,0.08)] overflow-hidden">
+<div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<span class="text-on-primary-container font-medium text-sm tracking-wide block mb-2" id="balance-label">本月累計支出</span>
+<h2 class="text-5xl font-extrabold text-on-primary-container tracking-tighter" id="balance-main-amount">$0.00</h2>
+<p class="text-sm text-on-primary-container/90 mt-3 font-medium" id="balance-sub"></p>
+</div>
+<div class="flex -space-x-3 shrink-0">
+<div class="w-12 h-12 rounded-full border-4 border-white/30 bg-white/20 backdrop-blur-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+</div>
+</div>
+<div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-2xl pointer-events-none"></div>
+</div>
+</section>
+<!-- 本月淨結餘 -->
+<section>
+<div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)] border border-secondary/10">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">本月淨結餘</p>
+<p class="text-sm text-on-surface-variant mb-1">收入減去支出（不含預算設定）</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-extrabold text-secondary">$</span>
+<span class="text-4xl md:text-5xl font-extrabold tracking-tighter text-secondary" id="month-net-amount">0.00</span>
+</div>
+<p class="text-sm text-on-surface-variant mt-3" id="month-flow-detail">本月收入 $0.00 · 本月支出 $0.00</p>
+</div>
+<div class="w-14 h-14 rounded-2xl bg-secondary-container/70 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">balance</span>
+</div>
+</div>
+</div>
 </section>
 </main>
 <!-- BottomNavBar（嵌入 index 時由父頁底部列負責導覽，此列會隱藏） -->
@@ -3127,6 +3130,44 @@ const STORAGE_KEY = "stitch_transactions";
     return Number.isNaN(dt.getTime()) ? null : dt;
   }
 
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  /** 區間篩選與匯出用：優先 bookedDate（帳務日），否則為 createdAt 的本地日，正午比較避免時區誤差 */
+  function transactionBookedAtNoon(item) {
+    const b = item && item.bookedDate;
+    if (b && typeof b === "string") {
+      const m = String(b).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        const y = parseInt(m[1], 10);
+        const mo = parseInt(m[2], 10) - 1;
+        const d = parseInt(m[3], 10);
+        return new Date(y, mo, d, 12, 0, 0, 0);
+      }
+    }
+    const c = new Date(item.createdAt);
+    if (Number.isNaN(c.getTime())) return null;
+    return new Date(c.getFullYear(), c.getMonth(), c.getDate(), 12, 0, 0, 0);
+  }
+
+  function formatExportBookedYmd(item) {
+    const b = item && item.bookedDate;
+    if (b && typeof b === "string") {
+      const t = String(b).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+    }
+    const c = new Date(item.createdAt);
+    if (Number.isNaN(c.getTime())) return "";
+    return `${c.getFullYear()}-${pad2(c.getMonth() + 1)}-${pad2(c.getDate())}`;
+  }
+
+  function formatExportTimeHms(item) {
+    const c = new Date(item.createdAt);
+    if (Number.isNaN(c.getTime())) return "";
+    return `${pad2(c.getHours())}:${pad2(c.getMinutes())}:${pad2(c.getSeconds())}`;
+  }
+
   exportCsvBtn?.addEventListener("click", async () => {
     const startVal = exportStart?.value;
     const endVal = exportEnd?.value;
@@ -3142,22 +3183,20 @@ const STORAGE_KEY = "stitch_transactions";
     }
     const items = await readTransactions();
     const inRange = items.filter((item) => {
-      const t = new Date(item.createdAt);
-      if (Number.isNaN(t.getTime())) return false;
+      const t = transactionBookedAtNoon(item);
+      if (!t || Number.isNaN(t.getTime())) return false;
       return t >= start && t <= end;
     });
     if (inRange.length === 0) {
       alert("此區間內沒有任何紀錄可匯出。");
       return;
     }
-    const headerRow = ["日期時間", "收支", "分類", "備註", "金額", "紀錄 ID"];
+    const headerRow = ["日期", "時間", "收支", "分類", "備註", "金額", "紀錄 ID"];
     const rows = inRange.map((item) => {
-      const d = new Date(item.createdAt);
-      const isoLocal =
-        Number.isNaN(d.getTime()) ? "" : d.toLocaleString("zh-TW", { hour12: false });
       const flowLabel = isIncomeTransaction(item) ? "收入" : "支出";
       return [
-        escapeCsvCell(isoLocal),
+        escapeCsvCell(formatExportBookedYmd(item)),
+        escapeCsvCell(formatExportTimeHms(item)),
         escapeCsvCell(flowLabel),
         escapeCsvCell(item.category || ""),
         escapeCsvCell(item.note || ""),
