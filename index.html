@@ -2,7 +2,7 @@
 <html lang="zh-Hant" class="light stitch-app-embed stitch-single-app">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>私人帳本</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
@@ -91,31 +91,63 @@
   --navShadow: rgba(114, 86, 56, 0.06);
 }
 * { box-sizing: border-box; }
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+html.stitch-single-app {
+  height: 100%;
+}
 body {
   margin: 0;
   min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
+  align-items: center;
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+html.stitch-single-app body {
+  width: 100%;
 }
 .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
 .wrap {
-  max-width: 1100px;
+  max-width: min(1100px, 100vw);
+  width: 100%;
   margin: 0 auto;
-  padding: 8px 12px 0;
+  padding: 8px clamp(10px, 3.5vw, 16px) 0;
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
   min-height: 0;
+  min-width: 0;
 }
 .stitch-stage {
-  flex: 1;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+html.stitch-single-app img,
+html.stitch-single-app video,
+html.stitch-single-app canvas {
+  max-width: 100%;
+  height: auto;
+}
+html.stitch-single-app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html.stitch-single-app select,
+html.stitch-single-app textarea {
+  max-width: 100%;
 }
 .stitch-view[hidden] { display: none !important; }
 .stitch-view:not([hidden]) { display: block; }
@@ -675,8 +707,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8f6f1; 
             transition: left 0.2s ease, right 0.2s ease, background-color 0.2s ease;
         }
 
-body {
-      min-height: max(884px, 100dvh);
+html.stitch-single-app body {
+      min-height: 100dvh !important;
+      min-height: 100svh !important;
     }
 
 </style>
@@ -1739,6 +1772,38 @@ body {
 
   </div>
 </main>
+<!-- 相機掃描：權限確認與失敗提示（全系統共用，高於掃描 overlay） -->
+<div id="stitch-camera-consent-modal" class="fixed inset-0 z-[220] hidden flex items-center justify-center p-4 sm:p-6" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stitch-camera-consent-title">
+<div class="absolute inset-0 bg-[#1a1510]/55 backdrop-blur-md" data-stitch-consent-backdrop tabindex="-1"></div>
+<div class="relative w-full max-w-sm rounded-[1.75rem] bg-gradient-to-b from-surface to-surface-container-low shadow-[0_24px_64px_rgba(0,0,0,0.28)] border border-primary/15 overflow-hidden">
+<div class="px-6 pt-7 pb-2 text-center">
+<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container/90 text-primary shadow-inner ring-2 ring-primary/10">
+<span class="material-symbols-outlined text-[2rem]" aria-hidden="true">photo_camera</span>
+</div>
+<h2 id="stitch-camera-consent-title" class="text-lg font-extrabold text-primary tracking-tight">掃描發票</h2>
+<p class="mt-3 text-sm text-on-surface-variant leading-relaxed px-1">是否開啟相機掃描發票？</p>
+</div>
+<div class="grid grid-cols-2 gap-3 p-5 pt-4 border-t border-outline-variant/20 bg-surface-container-low/40">
+<button type="button" id="stitch-camera-consent-cancel" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high border border-outline-variant/30 active:scale-[0.98] transition touch-manipulation">取消</button>
+<button type="button" id="stitch-camera-consent-ok" class="py-3.5 rounded-2xl font-bold text-on-primary bg-primary shadow-md shadow-primary/25 active:scale-[0.98] transition touch-manipulation">確定</button>
+</div>
+</div>
+</div>
+<div id="stitch-camera-error-modal" class="fixed inset-0 z-[221] hidden flex items-center justify-center p-4 sm:p-6" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stitch-camera-error-title">
+<div class="absolute inset-0 bg-[#1a1510]/55 backdrop-blur-md" data-stitch-error-backdrop tabindex="-1"></div>
+<div class="relative w-full max-w-sm rounded-[1.75rem] bg-surface shadow-[0_24px_64px_rgba(0,0,0,0.28)] border border-error/20 overflow-hidden">
+<div class="px-6 pt-7 pb-6 text-center">
+<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-error-container/35 text-error">
+<span class="material-symbols-outlined text-2xl" aria-hidden="true">videocam_off</span>
+</div>
+<h2 id="stitch-camera-error-title" class="text-base font-extrabold text-on-surface">無法使用相機</h2>
+<p class="mt-3 text-sm text-on-surface-variant leading-relaxed" data-stitch-camera-error-text>相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。</p>
+</div>
+<div class="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+<button type="button" id="stitch-camera-error-ok" class="w-full py-3.5 rounded-2xl font-bold text-on-primary bg-primary active:scale-[0.99] transition touch-manipulation">我知道了</button>
+</div>
+</div>
+</div>
 <nav class="bottom-nav" aria-label="App 選單列">
       <div class="bottom-nav-inner">
         <button class="nav-item" type="button" data-route="home" aria-current="false">
@@ -2014,6 +2079,74 @@ function __stitchBuildBridge() {
 }
 
 window.__STITCH_BRIDGE__ = __stitchBuildBridge();
+
+(function stitchCameraPermissionUi() {
+  const FAIL_TEXT = "相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。";
+  function showEl(el) {
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.classList.add("flex");
+    el.setAttribute("aria-hidden", "false");
+  }
+  function hideEl(el) {
+    if (!el) return;
+    el.classList.add("hidden");
+    el.classList.remove("flex");
+    el.setAttribute("aria-hidden", "true");
+  }
+  window.__stitchCameraConsent = function stitchCameraConsent() {
+    return new Promise((resolve) => {
+      const root = document.getElementById("stitch-camera-consent-modal");
+      if (!root) {
+        resolve(true);
+        return;
+      }
+      const okBtn = document.getElementById("stitch-camera-consent-ok");
+      const cancelBtn = document.getElementById("stitch-camera-consent-cancel");
+      const backdrop = root.querySelector("[data-stitch-consent-backdrop]");
+      function finish(granted) {
+        okBtn?.removeEventListener("click", onOk);
+        cancelBtn?.removeEventListener("click", onCancel);
+        backdrop?.removeEventListener("click", onCancel);
+        hideEl(root);
+        resolve(granted);
+      }
+      function onOk() {
+        finish(true);
+      }
+      function onCancel() {
+        finish(false);
+      }
+      okBtn?.addEventListener("click", onOk);
+      cancelBtn?.addEventListener("click", onCancel);
+      backdrop?.addEventListener("click", onCancel);
+      showEl(root);
+    });
+  };
+  window.__stitchCameraError = function stitchCameraError() {
+    return new Promise((resolve) => {
+      const root = document.getElementById("stitch-camera-error-modal");
+      const textEl = root?.querySelector("[data-stitch-camera-error-text]");
+      if (textEl) textEl.textContent = FAIL_TEXT;
+      if (!root) {
+        alert(FAIL_TEXT);
+        resolve();
+        return;
+      }
+      const okBtn = document.getElementById("stitch-camera-error-ok");
+      const backdrop = root.querySelector("[data-stitch-error-backdrop]");
+      function close() {
+        okBtn?.removeEventListener("click", close);
+        backdrop?.removeEventListener("click", close);
+        hideEl(root);
+        resolve();
+      }
+      okBtn?.addEventListener("click", close);
+      backdrop?.addEventListener("click", close);
+      showEl(root);
+    });
+  };
+})();
 
 const THEME_KEY_UI = "stitch_ui_theme";
 const STITCH_SHELL_THEMES = {
@@ -3646,6 +3779,23 @@ const STORAGE_KEY = "stitch_transactions";
       alert("無法載入掃描元件，請檢查網路後重新整理。");
       return;
     }
+    if (typeof window.__stitchCameraConsent === "function") {
+      const agreed = await window.__stitchCameraConsent();
+      if (!agreed) return;
+    }
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+      try {
+        const pre = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        pre.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
+        else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
+        return;
+      }
+    }
     const overlay = document.getElementById("add-qr-scanner-overlay");
     const readerId = "add-qr-reader";
     if (!overlay) return;
@@ -3676,7 +3826,8 @@ const STORAGE_KEY = "stitch_transactions";
         () => {}
       );
     } catch (err) {
-      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。");
+      if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
+      else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
       closeInvoiceQrScanner();
     }
   }
@@ -5053,6 +5204,23 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       alert("掃描元件載入失敗，請重新整理頁面。");
       return;
     }
+    if (typeof window.__stitchCameraConsent === "function") {
+      const agreed = await window.__stitchCameraConsent();
+      if (!agreed) return;
+    }
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+      try {
+        const pre = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        pre.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
+        else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
+        return;
+      }
+    }
     const overlay = document.getElementById("inv-qr-camera-overlay");
     const readerId = "inv-qr-reader";
     if (!overlay) return;
@@ -5077,7 +5245,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         () => {}
       );
     } catch (err) {
-      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。您可改用下方「從相簿選圖」。");
+      if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
+      else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
       await closeInvQrCamera();
     }
   }
