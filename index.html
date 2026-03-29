@@ -10,11 +10,45 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="私人帳本" />
-<link rel="icon" href="./assets/icon.png" type="image/png" sizes="512x512" />
-<link rel="apple-touch-icon" href="./assets/icon.png" />
-<link rel="manifest" href="./manifest.webmanifest" />
-<script type="application/manifest+json" id="stitch-pwa-manifest-embedded">
-{"name":"私人帳本","short_name":"帳本","description":"本機記帳、發票掃描與消費統計","start_url":"./","scope":"./","display":"standalone","orientation":"portrait-primary","background_color":"#f8f6f1","theme_color":"#725638","lang":"zh-Hant","icons":[{"src":"./assets/icon.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"./assets/icon.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"./assets/icon.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
+<link rel="icon" type="image/png" sizes="512x512" href="icon.png" id="stitch-pwa-icon-link" />
+<link rel="apple-touch-icon" sizes="512x512" href="icon.png" id="stitch-pwa-apple-icon-link" />
+<link rel="manifest" href="manifest.webmanifest" id="stitch-pwa-manifest-link" />
+<script>
+(function () {
+  function appBaseHref() {
+    return new URL(".", window.location.href).href;
+  }
+  function toAbs(relativePath) {
+    var p = String(relativePath || "").replace(/^\.\//, "");
+    return new URL(p, appBaseHref()).href;
+  }
+  try {
+    var iconAbs = toAbs("icon.png");
+    var iconEl = document.getElementById("stitch-pwa-icon-link");
+    if (iconEl) iconEl.setAttribute("href", iconAbs);
+    var appleEl = document.getElementById("stitch-pwa-apple-icon-link");
+    if (appleEl) appleEl.setAttribute("href", iconAbs);
+    var mlink = document.getElementById("stitch-pwa-manifest-link");
+    if (!mlink) return;
+    var manifestFetchUrl = new URL(mlink.getAttribute("href") || "manifest.webmanifest", window.location.href).href;
+    fetch(manifestFetchUrl, { credentials: "same-origin" })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        var base = appBaseHref();
+        data.start_url = new URL(data.start_url || ".", base).href.split("#")[0];
+        data.scope = new URL(data.scope || ".", base).href.split("#")[0];
+        data.icons = (data.icons || []).map(function (ic) {
+          ic.src = toAbs(ic.src);
+          return ic;
+        });
+        var blob = new Blob([JSON.stringify(data)], { type: "application/manifest+json" });
+        mlink.setAttribute("href", URL.createObjectURL(blob));
+      })
+      .catch(function () {});
+  } catch (e) {}
+})();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
@@ -3670,24 +3704,54 @@ const STORAGE_KEY = "stitch_transactions";
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
-  /** 財政部左側 QR：常見 77 碼明文（位置依官方規格；部分店家長度可能不同） */
-  function parseTaiwanInvoiceLeftQr(raw) {
-    const text = String(raw || "").trim().replace(/\s/g, "");
-    if (text.length < 50) return null;
-    let inv = text.slice(0, 10);
-    if (!/^[A-Z]{2}\d{8}$/i.test(inv)) {
-      const m = text.match(/([A-Z]{2})(\d{8})/i);
-      if (!m) return null;
-      inv = (m[1] + m[2]).toUpperCase();
-    } else inv = inv.toUpperCase();
-    const rocStr = text.slice(10, 17);
-    if (!/^\d{7}$/.test(rocStr)) return null;
+  /** 民國日期 7 碼（YYY+MM+DD）→ 西元 YYYY-MM-DD；含曆日檢查；民國 1–200 年皆允許 */
+  function parseRocSevenDigitsToYmd(rocStr) {
+    if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
     const rocY = parseInt(rocStr.slice(0, 3), 10);
     const mm = parseInt(rocStr.slice(3, 5), 10);
     const dd = parseInt(rocStr.slice(5, 7), 10);
-    if (rocY < 100 || rocY > 200 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    if (rocY < 1 || rocY > 200 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
     const gy = rocY + 1911;
-    const dateYmd = gy + "-" + pad2(mm) + "-" + pad2(dd);
+    const cal = new Date(gy, mm - 1, dd);
+    if (cal.getFullYear() !== gy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) return null;
+    return gy + "-" + pad2(mm) + "-" + pad2(dd);
+  }
+
+  /** 從整段密碼找出「發票號碼+民國日」；取最後一組有效日期（容忍前綴雜訊） */
+  function findInvoiceRocYmdInCompact(compact) {
+    const re = /[A-Z]{2}\d{8}(\d{7})/gi;
+    let m;
+    let last = null;
+    while ((m = re.exec(compact)) !== null) {
+      const ymd = parseRocSevenDigitsToYmd(m[1]);
+      if (ymd) last = ymd;
+    }
+    return last;
+  }
+
+  /** 財政部左側 QR：77 碼等（長度依店家可能不同，至少需發票號+日期 17 字） */
+  function parseTaiwanInvoiceLeftQr(raw) {
+    const text = String(raw || "").trim().replace(/\s/g, "");
+    if (text.length < 17) return null;
+    let inv = "";
+    let rocStr = "";
+    const head = text.match(/^([A-Z]{2}\d{8})(\d{7})/i);
+    if (head) {
+      inv = head[1].toUpperCase();
+      rocStr = head[2];
+    } else {
+      inv = text.slice(0, 10).toUpperCase();
+      if (!/^[A-Z]{2}\d{8}$/i.test(inv)) {
+        const inner = text.match(/([A-Z]{2})(\d{8})(\d{7})/i);
+        if (!inner) return null;
+        inv = (inner[1] + inner[2]).toUpperCase();
+        rocStr = inner[3];
+      } else {
+        rocStr = text.slice(10, 17);
+      }
+    }
+    const dateYmd = parseRocSevenDigitsToYmd(rocStr);
+    if (!dateYmd) return null;
     let total = null;
     let sales = null;
     if (text.length >= 37) {
@@ -3861,6 +3925,12 @@ const STORAGE_KEY = "stitch_transactions";
     }
     const lines = parseTaiwanInvoiceRightQr(text);
     if (lines.length > 0) {
+      const compactGuess = String(text || "").replace(/\s/g, "");
+      const guessYmd = findInvoiceRocYmdInCompact(compactGuess);
+      if (guessYmd) {
+        transactionDateYmd = guessYmd;
+        syncTxDateUi();
+      }
       invoiceLineItems = lines;
       renderInvoiceLinesList();
       try {
@@ -3909,16 +3979,19 @@ const STORAGE_KEY = "stitch_transactions";
     }
     document.getElementById(readerId).innerHTML = "";
     html5QrInstance = new Html5Qrcode(readerId);
-    const edge = Math.min(Math.max(240, Math.floor(window.innerWidth - 24)), 360);
-    const scanBox = Math.min(edge, Math.floor(edge * 0.96));
     const config = {
-      fps: 18,
-      qrbox: { width: scanBox, height: scanBox },
+      fps: 22,
+      qrbox: function (vw, vh) {
+        const e = Math.min(vw, vh);
+        const q = Math.floor(Math.min(e * 0.9, 384));
+        return { width: q, height: q };
+      },
       aspectRatio: 1,
+      disableFlip: false,
       videoConstraints: {
         facingMode: "environment",
-        width: { ideal: 1280, min: 480 },
-        height: { ideal: 720, min: 360 },
+        width: { ideal: 1920, min: 640 },
+        height: { ideal: 1080, min: 480 },
       },
     };
     try {
@@ -5338,16 +5411,19 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const readerEl = document.getElementById(readerId);
     if (readerEl) readerEl.innerHTML = "";
     invHtml5QrInstance = new Html5Qrcode(readerId);
-    const edge = Math.min(Math.max(240, Math.floor(window.innerWidth - 24)), 360);
-    const scanBox = Math.min(edge, Math.floor(edge * 0.96));
     const invScanConfig = {
-      fps: 18,
-      qrbox: { width: scanBox, height: scanBox },
+      fps: 22,
+      qrbox: function (vw, vh) {
+        const e = Math.min(vw, vh);
+        const q = Math.floor(Math.min(e * 0.9, 384));
+        return { width: q, height: q };
+      },
       aspectRatio: 1,
+      disableFlip: false,
       videoConstraints: {
         facingMode: "environment",
-        width: { ideal: 1280, min: 480 },
-        height: { ideal: 720, min: 360 },
+        width: { ideal: 1920, min: 640 },
+        height: { ideal: 1080, min: 480 },
       },
     };
     try {
@@ -5585,33 +5661,53 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
-  /** 嘗試從電子發票左側 QR 文字擷取資訊（格式因版本而異，僅最佳努力） */
+  function invRocSevenToYmd(rocStr) {
+    if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
+    const rocY = parseInt(rocStr.slice(0, 3), 10);
+    const mm = parseInt(rocStr.slice(3, 5), 10);
+    const dd = parseInt(rocStr.slice(5, 7), 10);
+    if (rocY < 1 || rocY > 200 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    const gy = rocY + 1911;
+    const cal = new Date(gy, mm - 1, dd);
+    if (cal.getFullYear() !== gy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) return null;
+    return gy + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+  }
+
+  function invFindRocYmdInCompact(compact) {
+    const re = /[A-Z]{2}\d{8}(\d{7})/gi;
+    let m;
+    let last = null;
+    while ((m = re.exec(compact)) !== null) {
+      const y = invRocSevenToYmd(m[1]);
+      if (y) last = y;
+    }
+    return last;
+  }
+
+  /** 從電子發票 QR／圖片辨識文字擷取欄位（優先購買日，解析失敗才用今天） */
   function parseQrToForm(text) {
     const raw = String(text || "").trim();
+    const dateEl = document.getElementById("inv-f-date");
     document.getElementById("inv-f-store").value = "";
     document.getElementById("inv-f-num").value = "";
     document.getElementById("inv-f-amount").value = "";
-    const t = new Date();
-    document.getElementById("inv-f-date").value =
-      t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+    dateEl.value = "";
 
     const compact = raw.replace(/\s/g, "");
-    if (compact.length >= 37 && /^[A-Z]{2}\d{8}\d{7}/i.test(compact.slice(0, 17))) {
-      const inv10 = compact.slice(0, 10).toUpperCase();
-      if (/^[A-Z]{2}\d{8}$/.test(inv10)) {
-        document.getElementById("inv-f-num").value = inv10.slice(0, 2) + "-" + inv10.slice(2);
-      }
-      const rocStr = compact.slice(10, 17);
-      if (/^\d{7}$/.test(rocStr)) {
-        const rocY = parseInt(rocStr.slice(0, 3), 10);
-        const mm = parseInt(rocStr.slice(3, 5), 10);
-        const dd = parseInt(rocStr.slice(5, 7), 10);
-        if (rocY >= 100 && rocY <= 200 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
-          const gy = rocY + 1911;
-          document.getElementById("inv-f-date").value =
-            gy + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+    const ymdBest = invFindRocYmdInCompact(compact);
+    if (ymdBest) dateEl.value = ymdBest;
+
+    if (compact.length >= 17) {
+      const invMatch = compact.match(/([A-Z]{2}\d{8})/i);
+      if (invMatch) {
+        const inv10 = invMatch[1].toUpperCase();
+        if (/^[A-Z]{2}\d{8}$/.test(inv10)) {
+          document.getElementById("inv-f-num").value = inv10.slice(0, 2) + "-" + inv10.slice(2);
         }
       }
+    }
+
+    if (compact.length >= 37) {
       const total = hexToAmountInv(compact.slice(29, 37));
       const sales = hexToAmountInv(compact.slice(21, 29));
       const useAmt = total != null && total > 0 ? total : sales;
@@ -5630,19 +5726,24 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         }
       }
     }
-    const mRoc = raw.match(/(\d{3})(\d{2})(\d{2})/);
-    if (mRoc) {
-      const roc = parseInt(mRoc[1], 10);
-      const mm = parseInt(mRoc[2], 10);
-      const dd = parseInt(mRoc[3], 10);
-      if (roc >= 100 && roc <= 200 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
-        const gy = roc + 1911;
-        document.getElementById("inv-f-date").value =
-          gy + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+
+    if (!dateEl.value) {
+      const mRoc = raw.match(/(?:^|[^\d])(\d{3})(\d{2})(\d{2})(?:[^\d]|$)/);
+      if (mRoc) {
+        const ymdLoose = invRocSevenToYmd(mRoc[1] + mRoc[2] + mRoc[3]);
+        if (ymdLoose) dateEl.value = ymdLoose;
       }
     }
+
     const mInv = raw.match(/\b([A-Z]{2})[\s-]?([0-9]{8})\b/i);
     if (mInv) document.getElementById("inv-f-num").value = mInv[1].toUpperCase() + "-" + mInv[2];
+
+    if (!dateEl.value) {
+      const t = new Date();
+      dateEl.value =
+        t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+    }
+
     if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
     else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
   }

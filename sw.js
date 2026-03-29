@@ -1,5 +1,5 @@
 /* Stitch 私人帳本 — PWA Service Worker（離線殼層 + 執行時快取 CDN） */
-const CACHE = "stitch-pwa-v2";
+const CACHE = "stitch-pwa-v3";
 
 const CDN_ASSETS = [
   "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
@@ -16,6 +16,7 @@ function scopeUrls() {
     scope,
     new URL("index.html", scope).href,
     new URL("manifest.webmanifest", scope).href,
+    new URL("icon.png", scope).href,
     new URL("assets/icon.png", scope).href,
     new URL("sw.js", scope).href,
   ];
