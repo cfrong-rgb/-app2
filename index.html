@@ -2,54 +2,8 @@
 <html lang="zh-Hant" class="light stitch-app-embed stitch-single-app">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>私人帳本</title>
-<meta name="theme-color" content="#725638" />
-<meta name="application-name" content="私人帳本" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="私人帳本" />
-<link rel="icon" type="image/png" sizes="512x512" href="icon.png" id="stitch-pwa-icon-link" />
-<link rel="apple-touch-icon" sizes="512x512" href="icon.png" id="stitch-pwa-apple-icon-link" />
-<link rel="manifest" href="manifest.webmanifest" id="stitch-pwa-manifest-link" />
-<script>
-(function () {
-  function appBaseHref() {
-    return new URL(".", window.location.href).href;
-  }
-  function toAbs(relativePath) {
-    var p = String(relativePath || "").replace(/^\.\//, "");
-    return new URL(p, appBaseHref()).href;
-  }
-  try {
-    var iconAbs = toAbs("icon.png");
-    var iconEl = document.getElementById("stitch-pwa-icon-link");
-    if (iconEl) iconEl.setAttribute("href", iconAbs);
-    var appleEl = document.getElementById("stitch-pwa-apple-icon-link");
-    if (appleEl) appleEl.setAttribute("href", iconAbs);
-    var mlink = document.getElementById("stitch-pwa-manifest-link");
-    if (!mlink) return;
-    var manifestFetchUrl = new URL(mlink.getAttribute("href") || "manifest.webmanifest", window.location.href).href;
-    fetch(manifestFetchUrl, { credentials: "same-origin" })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (data) {
-        var base = appBaseHref();
-        data.start_url = new URL(data.start_url || ".", base).href.split("#")[0];
-        data.scope = new URL(data.scope || ".", base).href.split("#")[0];
-        data.icons = (data.icons || []).map(function (ic) {
-          ic.src = toAbs(ic.src);
-          return ic;
-        });
-        var blob = new Blob([JSON.stringify(data)], { type: "application/manifest+json" });
-        mlink.setAttribute("href", URL.createObjectURL(blob));
-      })
-      .catch(function () {});
-  } catch (e) {}
-})();
-</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -137,63 +91,31 @@
   --navShadow: rgba(114, 86, 56, 0.06);
 }
 * { box-sizing: border-box; }
-html {
-  height: 100%;
-  -webkit-text-size-adjust: 100%;
-}
-html.stitch-single-app {
-  height: 100%;
-}
 body {
   margin: 0;
   min-height: 100dvh;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
-}
-html.stitch-single-app body {
-  width: 100%;
 }
 .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
 .wrap {
-  max-width: min(1100px, 100vw);
-  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 8px clamp(10px, 3.5vw, 16px) 0;
+  padding: 8px 12px 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
   min-height: 0;
-  min-width: 0;
 }
 .stitch-stage {
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  flex: 1;
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
-}
-html.stitch-single-app img,
-html.stitch-single-app video,
-html.stitch-single-app canvas {
-  max-width: 100%;
-  height: auto;
-}
-html.stitch-single-app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-html.stitch-single-app select,
-html.stitch-single-app textarea {
-  max-width: 100%;
 }
 .stitch-view[hidden] { display: none !important; }
 .stitch-view:not([hidden]) { display: block; }
@@ -753,9 +675,8 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8f6f1; 
             transition: left 0.2s ease, right 0.2s ease, background-color 0.2s ease;
         }
 
-html.stitch-single-app body {
-      min-height: 100dvh !important;
-      min-height: 100svh !important;
+body {
+      min-height: max(884px, 100dvh);
     }
 
 </style>
@@ -1821,38 +1742,6 @@ html.stitch-single-app body {
 
   </div>
 </main>
-<!-- 相機掃描：權限確認與失敗提示（全系統共用，高於掃描 overlay） -->
-<div id="stitch-camera-consent-modal" class="fixed inset-0 z-[220] hidden flex items-center justify-center p-4 sm:p-6" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stitch-camera-consent-title">
-<div class="absolute inset-0 bg-[#1a1510]/55 backdrop-blur-md" data-stitch-consent-backdrop tabindex="-1"></div>
-<div class="relative w-full max-w-sm rounded-[1.75rem] bg-gradient-to-b from-surface to-surface-container-low shadow-[0_24px_64px_rgba(0,0,0,0.28)] border border-primary/15 overflow-hidden">
-<div class="px-6 pt-7 pb-2 text-center">
-<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container/90 text-primary shadow-inner ring-2 ring-primary/10">
-<span class="material-symbols-outlined text-[2rem]" aria-hidden="true">photo_camera</span>
-</div>
-<h2 id="stitch-camera-consent-title" class="text-lg font-extrabold text-primary tracking-tight">掃描發票</h2>
-<p class="mt-3 text-sm text-on-surface-variant leading-relaxed px-1">是否開啟相機掃描發票？</p>
-</div>
-<div class="grid grid-cols-2 gap-3 p-5 pt-4 border-t border-outline-variant/20 bg-surface-container-low/40">
-<button type="button" id="stitch-camera-consent-cancel" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high border border-outline-variant/30 active:scale-[0.98] transition touch-manipulation">取消</button>
-<button type="button" id="stitch-camera-consent-ok" class="py-3.5 rounded-2xl font-bold text-on-primary bg-primary shadow-md shadow-primary/25 active:scale-[0.98] transition touch-manipulation">確定</button>
-</div>
-</div>
-</div>
-<div id="stitch-camera-error-modal" class="fixed inset-0 z-[221] hidden flex items-center justify-center p-4 sm:p-6" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="stitch-camera-error-title">
-<div class="absolute inset-0 bg-[#1a1510]/55 backdrop-blur-md" data-stitch-error-backdrop tabindex="-1"></div>
-<div class="relative w-full max-w-sm rounded-[1.75rem] bg-surface shadow-[0_24px_64px_rgba(0,0,0,0.28)] border border-error/20 overflow-hidden">
-<div class="px-6 pt-7 pb-6 text-center">
-<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-error-container/35 text-error">
-<span class="material-symbols-outlined text-2xl" aria-hidden="true">videocam_off</span>
-</div>
-<h2 id="stitch-camera-error-title" class="text-base font-extrabold text-on-surface">無法使用相機</h2>
-<p class="mt-3 text-sm text-on-surface-variant leading-relaxed" data-stitch-camera-error-text>相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。</p>
-</div>
-<div class="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-<button type="button" id="stitch-camera-error-ok" class="w-full py-3.5 rounded-2xl font-bold text-on-primary bg-primary active:scale-[0.99] transition touch-manipulation">我知道了</button>
-</div>
-</div>
-</div>
 <nav class="bottom-nav" aria-label="App 選單列">
       <div class="bottom-nav-inner">
         <button class="nav-item" type="button" data-route="home" aria-current="false">
@@ -1990,14 +1879,6 @@ function __stitchBuildBridge() {
   writeCategories(readCategories());
   writeIncomeCategories(readIncomeCategories());
 
-  function notifyTransactionsChanged() {
-    try {
-      window.dispatchEvent(new CustomEvent("stitch:tx:changed"));
-    } catch (e) {
-      /* ignore */
-    }
-  }
-
   return function __STITCH_BRIDGE__(type, payload) {
     const requestId = payload && payload.requestId != null ? payload.requestId : "_";
     const p = payload || {};
@@ -2010,13 +1891,11 @@ function __stitchBuildBridge() {
       const items = readAll();
       items.unshift(record);
       writeAll(items);
-      notifyTransactionsChanged();
       return { type: "stitch:tx:add:result", requestId, ok: true };
     }
     if (type === "stitch:tx:delete") {
       const id = String(p.id || "");
       writeAll(readAll().filter((t) => String(t?.id) !== id));
-      notifyTransactionsChanged();
       return { type: "stitch:tx:delete:result", requestId, ok: true };
     }
     if (type === "stitch:tx:update") {
@@ -2042,7 +1921,6 @@ function __stitchBuildBridge() {
       if (patch.flow === "income" || patch.flow === "expense") cur.flow = patch.flow;
       items[idx] = cur;
       writeAll(items);
-      notifyTransactionsChanged();
       return { type: "stitch:tx:update:result", requestId, ok: true };
     }
     if (type === "stitch:cat:list") {
@@ -2139,74 +2017,6 @@ function __stitchBuildBridge() {
 }
 
 window.__STITCH_BRIDGE__ = __stitchBuildBridge();
-
-(function stitchCameraPermissionUi() {
-  const FAIL_TEXT = "相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。";
-  function showEl(el) {
-    if (!el) return;
-    el.classList.remove("hidden");
-    el.classList.add("flex");
-    el.setAttribute("aria-hidden", "false");
-  }
-  function hideEl(el) {
-    if (!el) return;
-    el.classList.add("hidden");
-    el.classList.remove("flex");
-    el.setAttribute("aria-hidden", "true");
-  }
-  window.__stitchCameraConsent = function stitchCameraConsent() {
-    return new Promise((resolve) => {
-      const root = document.getElementById("stitch-camera-consent-modal");
-      if (!root) {
-        resolve(true);
-        return;
-      }
-      const okBtn = document.getElementById("stitch-camera-consent-ok");
-      const cancelBtn = document.getElementById("stitch-camera-consent-cancel");
-      const backdrop = root.querySelector("[data-stitch-consent-backdrop]");
-      function finish(granted) {
-        okBtn?.removeEventListener("click", onOk);
-        cancelBtn?.removeEventListener("click", onCancel);
-        backdrop?.removeEventListener("click", onCancel);
-        hideEl(root);
-        resolve(granted);
-      }
-      function onOk() {
-        finish(true);
-      }
-      function onCancel() {
-        finish(false);
-      }
-      okBtn?.addEventListener("click", onOk);
-      cancelBtn?.addEventListener("click", onCancel);
-      backdrop?.addEventListener("click", onCancel);
-      showEl(root);
-    });
-  };
-  window.__stitchCameraError = function stitchCameraError() {
-    return new Promise((resolve) => {
-      const root = document.getElementById("stitch-camera-error-modal");
-      const textEl = root?.querySelector("[data-stitch-camera-error-text]");
-      if (textEl) textEl.textContent = FAIL_TEXT;
-      if (!root) {
-        alert(FAIL_TEXT);
-        resolve();
-        return;
-      }
-      const okBtn = document.getElementById("stitch-camera-error-ok");
-      const backdrop = root.querySelector("[data-stitch-error-backdrop]");
-      function close() {
-        okBtn?.removeEventListener("click", close);
-        backdrop?.removeEventListener("click", close);
-        hideEl(root);
-        resolve();
-      }
-      okBtn?.addEventListener("click", close);
-      backdrop?.addEventListener("click", close);
-      showEl(root);
-    });
-  };
-})();
 
 const THEME_KEY_UI = "stitch_ui_theme";
 const STITCH_SHELL_THEMES = {
@@ -2385,26 +2195,10 @@ const STORAGE_KEY = "stitch_transactions";
     return item && item.flow === "income";
   }
 
-  /** 統計「今天／本月」時優先使用帳務日期 bookedDate（與發票掃描一致），否則用 createdAt */
-  function transactionCalendarDate(item) {
-    const b = item && item.bookedDate;
-    if (b && typeof b === "string") {
-      const m = String(b).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (m) {
-        const y = parseInt(m[1], 10);
-        const mo = parseInt(m[2], 10) - 1;
-        const d = parseInt(m[3], 10);
-        return new Date(y, mo, d, 12, 0, 0, 0);
-      }
-    }
-    const c = item && item.createdAt ? new Date(item.createdAt) : new Date(NaN);
-    return Number.isNaN(c.getTime()) ? new Date(NaN) : c;
-  }
-
   function sumMonthExpense(items, now = new Date()) {
     return items.reduce((sum, item) => {
       if (!isExpenseTransaction(item)) return sum;
-      const d = transactionCalendarDate(item);
+      const d = new Date(item.createdAt);
       if (Number.isNaN(d.getTime()) || !isSameLocalMonth(d, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount) || amount <= 0) return sum;
@@ -2415,7 +2209,7 @@ const STORAGE_KEY = "stitch_transactions";
   function sumMonthIncome(items, now = new Date()) {
     return items.reduce((sum, item) => {
       if (!isIncomeTransaction(item)) return sum;
-      const d = transactionCalendarDate(item);
+      const d = new Date(item.createdAt);
       if (Number.isNaN(d.getTime()) || !isSameLocalMonth(d, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount) || amount <= 0) return sum;
@@ -2520,9 +2314,9 @@ const STORAGE_KEY = "stitch_transactions";
     const items = await readTransactions();
     const total = items.reduce((sum, item) => {
       if (!isExpenseTransaction(item)) return sum;
-      const day = transactionCalendarDate(item);
-      if (Number.isNaN(day.getTime())) return sum;
-      if (!isSameLocalDay(day, now)) return sum;
+      const createdAt = new Date(item.createdAt);
+      if (Number.isNaN(createdAt.getTime())) return sum;
+      if (!isSameLocalDay(createdAt, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount)) return sum;
       return sum + Math.max(0, amount);
@@ -2559,7 +2353,7 @@ const STORAGE_KEY = "stitch_transactions";
     const items = await readTransactions();
     const monthItems = items.filter((item) => {
       if (!isExpenseTransaction(item)) return false;
-      const d = transactionCalendarDate(item);
+      const d = new Date(item.createdAt);
       if (Number.isNaN(d.getTime())) return false;
       if (!isSameLocalMonth(d, now)) return false;
       const amount = Number(item.amount);
@@ -2713,20 +2507,6 @@ const STORAGE_KEY = "stitch_transactions";
   document.getElementById("home-notifications-goto-profile")?.addEventListener("click", () => {
     closeNotificationsPanel();
     navigateHomeRoute("profile");
-  });
-
-  async function refreshHomeDashboard() {
-    await renderTodayTotal();
-    await renderMainBalance();
-    await renderMonthlyCategoryChart();
-  }
-
-  window.addEventListener("stitch:route", (e) => {
-    if (e.detail && e.detail.route === "home") void refreshHomeDashboard();
-  });
-  window.addEventListener("stitch:tx:changed", () => {
-    const homeView = document.querySelector('[data-stitch-view="home"]');
-    if (homeView && !homeView.hidden) void refreshHomeDashboard();
   });
 
   initStitchTheme();
@@ -3168,7 +2948,6 @@ const STORAGE_KEY = "stitch_transactions";
     return String(n).padStart(2, "0");
   }
 
-  /** 區間篩選與匯出用：優先 bookedDate（帳務日），否則為 createdAt 的本地日，正午比較避免時區誤差 */
   function transactionBookedAtNoon(item) {
     const b = item && item.bookedDate;
     if (b && typeof b === "string") {
@@ -3487,14 +3266,6 @@ const STORAGE_KEY = "stitch_transactions";
     renderTransactions();
   });
 
-  window.addEventListener("stitch:route", (e) => {
-    if (e.detail && e.detail.route === "history") void renderTransactions();
-  });
-  window.addEventListener("stitch:tx:changed", () => {
-    const histView = document.querySelector('[data-stitch-view="history"]');
-    if (histView && !histView.hidden) void renderTransactions();
-  });
-
   updateChipStyles();
   setDrawerOpen(false);
   renderTransactions();
@@ -3704,7 +3475,7 @@ const STORAGE_KEY = "stitch_transactions";
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
-  /** 民國日期 7 碼（YYY+MM+DD）→ 西元 YYYY-MM-DD；含曆日檢查；民國 1–200 年皆允許 */
+  /** 民國日期 7 碼（YYY+MM+DD）→ 西元 YYYY-MM-DD；含曆日檢查 */
   function parseRocSevenDigitsToYmd(rocStr) {
     if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
     const rocY = parseInt(rocStr.slice(0, 3), 10);
@@ -3717,7 +3488,6 @@ const STORAGE_KEY = "stitch_transactions";
     return gy + "-" + pad2(mm) + "-" + pad2(dd);
   }
 
-  /** 對齊到第一組發票字軌十碼（略過前綴雜訊／不可見字元；NFKC 可修正部分全形數字） */
   function alignTaiwanInvoiceCompact(raw) {
     const tryOne = (s) => {
       const compact = String(s || "")
@@ -3733,7 +3503,6 @@ const STORAGE_KEY = "stitch_transactions";
     return a;
   }
 
-  /** 從整段字串推測民國日：只採用「對齊後字軌」後的 7 碼，避免末段加密區誤判 */
   function findInvoiceRocYmdInCompact(compact) {
     const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
     const aligned = alignTaiwanInvoiceCompact(c);
@@ -3760,14 +3529,13 @@ const STORAGE_KEY = "stitch_transactions";
     return { totalAmount: null, salesAmount: s };
   }
 
-  /** 財政部左側 QR：對齊字軌後依欄位位置讀取；金額做含稅≥未稅與上限檢查 */
+  /** 財政部左側 QR：對齊字軌後讀欄位；金額做含稅／未稅與上限檢查 */
   function parseTaiwanInvoiceLeftQr(raw) {
     const text = alignTaiwanInvoiceCompact(raw);
     if (!text || text.length < 17) return null;
     const inv10 = text.slice(0, 10).toUpperCase();
     if (!/^[A-Z]{2}\d{8}$/.test(inv10)) return null;
-    const rocStr = text.slice(10, 17);
-    const dateYmd = parseRocSevenDigitsToYmd(rocStr);
+    const dateYmd = parseRocSevenDigitsToYmd(text.slice(10, 17));
     if (!dateYmd) return null;
     let sales = null;
     let total = null;
@@ -3972,23 +3740,6 @@ const STORAGE_KEY = "stitch_transactions";
       alert("無法載入掃描元件，請檢查網路後重新整理。");
       return;
     }
-    if (typeof window.__stitchCameraConsent === "function") {
-      const agreed = await window.__stitchCameraConsent();
-      if (!agreed) return;
-    }
-    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
-      try {
-        const pre = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
-        pre.getTracks().forEach((t) => t.stop());
-      } catch (e) {
-        if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
-        else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
-        return;
-      }
-    }
     const overlay = document.getElementById("add-qr-scanner-overlay");
     const readerId = "add-qr-reader";
     if (!overlay) return;
@@ -4002,20 +3753,12 @@ const STORAGE_KEY = "stitch_transactions";
     }
     document.getElementById(readerId).innerHTML = "";
     html5QrInstance = new Html5Qrcode(readerId);
+    const vw = Math.min(window.innerWidth - 56, 300);
+    const qh = Math.min(Math.round(vw * 0.92), 280);
     const config = {
-      fps: 22,
-      qrbox: function (vw, vh) {
-        const e = Math.min(vw, vh);
-        const q = Math.floor(Math.min(e * 0.9, 384));
-        return { width: q, height: q };
-      },
+      fps: 10,
+      qrbox: { width: vw, height: qh },
       aspectRatio: 1,
-      disableFlip: false,
-      videoConstraints: {
-        facingMode: "environment",
-        width: { ideal: 1920, min: 640 },
-        height: { ideal: 1080, min: 480 },
-      },
     };
     try {
       await html5QrInstance.start(
@@ -4027,8 +3770,7 @@ const STORAGE_KEY = "stitch_transactions";
         () => {}
       );
     } catch (err) {
-      if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
-      else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
+      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。");
       closeInvoiceQrScanner();
     }
   }
@@ -5405,23 +5147,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       alert("掃描元件載入失敗，請重新整理頁面。");
       return;
     }
-    if (typeof window.__stitchCameraConsent === "function") {
-      const agreed = await window.__stitchCameraConsent();
-      if (!agreed) return;
-    }
-    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
-      try {
-        const pre = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
-        pre.getTracks().forEach((t) => t.stop());
-      } catch (e) {
-        if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
-        else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
-        return;
-      }
-    }
     const overlay = document.getElementById("inv-qr-camera-overlay");
     const readerId = "inv-qr-reader";
     if (!overlay) return;
@@ -5434,33 +5159,19 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const readerEl = document.getElementById(readerId);
     if (readerEl) readerEl.innerHTML = "";
     invHtml5QrInstance = new Html5Qrcode(readerId);
-    const invScanConfig = {
-      fps: 22,
-      qrbox: function (vw, vh) {
-        const e = Math.min(vw, vh);
-        const q = Math.floor(Math.min(e * 0.9, 384));
-        return { width: q, height: q };
-      },
-      aspectRatio: 1,
-      disableFlip: false,
-      videoConstraints: {
-        facingMode: "environment",
-        width: { ideal: 1920, min: 640 },
-        height: { ideal: 1080, min: 480 },
-      },
-    };
+    const vw = Math.min(window.innerWidth - 56, 300);
+    const qh = Math.min(Math.round(vw * 0.92), 280);
     try {
       await invHtml5QrInstance.start(
         { facingMode: "environment" },
-        invScanConfig,
+        { fps: 10, qrbox: { width: vw, height: qh }, aspectRatio: 1 },
         (decodedText) => {
           onInvCameraQrDecoded(decodedText);
         },
         () => {}
       );
     } catch (err) {
-      if (typeof window.__stitchCameraError === "function") await window.__stitchCameraError();
-      else alert("相機啟動失敗。請確保網址為 https 並已在瀏覽器設定中允許相機存取。");
+      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。您可改用下方「從相簿選圖」。");
       await closeInvQrCamera();
     }
   }
@@ -5469,7 +5180,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const t = String(text || "").trim();
     if (!t) return;
     const now = Date.now();
-    if (t === invLastCameraDecoded && now - invLastCameraDecodeAt < 700) return;
+    if (t === invLastCameraDecoded && now - invLastCameraDecodeAt < 1200) return;
     invLastCameraDecoded = t;
     invLastCameraDecodeAt = now;
     parseQrToForm(t);
@@ -5684,7 +5395,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
 
-  function invRocSevenToYmd(rocStr) {
+  function invPad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function invRocSevenToYmdStandalone(rocStr) {
     if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
     const rocY = parseInt(rocStr.slice(0, 3), 10);
     const mm = parseInt(rocStr.slice(3, 5), 10);
@@ -5693,12 +5408,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const gy = rocY + 1911;
     const cal = new Date(gy, mm - 1, dd);
     if (cal.getFullYear() !== gy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) return null;
-    return gy + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+    return gy + "-" + invPad2(mm) + "-" + invPad2(dd);
   }
 
-  const INV_AMOUNT_MAX_NT = 200000000;
-
-  function invAlignTaiwanInvoiceCompact(raw) {
+  function invAlignCompactStandalone(raw) {
     const tryOne = (s) => {
       const compact = String(s || "")
         .trim()
@@ -5713,7 +5426,9 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return a;
   }
 
-  function invPickHexAmounts(sales, total) {
+  const INV_AMT_MAX = 200000000;
+
+  function invPickAmtStandalone(sales, total) {
     let s = sales;
     let t = total;
     if (s != null && t != null && s > 0 && t > 0 && t < s) {
@@ -5721,23 +5436,36 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       s = t;
       t = x;
     }
-    const ok = (n) => n != null && n > 0 && n <= INV_AMOUNT_MAX_NT;
+    const ok = (n) => n != null && n > 0 && n <= INV_AMT_MAX;
     if (ok(t)) return t;
     if (ok(s)) return s;
-    if (t != null && t > INV_AMOUNT_MAX_NT && ok(s)) return s;
+    if (t != null && t > INV_AMT_MAX && ok(s)) return s;
     return null;
   }
 
-  function invFindRocYmdInCompact(compact) {
-    const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
-    const aligned = invAlignTaiwanInvoiceCompact(c);
-    if (!aligned || aligned.length < 17) return null;
-    const m = aligned.match(/^([A-Z]{2}\d{8})(\d{7})/i);
-    if (!m) return null;
-    return invRocSevenToYmd(m[2]);
+  function parseTaiwanInvoiceLeftQrStandalone(raw) {
+    const text = invAlignCompactStandalone(raw);
+    if (!text || text.length < 17) return null;
+    const inv10 = text.slice(0, 10).toUpperCase();
+    if (!/^[A-Z]{2}\d{8}$/.test(inv10)) return null;
+    const dateYmd = invRocSevenToYmdStandalone(text.slice(10, 17));
+    if (!dateYmd) return null;
+    let sales = null;
+    let total = null;
+    if (text.length >= 37) {
+      sales = hexToAmountInv(text.slice(21, 29));
+      total = hexToAmountInv(text.slice(29, 37));
+    }
+    const amt = invPickAmtStandalone(sales, total);
+    return {
+      invoiceNumber: inv10.slice(0, 2) + "-" + inv10.slice(2),
+      dateYmd,
+      totalAmount: amt,
+      salesAmount: sales,
+    };
   }
 
-  /** 從電子發票 QR／圖片辨識文字擷取欄位（優先購買日，解析失敗才用今天） */
+  /** 從電子發票 QR／圖片辨識文字擷取欄位（優先解析購買日，失敗才用今天） */
   function parseQrToForm(text) {
     const raw = String(text || "").trim();
     const dateEl = document.getElementById("inv-f-date");
@@ -5750,22 +5478,24 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     const compact = raw.replace(/[\s\u200B-\u200D\uFEFF]/g, "");
     const parseLeft =
-      typeof window.__stitchParseTaiwanInvoiceLeftQr === "function" ? window.__stitchParseTaiwanInvoiceLeftQr : null;
-    const left = parseLeft ? parseLeft(raw) : null;
+      typeof window.__stitchParseTaiwanInvoiceLeftQr === "function"
+        ? window.__stitchParseTaiwanInvoiceLeftQr
+        : parseTaiwanInvoiceLeftQrStandalone;
+    const left = parseLeft(raw);
     if (left && left.dateYmd) {
       dateEl.value = left.dateYmd;
       if (left.invoiceNumber) numEl.value = left.invoiceNumber;
       if (left.totalAmount != null && left.totalAmount > 0) amtEl.value = String(left.totalAmount);
     } else {
-      const ymdBest = invFindRocYmdInCompact(compact);
-      if (ymdBest) dateEl.value = ymdBest;
-      const aligned = invAlignTaiwanInvoiceCompact(compact);
+      const aligned = invAlignCompactStandalone(compact);
       if (aligned && aligned.length >= 17) {
         const inv10 = aligned.slice(0, 10).toUpperCase();
         if (/^[A-Z]{2}\d{8}$/.test(inv10)) numEl.value = inv10.slice(0, 2) + "-" + inv10.slice(2);
+        const ymd = invRocSevenToYmdStandalone(aligned.slice(10, 17));
+        if (ymd) dateEl.value = ymd;
       }
       if (aligned && aligned.length >= 37) {
-        const useAmt = invPickHexAmounts(hexToAmountInv(aligned.slice(21, 29)), hexToAmountInv(aligned.slice(29, 37)));
+        const useAmt = invPickAmtStandalone(hexToAmountInv(aligned.slice(21, 29)), hexToAmountInv(aligned.slice(29, 37)));
         if (useAmt != null) amtEl.value = String(useAmt);
       }
     }
@@ -5784,7 +5514,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (!dateEl.value) {
       const mRoc = raw.match(/(?:^|[^\d])(\d{3})(\d{2})(\d{2})(?:[^\d]|$)/);
       if (mRoc) {
-        const ymdLoose = invRocSevenToYmd(mRoc[1] + mRoc[2] + mRoc[3]);
+        const ymdLoose = invRocSevenToYmdStandalone(mRoc[1] + mRoc[2] + mRoc[3]);
         if (ymdLoose) dateEl.value = ymdLoose;
       }
     }
@@ -5796,8 +5526,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     if (!dateEl.value) {
       const t = new Date();
-      dateEl.value =
-        t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+      dateEl.value = t.getFullYear() + "-" + invPad2(t.getMonth() + 1) + "-" + invPad2(t.getDate());
     }
 
     if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
@@ -6269,16 +5998,6 @@ const BUDGET_KEY = "stitch_monthly_budget";
   refreshBudgetUI();
 })();
 
-</script>
-<script>
-(function () {
-  if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", function () {
-    var regUrl = new URL("./sw.js", document.baseURI || window.location.href);
-    var scopeUrl = new URL("./", regUrl.href);
-    navigator.serviceWorker.register(regUrl.href, { scope: scopeUrl.href }).catch(function () {});
-  });
-})();
 </script>
 </body>
 </html>
