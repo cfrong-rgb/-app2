@@ -4,6 +4,18 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>私人帳本</title>
+<meta name="theme-color" content="#725638" />
+<meta name="application-name" content="私人帳本" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="私人帳本" />
+<link rel="icon" href="./assets/icon.png" type="image/png" sizes="512x512" />
+<link rel="apple-touch-icon" href="./assets/icon.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<script type="application/manifest+json" id="stitch-pwa-manifest-embedded">
+{"name":"私人帳本","short_name":"帳本","description":"本機記帳、發票掃描與消費統計","start_url":"./","scope":"./","display":"standalone","orientation":"portrait-primary","background_color":"#f8f6f1","theme_color":"#725638","lang":"zh-Hant","icons":[{"src":"./assets/icon.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"./assets/icon.png","sizes":"512x512","type":"image/png","purpose":"any"},{"src":"./assets/icon.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -1941,6 +1953,14 @@ function __stitchBuildBridge() {
   writeCategories(readCategories());
   writeIncomeCategories(readIncomeCategories());
 
+  function notifyTransactionsChanged() {
+    try {
+      window.dispatchEvent(new CustomEvent("stitch:tx:changed"));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   return function __STITCH_BRIDGE__(type, payload) {
     const requestId = payload && payload.requestId != null ? payload.requestId : "_";
     const p = payload || {};
@@ -1953,11 +1973,13 @@ function __stitchBuildBridge() {
       const items = readAll();
       items.unshift(record);
       writeAll(items);
+      notifyTransactionsChanged();
       return { type: "stitch:tx:add:result", requestId, ok: true };
     }
     if (type === "stitch:tx:delete") {
       const id = String(p.id || "");
       writeAll(readAll().filter((t) => String(t?.id) !== id));
+      notifyTransactionsChanged();
       return { type: "stitch:tx:delete:result", requestId, ok: true };
     }
     if (type === "stitch:tx:update") {
@@ -1983,6 +2005,7 @@ function __stitchBuildBridge() {
       if (patch.flow === "income" || patch.flow === "expense") cur.flow = patch.flow;
       items[idx] = cur;
       writeAll(items);
+      notifyTransactionsChanged();
       return { type: "stitch:tx:update:result", requestId, ok: true };
     }
     if (type === "stitch:cat:list") {
@@ -2325,10 +2348,26 @@ const STORAGE_KEY = "stitch_transactions";
     return item && item.flow === "income";
   }
 
+  /** 統計「今天／本月」時優先使用帳務日期 bookedDate（與發票掃描一致），否則用 createdAt */
+  function transactionCalendarDate(item) {
+    const b = item && item.bookedDate;
+    if (b && typeof b === "string") {
+      const m = String(b).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        const y = parseInt(m[1], 10);
+        const mo = parseInt(m[2], 10) - 1;
+        const d = parseInt(m[3], 10);
+        return new Date(y, mo, d, 12, 0, 0, 0);
+      }
+    }
+    const c = item && item.createdAt ? new Date(item.createdAt) : new Date(NaN);
+    return Number.isNaN(c.getTime()) ? new Date(NaN) : c;
+  }
+
   function sumMonthExpense(items, now = new Date()) {
     return items.reduce((sum, item) => {
       if (!isExpenseTransaction(item)) return sum;
-      const d = new Date(item.createdAt);
+      const d = transactionCalendarDate(item);
       if (Number.isNaN(d.getTime()) || !isSameLocalMonth(d, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount) || amount <= 0) return sum;
@@ -2339,7 +2378,7 @@ const STORAGE_KEY = "stitch_transactions";
   function sumMonthIncome(items, now = new Date()) {
     return items.reduce((sum, item) => {
       if (!isIncomeTransaction(item)) return sum;
-      const d = new Date(item.createdAt);
+      const d = transactionCalendarDate(item);
       if (Number.isNaN(d.getTime()) || !isSameLocalMonth(d, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount) || amount <= 0) return sum;
@@ -2444,9 +2483,9 @@ const STORAGE_KEY = "stitch_transactions";
     const items = await readTransactions();
     const total = items.reduce((sum, item) => {
       if (!isExpenseTransaction(item)) return sum;
-      const createdAt = new Date(item.createdAt);
-      if (Number.isNaN(createdAt.getTime())) return sum;
-      if (!isSameLocalDay(createdAt, now)) return sum;
+      const day = transactionCalendarDate(item);
+      if (Number.isNaN(day.getTime())) return sum;
+      if (!isSameLocalDay(day, now)) return sum;
       const amount = Number(item.amount);
       if (!Number.isFinite(amount)) return sum;
       return sum + Math.max(0, amount);
@@ -2483,7 +2522,7 @@ const STORAGE_KEY = "stitch_transactions";
     const items = await readTransactions();
     const monthItems = items.filter((item) => {
       if (!isExpenseTransaction(item)) return false;
-      const d = new Date(item.createdAt);
+      const d = transactionCalendarDate(item);
       if (Number.isNaN(d.getTime())) return false;
       if (!isSameLocalMonth(d, now)) return false;
       const amount = Number(item.amount);
@@ -2637,6 +2676,20 @@ const STORAGE_KEY = "stitch_transactions";
   document.getElementById("home-notifications-goto-profile")?.addEventListener("click", () => {
     closeNotificationsPanel();
     navigateHomeRoute("profile");
+  });
+
+  async function refreshHomeDashboard() {
+    await renderTodayTotal();
+    await renderMainBalance();
+    await renderMonthlyCategoryChart();
+  }
+
+  window.addEventListener("stitch:route", (e) => {
+    if (e.detail && e.detail.route === "home") void refreshHomeDashboard();
+  });
+  window.addEventListener("stitch:tx:changed", () => {
+    const homeView = document.querySelector('[data-stitch-view="home"]');
+    if (homeView && !homeView.hidden) void refreshHomeDashboard();
   });
 
   initStitchTheme();
@@ -3361,6 +3414,14 @@ const STORAGE_KEY = "stitch_transactions";
     renderTransactions();
   });
 
+  window.addEventListener("stitch:route", (e) => {
+    if (e.detail && e.detail.route === "history") void renderTransactions();
+  });
+  window.addEventListener("stitch:tx:changed", () => {
+    const histView = document.querySelector('[data-stitch-view="history"]');
+    if (histView && !histView.hidden) void renderTransactions();
+  });
+
   updateChipStyles();
   setDrawerOpen(false);
   renderTransactions();
@@ -3746,7 +3807,7 @@ const STORAGE_KEY = "stitch_transactions";
     const now = Date.now();
     if (text === lastQrDecoded && now < qrDecodeCooldownUntil) return;
     lastQrDecoded = text;
-    qrDecodeCooldownUntil = now + 1200;
+    qrDecodeCooldownUntil = now + 700;
     const left = parseTaiwanInvoiceLeftQr(text);
     if (left) {
       applyInvoiceLeftParsed(left);
@@ -3809,12 +3870,17 @@ const STORAGE_KEY = "stitch_transactions";
     }
     document.getElementById(readerId).innerHTML = "";
     html5QrInstance = new Html5Qrcode(readerId);
-    const vw = Math.min(window.innerWidth - 56, 300);
-    const qh = Math.min(Math.round(vw * 0.92), 280);
+    const edge = Math.min(Math.max(240, Math.floor(window.innerWidth - 24)), 360);
+    const scanBox = Math.min(edge, Math.floor(edge * 0.96));
     const config = {
-      fps: 10,
-      qrbox: { width: vw, height: qh },
+      fps: 18,
+      qrbox: { width: scanBox, height: scanBox },
       aspectRatio: 1,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 1280, min: 480 },
+        height: { ideal: 720, min: 360 },
+      },
     };
     try {
       await html5QrInstance.start(
@@ -5233,12 +5299,22 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const readerEl = document.getElementById(readerId);
     if (readerEl) readerEl.innerHTML = "";
     invHtml5QrInstance = new Html5Qrcode(readerId);
-    const vw = Math.min(window.innerWidth - 56, 300);
-    const qh = Math.min(Math.round(vw * 0.92), 280);
+    const edge = Math.min(Math.max(240, Math.floor(window.innerWidth - 24)), 360);
+    const scanBox = Math.min(edge, Math.floor(edge * 0.96));
+    const invScanConfig = {
+      fps: 18,
+      qrbox: { width: scanBox, height: scanBox },
+      aspectRatio: 1,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 1280, min: 480 },
+        height: { ideal: 720, min: 360 },
+      },
+    };
     try {
       await invHtml5QrInstance.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: vw, height: qh }, aspectRatio: 1 },
+        invScanConfig,
         (decodedText) => {
           onInvCameraQrDecoded(decodedText);
         },
@@ -5255,7 +5331,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const t = String(text || "").trim();
     if (!t) return;
     const now = Date.now();
-    if (t === invLastCameraDecoded && now - invLastCameraDecodeAt < 1200) return;
+    if (t === invLastCameraDecoded && now - invLastCameraDecodeAt < 700) return;
     invLastCameraDecoded = t;
     invLastCameraDecodeAt = now;
     parseQrToForm(t);
@@ -5997,6 +6073,16 @@ const BUDGET_KEY = "stitch_monthly_budget";
   refreshBudgetUI();
 })();
 
+</script>
+<script>
+(function () {
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", function () {
+    var regUrl = new URL("./sw.js", document.baseURI || window.location.href);
+    var scopeUrl = new URL("./", regUrl.href);
+    navigator.serviceWorker.register(regUrl.href, { scope: scopeUrl.href }).catch(function () {});
+  });
+})();
 </script>
 </body>
 </html>
