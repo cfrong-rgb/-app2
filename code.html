@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>新增交易 - Peach &amp; Mint Hearth</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="stylesheet" href="../assets/stitch-themes.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        html,
+        body {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .organic-cloud {
+            border-radius: 60% 40% 70% 30% / 40% 50% 60% 40%;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "inverse-surface": "#0e0e0c",
+                "tertiary-fixed-dim": "#eed942",
+                "on-primary-fixed": "#4f371b",
+                "error-container": "#f95630",
+                "error-dim": "#b92902",
+                "on-tertiary-container": "#5e5400",
+                "on-primary-fixed-variant": "#6e5334",
+                "on-surface": "#2e2f2c",
+                "on-tertiary": "#fff4b9",
+                "tertiary": "#675c00",
+                "outline-variant": "#aeada9",
+                "on-tertiary-fixed-variant": "#695e00",
+                "tertiary-fixed": "#fde74f",
+                "inverse-primary": "#fdd6af",
+                "on-secondary": "#dbfbda",
+                "on-error-container": "#520c00",
+                "surface-dim": "#d5d5ce",
+                "secondary-container": "#cbebca",
+                "on-primary": "#fff0e4",
+                "secondary-fixed-dim": "#bdddbd",
+                "tertiary-dim": "#5a5000",
+                "primary-dim": "#654a2d",
+                "primary-fixed-dim": "#eec8a2",
+                "surface-container": "#eae8e3",
+                "outline": "#777773",
+                "secondary-fixed": "#cbebca",
+                "primary": "#725638",
+                "on-secondary-fixed": "#2a452e",
+                "secondary": "#466249",
+                "on-secondary-container": "#3c5840",
+                "surface-container-high": "#e4e2dd",
+                "on-secondary-fixed-variant": "#466249",
+                "surface-container-low": "#f2f1eb",
+                "primary-fixed": "#fdd6af",
+                "on-primary-container": "#64492c",
+                "tertiary-container": "#fde74f",
+                "surface": "#f8f6f1",
+                "surface-variant": "#deddd7",
+                "surface-container-highest": "#deddd7",
+                "surface-tint": "#725638",
+                "surface-container-lowest": "#ffffff",
+                "inverse-on-surface": "#9e9d99",
+                "on-background": "#2e2f2c",
+                "error": "#b02500",
+                "surface-bright": "#f8f6f1",
+                "primary-container": "#fdd6af",
+                "on-surface-variant": "#5c5c58",
+                "secondary-dim": "#3a563e",
+                "on-error": "#ffefec",
+                "background": "#f8f6f1",
+                "on-tertiary-fixed": "#4a4100"
+              },
+              fontFamily: {
+                "headline": ["Plus Jakarta Sans"],
+                "body": ["Plus Jakarta Sans"],
+                "label": ["Plus Jakarta Sans"]
+              },
+              borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+        /* 嵌入 index 時，父層底部導覽會蓋住 iframe 底部；加大底部留白並上移儲存列 */
+        html.add-embed-app-shell body {
+          padding-bottom: 13rem;
+        }
+        html.add-embed-app-shell #add-floating-save {
+          bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+        }
+        html.add-embed-app-shell #custom-category-sheet,
+        html.add-embed-app-shell #category-editor-sheet {
+            max-height: min(32rem, calc(100vh - 5rem));
+        }
+        html.theme-frost:not(.dark) body {
+          background-color: #edf4fc !important;
+        }
+        html.accessible-font {
+            font-size: 106%;
+        }
+        /* 讓 WebKit 整列都可點開日期選擇器 */
+        #tx-date-input::-webkit-calendar-picker-indicator {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        #add-qr-scanner-overlay { z-index: 125; }
+        #add-qr-reader video {
+            border-radius: 1.25rem;
+            object-fit: cover;
+        }
+        #add-qr-scanner-overlay #add-qr-reader canvas {
+            border-radius: 1.25rem;
+        }
+        /* html5-qrcode 掃描框：奶茶色描邊，與主題一致 */
+        #add-qr-scanner-overlay #add-qr-reader__scan_region,
+        #add-qr-scanner-overlay #add-qr-reader__scan_region img {
+            border-radius: 1.25rem !important;
+        }
+        #add-qr-scanner-overlay #add-qr-reader__scan_region {
+            outline: 2px solid rgba(253, 214, 175, 0.85) !important;
+            outline-offset: -2px;
+            box-shadow: 0 0 0 1px rgba(114, 86, 56, 0.35), 0 0 28px rgba(253, 214, 175, 0.15) !important;
+        }
+        #add-qr-scanner-overlay #add-qr-reader__dashboard_section_csr button {
+            color: #fdd6af !important;
+            border-radius: 9999px !important;
+        }
+    </style>
+<script>
+      (function () {
+        try {
+          if (window.parent !== window) document.documentElement.classList.add("add-embed-app-shell");
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen pb-40">
+<!-- Top Navigation Shell -->
+<nav class="fixed top-0 w-full z-50 bg-[#ffffffcc] dark:bg-[#1a1c18cc] backdrop-blur-xl flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-3">
+<button type="button" class="p-2 hover:bg-[#f2f1eb] transition-colors rounded-full active:scale-95 transition-transform duration-200" id="add-close-btn" aria-label="關閉並返回首頁">
+<span class="material-symbols-outlined text-primary">close</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-extrabold text-[#725638] tracking-tighter text-lg" id="add-page-title">新增支出</h1>
+</div>
+<div class="flex items-center gap-2 sm:gap-3">
+<button type="button" id="nav-invoice-qr-btn" class="p-2 rounded-full bg-primary-container/55 border border-primary/20 text-primary hover:bg-primary-container active:scale-95 transition touch-manipulation shadow-sm" aria-label="掃描發票 QR Code" title="掃描發票">
+<span class="material-symbols-outlined text-2xl" aria-hidden="true">qr_code_scanner</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="portrait of a smiling man with a warm expression in soft natural lighting professional headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7NBVDToVpypQirRHEU9N3ye9lnZOzCm6R5xM2aqPQSLFFRHtLOgzomYMoOxx9qsoFYrZUoqQhnrNWTDPXa5sIPWw_8UKBPYdrthuAYFtP5hcZpD6InX0FAjA_6hox3CWFIhS0mza7-O5Ie_dphNT4NSzXShPhXnCKU2-VW_b6v6a_VZxkLUl059FOajffbH5giJSmz-YyojbbCpKEGR3MK2-WTq2DIecBOrF1dlUgQVlM97tsesW8PTuLTHRiFhsPEc7pGPt2s6U"/>
+</div>
+</div>
+</nav>
+<main class="pt-24 w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
+<div class="max-w-lg mx-auto mb-8" id="flow-toggle-wrap">
+<div class="flex rounded-full p-1 bg-surface-container-low border border-outline-variant/35 shadow-sm" role="tablist" aria-label="支出或收入">
+<button type="button" id="flow-expense-btn" role="tab" aria-selected="true" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all bg-primary text-on-primary shadow-sm">支出</button>
+<button type="button" id="flow-income-btn" role="tab" aria-selected="false" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all text-on-surface-variant">收入</button>
+</div>
+</div>
+<!-- Amount Input Area (The Cloud) -->
+<div class="relative mb-10">
+<div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
+<div class="text-center py-8">
+<span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入金額 · 支出</span>
+<div class="flex items-center justify-center gap-1">
+<span class="text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
+<span class="text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200" id="amount-display">0.00</span>
+</div>
+<div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
+<button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
+<span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
+</button>
+<span class="text-[11px] font-bold text-on-surface-variant tracking-wide">掃描發票 QR Code</span>
+<p class="text-[10px] text-on-surface-variant/90 text-center max-w-xs leading-relaxed px-2">先掃左側（發票資訊），再掃右側（明細）。僅本機解析，格式依店家而異。</p>
+</div>
+<div id="invoice-fields-wrap" class="mt-4 w-full max-w-md mx-auto space-y-3">
+<div>
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1" for="tx-invoice-number">發票號碼</label>
+<input type="text" id="tx-invoice-number" class="w-full bg-white/80 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-3 font-mono font-bold text-on-surface text-sm uppercase" placeholder="例 AB-12345678" maxlength="12" autocomplete="off"/>
+</div>
+<button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
+</div>
+<div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
+<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">掃描明細列表</h3>
+<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">每筆可調整消費類別；儲存時會依類別各寫入一筆紀錄，圓餅圖會分別統計。</p>
+<div id="invoice-lines-list" class="space-y-3"></div>
+</div>
+<div id="add-expense-select-block" class="mt-6 w-full max-w-none mx-auto">
+<div class="flex items-end justify-between gap-3 mb-2">
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block" for="category-select">分類</label>
+<button class="w-10 h-10 rounded-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 flex items-center justify-center hover:bg-white transition active:scale-95" id="add-category-btn" type="button" aria-label="新增自訂類別">
+<span class="material-symbols-outlined text-primary">add</span>
+</button>
+</div>
+<select class="w-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-4 font-bold text-on-surface focus:ring-0 focus:border-secondary transition-all" id="category-select"></select>
+</div>
+</div>
+</div>
+<!-- Category quick-pick（支出） -->
+<div class="mb-10" id="expense-category-section">
+<div class="flex items-center justify-between mb-5 ml-1 gap-3">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">選擇類別</h2>
+<button type="button" class="shrink-0 text-xs font-bold text-primary uppercase tracking-widest px-4 py-2.5 rounded-full bg-primary-container/50 border border-primary/15 hover:bg-primary-container active:scale-95 transition" id="edit-categories-btn">編輯分類</button>
+</div>
+<div class="grid grid-cols-4 sm:grid-cols-5 gap-y-7 gap-x-3" id="category-grid">
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_breakfast">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="早餐，飲食">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">free_breakfast</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">早餐</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_lunch">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="午餐，飲食">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">lunch_dining</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">午餐</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_dinner">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="晚餐，飲食">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">dinner_dining</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">晚餐</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_cafe">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="咖啡，飲食">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">local_cafe</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">咖啡</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="交通" data-pick-id="trans_bus">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="交通">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">directions_bus</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">交通</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="交通" data-pick-id="trans_gas">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="加油，交通">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">local_gas_station</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">加油</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="交通" data-pick-id="trans_park">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="停車，交通">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">local_parking</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">停車</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="購物" data-pick-id="shop_bag">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="購物">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">shopping_bag</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">購物</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="購物" data-pick-id="shop_mart">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="超市，購物">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">shopping_cart</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">超市</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_movie">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="娛樂">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">movie</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">娛樂</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_bill">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="帳單">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">receipt_long</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">帳單</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_home">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="居家">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">home</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">居家</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_travel">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="旅遊">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">flight_takeoff</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">旅遊</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_health">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="健康">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">fitness_center</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">健康</span>
+</div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="其他" data-pick-id="misc_school">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="學習">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">school</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">學習</span>
+</div>
+<div id="category-grid-dynamic" class="contents"></div>
+<div class="flex flex-col items-center gap-2 group col-span-4 sm:col-span-1 justify-self-center sm:justify-self-start">
+<button type="button" class="w-[4.25rem] h-[4.25rem] rounded-2xl bg-secondary-container/80 text-on-secondary-container border-2 border-dashed border-secondary/50 flex items-center justify-center hover:bg-secondary-container transition-all active:scale-90" id="category-open-custom-btn" aria-label="新增其它自訂類別">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">add</span>
+</button>
+<span class="text-[10px] font-bold text-secondary text-center leading-tight tracking-wide">其它</span>
+</div>
+</div>
+</div>
+<!-- 收入類型（圓形圖示，由 JS 依本機清單動態產生） -->
+<div class="mb-10 hidden" id="income-category-section">
+<div class="flex items-center justify-between gap-3 mb-5 ml-1">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">收入類型</h2>
+<button type="button" class="shrink-0 text-xs font-bold text-secondary uppercase tracking-widest px-4 py-2.5 rounded-full bg-secondary-container/60 border border-secondary/20 hover:bg-secondary-container active:scale-95 transition hidden" id="edit-income-categories-btn">編輯類型</button>
+</div>
+<div class="flex flex-wrap justify-center gap-6 sm:gap-8" id="income-category-row"></div>
+</div>
+<!-- Numeric Keypad -->
+<div class="grid grid-cols-3 gap-4 mb-12" id="keypad">
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">4</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">5</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">6</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">7</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">8</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">9</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">0</button>
+<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low text-error rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">
+<span class="material-symbols-outlined">backspace</span>
+</button>
+</div>
+<!-- Date & Note（日期以透明 input 覆蓋整列，避免行動版無法開啟原生選擇器） -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+<label id="tx-date-trigger" class="relative flex items-center justify-between p-6 bg-surface-container-low rounded-xl group cursor-pointer hover:bg-surface-container-highest transition-colors text-left w-full overflow-hidden min-h-[5.5rem]">
+<input type="date" id="tx-date-input" class="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer border-0 p-0 m-0" aria-label="選擇交易日期"/>
+<div class="flex items-center justify-between w-full gap-3 pointer-events-none relative z-0">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-outlined text-primary shrink-0" aria-hidden="true">calendar_month</span>
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">日期</p>
+<p class="font-bold text-on-surface truncate" id="tx-date-label">今天</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant shrink-0" aria-hidden="true">expand_more</span>
+</div>
+</label>
+<div class="p-6 bg-surface-container-low rounded-xl flex items-center gap-3 group hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-primary">notes</span>
+<div class="flex-1">
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">備註</p>
+<input class="w-full bg-transparent border-none p-0 text-on-surface placeholder:text-outline focus:ring-0 font-bold" id="note-input" placeholder="這筆錢花在哪裡？" type="text"/>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Bar（嵌入父 App 時由 CSS 上移，避免被底部導覽遮住） -->
+<div id="add-floating-save" class="fixed bottom-0 left-0 right-0 w-full p-4 sm:p-6 flex flex-col items-center gap-1.5 z-[55] box-border pointer-events-none">
+<div class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
+<button type="button" class="flex-1 min-h-[52px] py-4 px-6 sm:px-8 bg-primary rounded-full text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation" id="save-transaction-btn"><span class="material-symbols-outlined" aria-hidden="true">save</span> <span id="save-transaction-label">儲存交易</span></button>
+</div>
+<p class="pointer-events-none text-center text-[10px] font-semibold text-on-surface-variant/80 tracking-wide px-2 max-w-md" id="add-save-hint">備註欄按 Enter 儲存 · 任意處 ⌘Enter / Ctrl+Enter 亦可</p>
+</div>
+<!-- 發票 QR 相機掃描（全螢幕） -->
+<div id="add-qr-scanner-overlay" class="fixed inset-0 hidden flex-col bg-gradient-to-b from-[#3a3228]/96 via-[#2a241c]/97 to-[#1a1510]/98 backdrop-blur-xl" aria-hidden="true">
+<div class="shrink-0 flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-primary-fixed/20 bg-black/15">
+<p class="text-sm font-extrabold text-primary-fixed tracking-tight">掃描發票 QR</p>
+<button type="button" id="add-qr-close-btn" class="p-2 rounded-full bg-primary-container/25 text-primary-fixed border border-primary-fixed/30 hover:bg-primary-container/45 active:scale-95 transition" aria-label="關閉相機">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 min-h-0 flex flex-col items-center justify-center p-5 sm:p-6">
+<div id="add-qr-reader" class="w-full max-w-[min(100%,20rem)] rounded-[1.25rem] overflow-hidden bg-black/35 border-2 border-primary-fixed/35 shadow-[0_0_40px_rgba(253,214,175,0.12),inset_0_0_0_1px_rgba(255,255,255,0.06)] ring-1 ring-primary/20"></div>
+<p id="add-qr-hint" class="text-xs text-primary-fixed/85 text-center mt-5 max-w-sm leading-relaxed px-2">請將 QR 對準框線；建議先掃發票<strong class="text-primary-fixed">左側</strong>，再點右上角圖示掃<strong class="text-primary-fixed">右側</strong>明細。</p>
+</div>
+</div>
+<!-- 編輯分類（名稱 + Material 圖示） -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center hidden p-4 sm:p-6" id="category-editor-overlay" aria-hidden="true">
+<div id="category-editor-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(36rem,82dvh)] min-h-0 overflow-hidden">
+<div class="shrink-0 flex justify-between items-start gap-3 px-6 sm:px-8 pt-6 pb-3 border-b border-outline-variant/15">
+<div>
+<h3 class="text-xl font-bold text-primary tracking-tight">編輯分類</h3>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">可調整預設分類圖示、新增／刪除自訂分類；變更會寫入本機並透過父頁同步。</p>
+</div>
+<button type="button" class="p-2 hover:bg-surface-container-highest rounded-full shrink-0" id="category-editor-close-btn" aria-label="關閉">
+<span class="material-symbols-outlined text-on-surface-variant">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-3">預設分類 · 圖示</p>
+<div class="space-y-3" id="category-editor-default-rows"></div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-3">
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">自訂分類</p>
+<button type="button" class="text-xs font-bold text-secondary hover:underline" id="category-editor-add-row-btn">＋ 新增一列</button>
+</div>
+<div class="space-y-3" id="category-editor-custom-rows"></div>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">⌘Enter／Ctrl+Enter 可儲存分類設定。</p>
+</div>
+<div class="shrink-0 grid grid-cols-2 gap-3 px-6 sm:px-8 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
+<button type="button" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-[0.99] transition" id="category-editor-cancel-btn">取消</button>
+<button type="button" class="py-3.5 rounded-2xl font-bold text-on-secondary bg-secondary active:scale-[0.99] transition" id="category-editor-save-btn">儲存</button>
+</div>
+</div>
+</div>
+<!-- 編輯收入類型（名稱 + Material 圖示） -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center hidden p-4 sm:p-6" id="income-category-editor-overlay" aria-hidden="true">
+<div id="income-category-editor-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(36rem,82dvh)] min-h-0 overflow-hidden">
+<div class="shrink-0 flex justify-between items-start gap-3 px-6 sm:px-8 pt-6 pb-3 border-b border-outline-variant/15">
+<div>
+<h3 class="text-xl font-bold text-primary tracking-tight">編輯收入類型</h3>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">可調整預設收入圖示、新增自訂收入類型；與支出分類分開儲存。</p>
+</div>
+<button type="button" class="p-2 hover:bg-surface-container-highest rounded-full shrink-0" id="income-category-editor-close-btn" aria-label="關閉">
+<span class="material-symbols-outlined text-on-surface-variant">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-3">預設類型 · 圖示</p>
+<div class="space-y-3" id="income-editor-default-rows"></div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-3">
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">自訂收入類型</p>
+<button type="button" class="text-xs font-bold text-secondary hover:underline" id="income-editor-add-row-btn">＋ 新增一列</button>
+</div>
+<div class="space-y-3" id="income-editor-custom-rows"></div>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">⌘Enter／Ctrl+Enter 可儲存。</p>
+</div>
+<div class="shrink-0 grid grid-cols-2 gap-3 px-6 sm:px-8 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
+<button type="button" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-[0.99] transition" id="income-category-editor-cancel-btn">取消</button>
+<button type="button" class="py-3.5 rounded-2xl font-bold text-on-secondary bg-secondary active:scale-[0.99] transition" id="income-category-editor-save-btn">儲存</button>
+</div>
+</div>
+</div>
+<!-- Custom Category：可捲動內容 + 底部按鈕固定（避免嵌入 iframe 時按鈕被裁切） -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4 sm:p-6 hidden" id="custom-category-overlay" role="dialog" aria-modal="true" aria-labelledby="custom-category-title">
+<div id="custom-category-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(32rem,78vh)] min-h-0 overflow-hidden">
+<div class="shrink-0 flex justify-between items-center px-6 pt-5 pb-3 border-b border-outline-variant/15">
+<h3 id="custom-category-title" class="text-xl font-bold text-primary">自訂類別</h3>
+<button type="button" class="p-2 hover:bg-surface-container-highest rounded-full transition-colors" id="custom-category-close-btn" aria-label="關閉">
+<span class="material-symbols-outlined text-on-surface-variant">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto overscroll-y-contain px-6 py-4 min-h-0 space-y-5">
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-secondary pointer-events-none">label</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-low border-2 border-transparent focus:border-secondary focus:ring-0 rounded-2xl font-bold text-on-surface transition-all" id="custom-category-input" placeholder="輸入類別名稱..." type="text" maxlength="16"/>
+</div>
+<div>
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">圖示</p>
+<div class="flex flex-wrap gap-2" id="custom-category-icon-picker" role="group" aria-label="選擇類別圖示"></div>
+</div>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">名稱欄按 Enter 可儲存；亦可 ⌘Enter／Ctrl+Enter。</p>
+</div>
+<div class="shrink-0 grid grid-cols-2 gap-3 px-6 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
+<button type="button" class="py-4 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-95 transition-transform" id="custom-category-cancel-btn">取消</button>
+<button type="button" class="py-4 rounded-2xl font-bold text-on-secondary bg-secondary active:scale-95 transition-transform" id="save-custom-category-btn" type="button">儲存類別</button>
+</div>
+</div>
+</div>
+<!-- Background Decorative Elements -->
+<div class="fixed top-20 right-[-10%] w-64 h-64 bg-secondary-container opacity-20 blur-3xl rounded-full -z-20"></div>
+<div class="fixed bottom-10 left-[-5%] w-48 h-48 bg-primary-container opacity-30 blur-3xl rounded-full -z-20"></div>
+<script>
+  const STORAGE_KEY = "stitch_transactions";
+  const CATEGORIES_KEY = "stitch_categories";
+  const CAT_ICONS_KEY = "stitch_category_icons";
+  const INCOME_CATEGORIES_KEY = "stitch_income_categories";
+  const INCOME_ICONS_KEY = "stitch_income_icons";
+  const DEFAULT_CATEGORIES = ["飲食", "交通", "購物", "其他"];
+  const DEFAULT_CAT_ICONS = {
+    飲食: "restaurant_menu",
+    交通: "directions_bus",
+    購物: "shopping_bag",
+    其他: "category",
+  };
+  const DEFAULT_INCOME_CATEGORIES = ["薪水", "獎金", "回饋", "交易"];
+  const DEFAULT_INCOME_ICONS = {
+    薪水: "account_balance_wallet",
+    獎金: "redeem",
+    回饋: "currency_exchange",
+    交易: "trending_up",
+  };
+  const ICON_PICKLIST = [
+    "restaurant_menu",
+    "free_breakfast",
+    "lunch_dining",
+    "dinner_dining",
+    "local_cafe",
+    "bakery_dining",
+    "directions_bus",
+    "directions_car",
+    "local_gas_station",
+    "local_parking",
+    "train",
+    "two_wheeler",
+    "shopping_bag",
+    "shopping_cart",
+    "payments",
+    "home",
+    "movie",
+    "receipt_long",
+    "flight_takeoff",
+    "fitness_center",
+    "school",
+    "category",
+    "sell",
+    "pets",
+    "child_care",
+    "label",
+    "work",
+    "savings",
+    "card_giftcard",
+    "local_offer",
+    "star",
+    "favorite",
+  ];
+
+  /** 自訂類別彈窗可選的 Material 圖示（精簡一組常用） */
+  const CUSTOM_CATEGORY_ICON_CHOICES = [
+    "label",
+    "category",
+    "sell",
+    "payments",
+    "home",
+    "pets",
+    "child_care",
+    "work",
+    "savings",
+    "card_giftcard",
+    "local_offer",
+    "star",
+    "favorite",
+  ];
+
+  /** 新增「收入類型」時可選圖示（含預設收入圖示） */
+  const INCOME_CUSTOM_ICON_CHOICES = [
+    "account_balance_wallet",
+    "redeem",
+    "currency_exchange",
+    "trending_up",
+    "payments",
+    "savings",
+    "attach_money",
+    "account_balance",
+    "work",
+    "card_giftcard",
+    "local_offer",
+    "label",
+    "category",
+  ];
+
+  let amountInput = "";
+  let selectedCategory = "飲食";
+  /** 快捷圖示列一次只亮一格；與實際儲存分類（可能多格同值）分開 */
+  let activeCategoryPickId = "food_breakfast";
+  /** expense | income */
+  let txFlow = "expense";
+  let selectedIncomeCategory = "薪水";
+  let activeIncomePickId = "inc_salary";
+
+  const amountDisplay = document.getElementById("amount-display");
+  const keypad = document.getElementById("keypad");
+  const noteInput = document.getElementById("note-input");
+  const categoryGrid = document.getElementById("category-grid");
+  const saveButton = document.getElementById("save-transaction-btn");
+  const categorySelect = document.getElementById("category-select");
+  const addCategoryBtn = document.getElementById("add-category-btn");
+  const editCategoriesBtn = document.getElementById("edit-categories-btn");
+  const categoryEditorOverlay = document.getElementById("category-editor-overlay");
+  const categoryEditorDefaultRows = document.getElementById("category-editor-default-rows");
+  const categoryEditorCustomRows = document.getElementById("category-editor-custom-rows");
+  const categoryEditorCloseBtn = document.getElementById("category-editor-close-btn");
+  const categoryEditorCancelBtn = document.getElementById("category-editor-cancel-btn");
+  const categoryEditorSaveBtn = document.getElementById("category-editor-save-btn");
+  const categoryEditorAddRowBtn = document.getElementById("category-editor-add-row-btn");
+  const incomeCategoryEditorOverlay = document.getElementById("income-category-editor-overlay");
+  const incomeEditorDefaultRows = document.getElementById("income-editor-default-rows");
+  const incomeEditorCustomRows = document.getElementById("income-editor-custom-rows");
+  const incomeCategoryEditorCloseBtn = document.getElementById("income-category-editor-close-btn");
+  const incomeCategoryEditorCancelBtn = document.getElementById("income-category-editor-cancel-btn");
+  const incomeCategoryEditorSaveBtn = document.getElementById("income-category-editor-save-btn");
+  const incomeEditorAddRowBtn = document.getElementById("income-editor-add-row-btn");
+  const customCategoryOverlay = document.getElementById("custom-category-overlay");
+  const customCategoryInput = document.getElementById("custom-category-input");
+  const saveCustomCategoryBtn = document.getElementById("save-custom-category-btn");
+  const customCategoryIconPicker = document.getElementById("custom-category-icon-picker");
+  let pendingCustomIcon = "label";
+  /** expense | income — 自訂類別彈窗目標 */
+  let customCategoryTargetFlow = "expense";
+
+  const THEME_KEY_ADD = "stitch_ui_theme";
+  (function initAddPageThemeAndFont() {
+    try {
+      const t = localStorage.getItem(THEME_KEY_ADD) || "hearth";
+      const root = document.documentElement;
+      root.classList.remove("dark", "theme-frost", "theme-sakura", "theme-terracotta", "theme-forest");
+      if (t === "midnight") root.classList.add("dark");
+      else if (t === "frost") root.classList.add("theme-frost");
+      else if (t === "sakura") root.classList.add("theme-sakura");
+      else if (t === "terracotta") root.classList.add("theme-terracotta");
+      else if (t === "forest") root.classList.add("theme-forest");
+      let prefs = {};
+      try {
+        prefs = JSON.parse(localStorage.getItem("stitch_prefs") || "{}");
+      } catch (e) {
+        /* ignore */
+      }
+      root.classList.toggle("accessible-font", prefs.accessibleFont === true);
+    } catch (e) {
+      /* ignore */
+    }
+  })();
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function ymdFromDate(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  let transactionDateYmd = ymdFromDate(new Date());
+
+  /** 發票掃描：拆項明細（儲存時各寫一筆） */
+  let invoiceLineItems = [];
+  let lastQrDecoded = "";
+  let qrDecodeCooldownUntil = 0;
+  let html5QrInstance = null;
+
+  function invoiceSplitActive() {
+    return txFlow === "expense" && invoiceLineItems.length > 0;
+  }
+
+  function guessCategoryFromItemName(name, allowed) {
+    const list = Array.isArray(allowed) && allowed.length ? allowed : [...DEFAULT_CATEGORIES];
+    const pick = (pref) => {
+      for (const p of pref) {
+        if (list.includes(p)) return p;
+      }
+      return list.includes("其他") ? "其他" : list[0];
+    };
+    const t = String(name || "");
+    if (
+      /奶茶|咖啡|早餐|吐司|麵包|便當|午餐|晚餐|火鍋|拉麵|壽司|飯糰|滷味|小吃|手搖|飲料|果汁|豆漿|漢堡|雞排|餐廳|鍋燒|湯麵|水餃|包子|三明治|甜點|蛋糕|茶飲/.test(t)
+    ) {
+      return pick(["飲食"]);
+    }
+    if (/車|加油|停車|捷運|高鐵|台鐵|ibus|悠遊|一卡通|Uber|計程|租車|高鐵|機票|船票|YouBike/.test(t)) {
+      return pick(["交通"]);
+    }
+    if (/電影|KTV|遊戲|點數|Steam|演唱會|門票|遊樂|娛樂|書籍|雜誌/.test(t)) {
+      return pick(["購物", "其他"]);
+    }
+    if (/超市|量販|全聯|家樂福|momo|網購|購物|百貨|服飾|鞋|化妝|3C/.test(t)) {
+      return pick(["購物"]);
+    }
+    return pick(["其他", "飲食"]);
+  }
+
+  function hexToAmount(s) {
+    if (!s || String(s).length !== 8) return null;
+    const n = parseInt(String(s).replace(/[^0-9a-fA-F]/g, ""), 16);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  /** 民國日期 7 碼（YYY+MM+DD）→ 西元 YYYY-MM-DD；含曆日檢查 */
+  function parseRocSevenDigitsToYmd(rocStr) {
+    if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
+    const rocY = parseInt(rocStr.slice(0, 3), 10);
+    const mm = parseInt(rocStr.slice(3, 5), 10);
+    const dd = parseInt(rocStr.slice(5, 7), 10);
+    if (rocY < 1 || rocY > 200 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+    const gy = rocY + 1911;
+    const cal = new Date(gy, mm - 1, dd);
+    if (cal.getFullYear() !== gy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) return null;
+    return gy + "-" + pad2(mm) + "-" + pad2(dd);
+  }
+
+  function alignTaiwanInvoiceCompact(raw) {
+    const tryOne = (s) => {
+      const compact = String(s || "")
+        .trim()
+        .replace(/^\uFEFF/, "")
+        .replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+      const idx = compact.search(/[A-Z]{2}\d{8}/i);
+      if (idx < 0) return null;
+      return compact.slice(idx);
+    };
+    let a = tryOne(raw);
+    if (!a && raw) a = tryOne(String(raw).normalize("NFKC"));
+    return a;
+  }
+
+  function findInvoiceRocYmdInCompact(compact) {
+    const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+    const aligned = alignTaiwanInvoiceCompact(c);
+    if (!aligned || aligned.length < 17) return null;
+    const m = aligned.match(/^([A-Z]{2}\d{8})(\d{7})/i);
+    if (!m) return null;
+    return parseRocSevenDigitsToYmd(m[2]);
+  }
+
+  const INVOICE_AMOUNT_MAX_NT = 200000000;
+
+  function pickInvoiceHexAmounts(sales, total) {
+    let s = sales;
+    let t = total;
+    if (s != null && t != null && s > 0 && t > 0 && t < s) {
+      const x = s;
+      s = t;
+      t = x;
+    }
+    const ok = (n) => n != null && n > 0 && n <= INVOICE_AMOUNT_MAX_NT;
+    if (ok(t)) return { totalAmount: t, salesAmount: s };
+    if (ok(s)) return { totalAmount: s, salesAmount: s };
+    if (t != null && t > INVOICE_AMOUNT_MAX_NT && ok(s)) return { totalAmount: s, salesAmount: s };
+    return { totalAmount: null, salesAmount: s };
+  }
+
+  /** 財政部左側 QR：對齊字軌後讀欄位；金額做含稅／未稅與上限檢查 */
+  function parseTaiwanInvoiceLeftQr(raw) {
+    const text = alignTaiwanInvoiceCompact(raw);
+    if (!text || text.length < 17) return null;
+    const inv10 = text.slice(0, 10).toUpperCase();
+    if (!/^[A-Z]{2}\d{8}$/.test(inv10)) return null;
+    const dateYmd = parseRocSevenDigitsToYmd(text.slice(10, 17));
+    if (!dateYmd) return null;
+    let sales = null;
+    let total = null;
+    if (text.length >= 37) {
+      sales = hexToAmount(text.slice(21, 29));
+      total = hexToAmount(text.slice(29, 37));
+    }
+    const picked = pickInvoiceHexAmounts(sales, total);
+    return {
+      invoiceNumber: inv10.slice(0, 2) + "-" + inv10.slice(2),
+      dateYmd,
+      totalAmount: picked.totalAmount,
+      salesAmount: picked.salesAmount,
+    };
+  }
+
+  try {
+    window.__stitchParseTaiwanInvoiceLeftQr = parseTaiwanInvoiceLeftQr;
+  } catch (e) {
+    /* ignore */
+  }
+
+  /** 右側 QR：嘗試 ** 分段、冒號分隔、JSON 等 */
+  function parseTaiwanInvoiceRightQr(raw) {
+    const text = String(raw || "").trim();
+    if (text.length < 8) return [];
+    const allowed = Array.from(categorySelect?.options || []).map((o) => o.value);
+    const items = [];
+    const pushItem = (name, amt) => {
+      const n = Math.round(Number(amt));
+      if (!name || !Number.isFinite(n) || n <= 0) return;
+      const nm = String(name).trim().slice(0, 40);
+      if (nm.length < 1) return;
+      items.push({
+        id: "invl_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: nm,
+        amount: n,
+        category: guessCategoryFromItemName(nm, allowed),
+      });
+    };
+    if (text.includes("**")) {
+      const parts = text.split(/\*\*/).map((p) => p.trim()).filter(Boolean);
+      for (const p of parts) {
+        const segs = p.split(":");
+        if (segs.length >= 5) {
+          const name = (segs[1] || "").trim();
+          const sub = parseFloat(String(segs[segs.length - 1]).replace(/[^\d.]/g, ""));
+          if (name && Number.isFinite(sub) && sub > 0) pushItem(name, sub);
+        } else if (segs.length >= 2) {
+          const last = segs[segs.length - 1].replace(/[^\d.]/g, "");
+          const first = (segs[1] || segs[0].replace(/^\d+[.:：]?\s*/, "")).trim();
+          const amt = parseFloat(last);
+          if (first && Number.isFinite(amt) && amt > 0) pushItem(first, amt);
+        }
+      }
+      if (items.length) return items;
+    }
+    const lineRe = /[:：]\s*(\d{1,6})\s*$/;
+    for (const line of text.split(/[\r\n;；]/)) {
+      const m = line.trim().match(/^([^:：]{1,30})[:：]\s*(\d{1,6})\s*$/);
+      if (m) pushItem(m[1].trim(), m[2]);
+    }
+    if (items.length) return items;
+    try {
+      const j = JSON.parse(text);
+      if (Array.isArray(j)) {
+        j.forEach((row) => {
+          if (row && (row.name || row.品名)) pushItem(row.name || row.品名, row.amount || row.金額 || row.price);
+        });
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return items;
+  }
+
+  function applyInvoiceLeftParsed(data) {
+    if (!data) return;
+    const invEl = document.getElementById("tx-invoice-number");
+    if (invEl) invEl.value = data.invoiceNumber || "";
+    if (data.dateYmd) {
+      transactionDateYmd = data.dateYmd;
+      syncTxDateUi();
+    }
+    if (data.totalAmount != null && Number.isFinite(data.totalAmount) && data.totalAmount > 0) {
+      amountInput = String(data.totalAmount);
+      normalizeAfterTyping();
+      updateAmountDisplay();
+    }
+  }
+
+  function renderInvoiceLinesList() {
+    const section = document.getElementById("invoice-lines-section");
+    const listEl = document.getElementById("invoice-lines-list");
+    if (!section || !listEl) return;
+    if (!invoiceLineItems.length) {
+      section.classList.add("hidden");
+      listEl.innerHTML = "";
+      return;
+    }
+    section.classList.remove("hidden");
+    const opts = Array.from(categorySelect.options)
+      .map((o) => {
+        const v = o.value.replace(/"/g, "&quot;");
+        const t = o.textContent.replace(/</g, "&lt;");
+        return `<option value="${v}">${t}</option>`;
+      })
+      .join("");
+    listEl.innerHTML = invoiceLineItems
+      .map(
+        (line, idx) => `
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 p-4 rounded-2xl bg-surface-container-low border border-outline-variant/25" data-invoice-line-id="${line.id}">
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-on-surface-variant">品項</p>
+          <p class="font-bold text-on-surface truncate">${String(line.name).replace(/</g, "&lt;")}</p>
+          <p class="text-sm font-extrabold text-primary mt-1">${line.amount.toLocaleString("zh-TW")} 元</p>
+        </div>
+        <div class="sm:w-44 shrink-0">
+          <label class="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">消費類別</label>
+          <select class="invoice-line-cat w-full px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" data-idx="${idx}">
+            ${opts}
+          </select>
+        </div>
+      </div>`
+      )
+      .join("");
+    listEl.querySelectorAll(".invoice-line-cat").forEach((sel) => {
+      const idx = Number(sel.getAttribute("data-idx"));
+      if (!Number.isFinite(idx) || !invoiceLineItems[idx]) return;
+      sel.value = invoiceLineItems[idx].category;
+      sel.addEventListener("change", () => {
+        invoiceLineItems[idx].category = sel.value;
+      });
+    });
+    syncTotalFromInvoiceLines();
+  }
+
+  function syncTotalFromInvoiceLines() {
+    if (!invoiceLineItems.length) return;
+    const sum = invoiceLineItems.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    amountInput = sum ? String(sum) : "";
+    normalizeAfterTyping();
+    updateAmountDisplay();
+  }
+
+  function clearInvoiceScanData() {
+    invoiceLineItems = [];
+    const invEl = document.getElementById("tx-invoice-number");
+    if (invEl) invEl.value = "";
+    amountInput = "";
+    normalizeAfterTyping();
+    updateAmountDisplay();
+    renderInvoiceLinesList();
+    lastQrDecoded = "";
+  }
+
+  function requestOpenInvoiceQrScanner() {
+    if (txFlow !== "expense") setTxFlow("expense");
+    openInvoiceQrScanner();
+  }
+
+  function handleInvoiceQrDecoded(text) {
+    const now = Date.now();
+    if (text === lastQrDecoded && now < qrDecodeCooldownUntil) return;
+    lastQrDecoded = text;
+    qrDecodeCooldownUntil = now + 700;
+    const left = parseTaiwanInvoiceLeftQr(text);
+    if (left) {
+      applyInvoiceLeftParsed(left);
+      try {
+        if (navigator.vibrate) navigator.vibrate(40);
+      } catch (e) {}
+      void closeInvoiceQrScanner();
+      requestAnimationFrame(() => {
+        document.getElementById("invoice-fields-wrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+    const lines = parseTaiwanInvoiceRightQr(text);
+    if (lines.length > 0) {
+      const compactGuess = String(text || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+      const guessYmd = findInvoiceRocYmdInCompact(compactGuess);
+      if (guessYmd) {
+        transactionDateYmd = guessYmd;
+        syncTxDateUi();
+      }
+      invoiceLineItems = lines;
+      renderInvoiceLinesList();
+      try {
+        if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+      } catch (e) {}
+      void closeInvoiceQrScanner();
+      requestAnimationFrame(() => {
+        document.getElementById("invoice-lines-section")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+      return;
+    }
+  }
+
+  async function openInvoiceQrScanner() {
+    if (typeof Html5Qrcode === "undefined") {
+      alert("無法載入掃描元件，請檢查網路後重新整理。");
+      return;
+    }
+    const overlay = document.getElementById("add-qr-scanner-overlay");
+    const readerId = "add-qr-reader";
+    if (!overlay) return;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+    overlay.setAttribute("aria-hidden", "false");
+    const hint = document.getElementById("add-qr-hint");
+    if (hint) {
+      hint.textContent =
+        "請將 QR 對準中央框線；讀取成功後會自動關閉。明細請再點掃描圖示掃發票右側。";
+    }
+    document.getElementById(readerId).innerHTML = "";
+    html5QrInstance = new Html5Qrcode(readerId);
+    const vw = Math.min(window.innerWidth - 56, 300);
+    const qh = Math.min(Math.round(vw * 0.92), 280);
+    const config = {
+      fps: 10,
+      qrbox: { width: vw, height: qh },
+      aspectRatio: 1,
+    };
+    try {
+      await html5QrInstance.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          handleInvoiceQrDecoded(decodedText);
+        },
+        () => {}
+      );
+    } catch (err) {
+      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。");
+      closeInvoiceQrScanner();
+    }
+  }
+
+  async function closeInvoiceQrScanner() {
+    const overlay = document.getElementById("add-qr-scanner-overlay");
+    if (html5QrInstance) {
+      try {
+        await html5QrInstance.stop();
+      } catch (e) {}
+      try {
+        await html5QrInstance.clear();
+      } catch (e) {}
+      html5QrInstance = null;
+    }
+    if (overlay) {
+      overlay.classList.add("hidden");
+      overlay.classList.remove("flex");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function formatTxDateLabel(ymd) {
+    const parts = ymd.split("-").map(Number);
+    if (parts.length !== 3) return ymd;
+    const target = new Date(parts[0], parts[1] - 1, parts[2]);
+    target.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.round((target.getTime() - today.getTime()) / 864e5);
+    if (diff === 0) return "今天";
+    if (diff === -1) return "昨天";
+    if (diff === 1) return "明天";
+    if (parts[0] !== today.getFullYear()) return parts[0] + "年" + parts[1] + "月" + parts[2] + "日";
+    return parts[1] + "月" + parts[2] + "日";
+  }
+
+  function syncTxDateUi() {
+    const inp = document.getElementById("tx-date-input");
+    const lab = document.getElementById("tx-date-label");
+    if (inp) inp.value = transactionDateYmd;
+    if (lab) lab.textContent = formatTxDateLabel(transactionDateYmd);
+  }
+
+  function createdAtForTransaction() {
+    const parts = transactionDateYmd.split("-").map(Number);
+    const now = new Date();
+    if (parts.length !== 3) return new Date().toISOString();
+    return new Date(
+      parts[0],
+      parts[1] - 1,
+      parts[2],
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds()
+    ).toISOString();
+  }
+
+  function onTxDateInputCommit() {
+    const el = document.getElementById("tx-date-input");
+    if (el && el.value) transactionDateYmd = el.value;
+    else if (el && !el.value) transactionDateYmd = ymdFromDate(new Date());
+    syncTxDateUi();
+  }
+
+  document.getElementById("tx-date-input")?.addEventListener("change", onTxDateInputCommit);
+  document.getElementById("tx-date-input")?.addEventListener("input", onTxDateInputCommit);
+
+  document.getElementById("invoice-qr-scan-btn")?.addEventListener("click", () => requestOpenInvoiceQrScanner());
+  document.getElementById("nav-invoice-qr-btn")?.addEventListener("click", () => requestOpenInvoiceQrScanner());
+  document.getElementById("add-qr-close-btn")?.addEventListener("click", () => closeInvoiceQrScanner());
+  document.getElementById("invoice-clear-btn")?.addEventListener("click", () => {
+    if (confirm("清除發票掃描資料（含明細）？")) clearInvoiceScanData();
+  });
+
+  function formatAmountText(raw) {
+    if (!raw) return "0.00";
+    const n = Number(raw);
+    if (Number.isNaN(n)) return "0.00";
+    return n.toFixed(2);
+  }
+
+  function updateAmountDisplay() {
+    amountDisplay.textContent = formatAmountText(amountInput);
+  }
+
+  function normalizeAfterTyping() {
+    if (!amountInput) return;
+    if (amountInput.includes(".")) {
+      const parts = amountInput.split(".");
+      parts[0] = parts[0].replace(/^0+(?=\d)/, "");
+      amountInput = (parts[0] || "0") + "." + (parts[1] || "");
+    } else {
+      amountInput = amountInput.replace(/^0+(?=\d)/, "");
+    }
+  }
+
+  keypad.addEventListener("click", (event) => {
+    if (invoiceSplitActive()) {
+      return;
+    }
+    const btn = event.target.closest("button");
+    if (!btn) return;
+
+    const key = btn.textContent.trim();
+    if (key === "") return;
+
+    if (key === "backspace") {
+      amountInput = amountInput.slice(0, -1);
+      updateAmountDisplay();
+      return;
+    }
+
+    if (key === ".") {
+      if (!amountInput.includes(".")) {
+        amountInput = amountInput ? amountInput + "." : "0.";
+      }
+      updateAmountDisplay();
+      return;
+    }
+
+    if (!/^\d$/.test(key)) return;
+    const decimalPart = amountInput.includes(".") ? amountInput.split(".")[1] : "";
+    if (amountInput.includes(".") && decimalPart.length >= 2) return;
+
+    amountInput += key;
+    normalizeAfterTyping();
+    updateAmountDisplay();
+  });
+
+  function updateIncomePickUi() {
+    document.querySelectorAll(".income-cell").forEach((cell) => {
+      const btn = cell.querySelector(".income-pick-btn");
+      if (!btn) return;
+      const pid = cell.getAttribute("data-income-pick-id");
+      const on = pid === activeIncomePickId;
+      btn.classList.toggle("bg-secondary-container/90", on);
+      btn.classList.toggle("text-on-secondary-container", on);
+      btn.classList.toggle("border-secondary/30", on);
+      btn.classList.toggle("shadow-md", on);
+      btn.classList.toggle("ring-2", on);
+      btn.classList.toggle("ring-secondary", on);
+      btn.classList.toggle("ring-offset-2", on);
+      btn.classList.toggle("ring-offset-surface", on);
+      btn.classList.toggle("bg-surface-container-low", !on);
+      btn.classList.toggle("text-on-surface-variant", !on);
+      btn.classList.toggle("border", !on);
+      btn.classList.toggle("border-outline-variant/25", !on);
+      btn.classList.toggle("shadow-sm", !on);
+    });
+  }
+
+  function setTxFlow(flow) {
+    txFlow = flow === "income" ? "income" : "expense";
+    const expBtn = document.getElementById("flow-expense-btn");
+    const incBtn = document.getElementById("flow-income-btn");
+    if (expBtn && incBtn) {
+      const onExp = txFlow === "expense";
+      expBtn.setAttribute("aria-selected", onExp ? "true" : "false");
+      incBtn.setAttribute("aria-selected", onExp ? "false" : "true");
+      const tabBase = "flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all";
+      if (onExp) {
+        expBtn.className = `${tabBase} bg-primary text-on-primary shadow-sm`;
+        incBtn.className = `${tabBase} text-on-surface-variant`;
+      } else {
+        expBtn.className = `${tabBase} text-on-surface-variant`;
+        incBtn.className = `${tabBase} bg-secondary text-on-secondary shadow-sm`;
+      }
+    }
+    const titleEl = document.getElementById("add-page-title");
+    if (titleEl) titleEl.textContent = txFlow === "income" ? "新增收入" : "新增支出";
+    const hintEl = document.getElementById("amount-hint-text");
+    if (hintEl) hintEl.textContent = txFlow === "income" ? "輸入金額 · 收入" : "輸入金額 · 支出";
+    const sym = document.getElementById("amount-currency-symbol");
+    if (sym) {
+      sym.classList.toggle("text-primary", txFlow === "expense");
+      sym.classList.toggle("text-secondary", txFlow === "income");
+    }
+    if (amountDisplay) {
+      amountDisplay.classList.toggle("text-on-surface", txFlow === "expense");
+      amountDisplay.classList.toggle("text-secondary", txFlow === "income");
+    }
+    document.getElementById("add-expense-select-block")?.classList.toggle("hidden", txFlow === "income");
+    document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
+    document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
+    editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
+    document.getElementById("edit-income-categories-btn")?.classList.toggle("hidden", txFlow === "expense");
+    addCategoryBtn?.classList.toggle("hidden", txFlow === "income");
+    document.getElementById("invoice-scan-wrap")?.classList.toggle("hidden", txFlow !== "expense");
+    document.getElementById("invoice-fields-wrap")?.classList.toggle("hidden", txFlow !== "expense");
+    document.getElementById("nav-invoice-qr-btn")?.classList.toggle("hidden", txFlow !== "expense");
+    if (txFlow !== "expense") {
+      closeInvoiceQrScanner();
+      invoiceLineItems = [];
+      const invEl = document.getElementById("tx-invoice-number");
+      if (invEl) invEl.value = "";
+      renderInvoiceLinesList();
+    }
+    const saveLab = document.getElementById("save-transaction-label");
+    if (saveLab) saveLab.textContent = txFlow === "income" ? "確認收入" : "儲存交易";
+    if (noteInput) {
+      noteInput.placeholder =
+        txFlow === "income" ? "補充說明（選填）" : "這筆錢花在哪裡？";
+    }
+    if (txFlow === "expense") {
+      syncPickIdFromSelect();
+    } else {
+      updateIncomePickUi();
+    }
+  }
+
+  document.getElementById("flow-expense-btn")?.addEventListener("click", () => setTxFlow("expense"));
+  document.getElementById("flow-income-btn")?.addEventListener("click", () => setTxFlow("income"));
+
+  document.getElementById("income-category-row")?.addEventListener("click", (e) => {
+    if (e.target.closest("#income-open-custom-btn")) {
+      openCustomCategoryModal("income");
+      return;
+    }
+    const btn = e.target.closest(".income-pick-btn");
+    if (!btn) return;
+    const cell = btn.closest(".income-cell");
+    if (!cell) return;
+    selectedIncomeCategory = cell.getAttribute("data-income-cat") || "薪水";
+    activeIncomePickId = cell.getAttribute("data-income-pick-id") || incomeSlugPickId(selectedIncomeCategory);
+    updateIncomePickUi();
+  });
+
+  function updateCategorySelection() {
+    if (txFlow !== "expense") return;
+    const sel = categorySelect.value || selectedCategory || "其他";
+    categoryGrid.querySelectorAll(".category-cell").forEach((cell) => {
+      const btn = cell.querySelector(".category-pick-btn");
+      if (!btn) return;
+      const pickId = cell.getAttribute("data-pick-id");
+      const val = cell.getAttribute("data-category-value");
+      const on =
+        Boolean(pickId) &&
+        Boolean(activeCategoryPickId) &&
+        pickId === activeCategoryPickId &&
+        val === sel;
+      btn.classList.toggle("bg-primary-container", on);
+      btn.classList.toggle("text-on-primary-container", on);
+      btn.classList.toggle("ring-2", on);
+      btn.classList.toggle("ring-primary", on);
+      btn.classList.toggle("shadow-md", on);
+      btn.classList.toggle("border-primary/30", on);
+      btn.classList.toggle("bg-surface-container-low", !on);
+      btn.classList.toggle("text-on-surface-variant", !on);
+      const lab = cell.querySelector(".category-cell-label");
+      if (lab) {
+        lab.classList.toggle("text-primary", on);
+        lab.classList.toggle("text-on-surface-variant", !on);
+      }
+    });
+  }
+
+  function syncPickIdFromSelect() {
+    const val = categorySelect.value || selectedCategory || "其他";
+    const match = Array.from(categoryGrid.querySelectorAll(".category-cell")).find(
+      (c) => c.getAttribute("data-category-value") === val
+    );
+    if (match) {
+      const pid = match.getAttribute("data-pick-id");
+      activeCategoryPickId = pid || "";
+    } else {
+      activeCategoryPickId = "";
+    }
+    updateCategorySelection();
+  }
+
+  categoryGrid.addEventListener("click", (event) => {
+    if (txFlow !== "expense") return;
+    const btn = event.target.closest(".category-pick-btn");
+    if (!btn) return;
+    const cell = btn.closest(".category-cell");
+    if (!cell || !cell.classList.contains("category-cell")) return;
+    const val = cell.getAttribute("data-category-value");
+    if (!val) return;
+    const pickId = cell.getAttribute("data-pick-id");
+    const exists = Array.from(categorySelect.options).some((o) => o.value === val);
+    if (!exists) return;
+    if (pickId) activeCategoryPickId = pickId;
+    categorySelect.value = val;
+    selectedCategory = val;
+    updateCategorySelection();
+  });
+
+  function slugPickId(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "custom_" + h.toString(36);
+  }
+
+  function incomeSlugPickId(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "inc_" + h.toString(36);
+  }
+
+  async function renderDynamicCategoryCells() {
+    const root = document.getElementById("category-grid-dynamic");
+    if (!root) return;
+    root.innerHTML = "";
+    const cats = await readCategories();
+    const icons = await readCatIconsFull();
+    const customs = cats.filter((c) => !DEFAULT_CATEGORIES.includes(c));
+    customs.forEach((name) => {
+      const pickId = slugPickId(name);
+      const iconName = icons[name] || "label";
+      const cell = document.createElement("div");
+      cell.className = "category-cell category-cell-custom flex flex-col items-center gap-2 group";
+      cell.setAttribute("data-category-value", name);
+      cell.setAttribute("data-pick-id", pickId);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90";
+      btn.setAttribute("aria-label", name + "，自訂分類");
+      const span = document.createElement("span");
+      span.className = "material-symbols-outlined text-[1.75rem]";
+      span.setAttribute("aria-hidden", "true");
+      span.textContent = iconName;
+      btn.appendChild(span);
+      const lab = document.createElement("span");
+      lab.className =
+        "category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide";
+      lab.textContent = name;
+      cell.appendChild(btn);
+      cell.appendChild(lab);
+      root.appendChild(cell);
+    });
+  }
+
+  function syncCustomIconPickerHighlight() {
+    if (!customCategoryIconPicker) return;
+    customCategoryIconPicker.querySelectorAll(".custom-icon-choice").forEach((b) => {
+      const on = b.getAttribute("data-icon-name") === pendingCustomIcon;
+      b.classList.toggle("ring-2", on);
+      b.classList.toggle("ring-primary", on);
+      b.classList.toggle("bg-primary-container/50", on);
+      b.classList.toggle("border-primary/35", on);
+      b.classList.toggle("border-outline-variant/30", !on);
+    });
+  }
+
+  function buildCustomIconPickerUI() {
+    if (!customCategoryIconPicker) return;
+    customCategoryIconPicker.innerHTML = "";
+    const choices =
+      customCategoryTargetFlow === "income" ? INCOME_CUSTOM_ICON_CHOICES : CUSTOM_CATEGORY_ICON_CHOICES;
+    choices.forEach((iconName) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className =
+        "custom-icon-choice w-11 h-11 rounded-xl border-2 border-outline-variant/30 bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-secondary-container/40 active:scale-95 transition-all shrink-0";
+      b.setAttribute("data-icon-name", iconName);
+      b.setAttribute("aria-label", "圖示 " + iconName.replace(/_/g, " "));
+      const sp = document.createElement("span");
+      sp.className = "material-symbols-outlined text-[1.35rem]";
+      sp.setAttribute("aria-hidden", "true");
+      sp.textContent = iconName;
+      b.appendChild(sp);
+      b.addEventListener("click", () => {
+        pendingCustomIcon = iconName;
+        syncCustomIconPickerHighlight();
+      });
+      customCategoryIconPicker.appendChild(b);
+    });
+    syncCustomIconPickerHighlight();
+  }
+
+  function closeCustomCategoryModal() {
+    customCategoryOverlay?.classList.add("hidden");
+  }
+
+  function openCustomCategoryModal(flow) {
+    customCategoryTargetFlow = flow === "income" ? "income" : "expense";
+    customCategoryInput.value = "";
+    pendingCustomIcon = customCategoryTargetFlow === "income" ? "payments" : "label";
+    const titleEl = document.getElementById("custom-category-title");
+    if (titleEl)
+      titleEl.textContent = customCategoryTargetFlow === "income" ? "新增收入類型" : "自訂類別";
+    buildCustomIconPickerUI();
+    customCategoryOverlay.classList.remove("hidden");
+    setTimeout(() => customCategoryInput.focus(), 50);
+  }
+
+  document.getElementById("custom-category-close-btn")?.addEventListener("click", () => closeCustomCategoryModal());
+  document.getElementById("custom-category-cancel-btn")?.addEventListener("click", () => closeCustomCategoryModal());
+  customCategoryOverlay?.addEventListener("click", (e) => {
+    if (e.target === customCategoryOverlay) closeCustomCategoryModal();
+  });
+
+  document.getElementById("category-open-custom-btn")?.addEventListener("click", () =>
+    openCustomCategoryModal("expense")
+  );
+
+  function isInIframe() {
+    return window.parent && window.parent !== window;
+  }
+
+  function requestParent(type, payload) {
+    const requestId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    return new Promise((resolve) => {
+      const onMessage = (event) => {
+        const data = event.data;
+        if (!data || typeof data !== "object") return;
+        if (data.requestId !== requestId) return;
+        if (!String(data.type || "").startsWith(type + ":result")) return;
+        window.removeEventListener("message", onMessage);
+        resolve(data);
+      };
+      window.addEventListener("message", onMessage);
+      window.parent.postMessage({ type, requestId, ...payload }, "*");
+      setTimeout(() => {
+        window.removeEventListener("message", onMessage);
+        resolve({ type: type + ":result", requestId, ok: false, timeout: true });
+      }, 1500);
+    });
+  }
+
+  function normalizeCategories(list) {
+    const items = Array.isArray(list) ? list : [];
+    const cleaned = items
+      .map((x) => String(x || "").trim())
+      .filter(Boolean);
+    const merged = [...DEFAULT_CATEGORIES, ...cleaned];
+    return Array.from(new Set(merged));
+  }
+
+  function readCategoriesLocal() {
+    try {
+      const raw = localStorage.getItem(CATEGORIES_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return normalizeCategories(parsed);
+    } catch {
+      return [...DEFAULT_CATEGORIES];
+    }
+  }
+
+  function writeCategoriesLocal(list) {
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(normalizeCategories(list)));
+  }
+
+  async function readCatIconsFull() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cfg:caticons:get", {});
+      return res.icons && typeof res.icons === "object" && !Array.isArray(res.icons) ? res.icons : {};
+    }
+    try {
+      const raw = localStorage.getItem(CAT_ICONS_KEY);
+      if (!raw) return {};
+      const p = JSON.parse(raw);
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function writeCatIconsFull(icons) {
+    const o = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
+    if (isInIframe()) {
+      await requestParent("stitch:cfg:caticons:set", { icons: o });
+      return;
+    }
+    localStorage.setItem(CAT_ICONS_KEY, JSON.stringify(o));
+  }
+
+  function normalizeIncomeCategories(list) {
+    const items = Array.isArray(list) ? list : [];
+    const cleaned = items
+      .map((x) => String(x || "").trim())
+      .filter(Boolean);
+    const merged = [...DEFAULT_INCOME_CATEGORIES, ...cleaned];
+    return Array.from(new Set(merged));
+  }
+
+  function readIncomeCategoriesLocal() {
+    try {
+      const raw = localStorage.getItem(INCOME_CATEGORIES_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return normalizeIncomeCategories(parsed);
+    } catch {
+      return [...DEFAULT_INCOME_CATEGORIES];
+    }
+  }
+
+  function writeIncomeCategoriesLocal(list) {
+    localStorage.setItem(INCOME_CATEGORIES_KEY, JSON.stringify(normalizeIncomeCategories(list)));
+  }
+
+  async function readIncomeIconsFull() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cfg:incaticons:get", {});
+      return res.icons && typeof res.icons === "object" && !Array.isArray(res.icons) ? res.icons : {};
+    }
+    try {
+      const raw = localStorage.getItem(INCOME_ICONS_KEY);
+      if (!raw) return {};
+      const p = JSON.parse(raw);
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function writeIncomeIconsFull(icons) {
+    const o = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
+    if (isInIframe()) {
+      await requestParent("stitch:cfg:incaticons:set", { icons: o });
+      return;
+    }
+    localStorage.setItem(INCOME_ICONS_KEY, JSON.stringify(o));
+  }
+
+  async function readIncomeCategories() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:incat:list", {});
+      return Array.isArray(res.categories)
+        ? normalizeIncomeCategories(res.categories)
+        : [...DEFAULT_INCOME_CATEGORIES];
+    }
+    return readIncomeCategoriesLocal();
+  }
+
+  async function setIncomeCategoriesAll(list) {
+    const merged = normalizeIncomeCategories(Array.isArray(list) ? list : []);
+    if (isInIframe()) {
+      const res = await requestParent("stitch:incat:setAll", { categories: merged });
+      return !res.timeout && res.ok !== false;
+    }
+    writeIncomeCategoriesLocal(merged);
+    return true;
+  }
+
+  async function addIncomeCategory(name) {
+    const n = String(name || "").trim();
+    if (!n) return { ok: false };
+    if (isInIframe()) {
+      const res = await requestParent("stitch:incat:add", { name: n });
+      return { ok: !!res.ok, categories: Array.isArray(res.categories) ? normalizeIncomeCategories(res.categories) : null };
+    }
+    const current = readIncomeCategoriesLocal();
+    writeIncomeCategoriesLocal([...current, n]);
+    return { ok: true, categories: readIncomeCategoriesLocal() };
+  }
+
+  async function renderDynamicIncomeCells() {
+    const row = document.getElementById("income-category-row");
+    if (!row) return;
+    row.innerHTML = "";
+    const cats = await readIncomeCategories();
+    const icons = await readIncomeIconsFull();
+    cats.forEach((name) => {
+      const pickId = incomeSlugPickId(name);
+      const iconName = icons[name] || DEFAULT_INCOME_ICONS[name] || "payments";
+      const cell = document.createElement("div");
+      cell.className = "income-cell flex flex-col items-center gap-2";
+      cell.setAttribute("data-income-cat", name);
+      cell.setAttribute("data-income-pick-id", pickId);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "income-pick-btn w-[4.5rem] h-[4.5rem] rounded-full bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/25 hover:bg-secondary-container/40 transition-all active:scale-90";
+      btn.setAttribute("aria-label", name);
+      const span = document.createElement("span");
+      span.className = "material-symbols-outlined text-[2rem]";
+      span.setAttribute("aria-hidden", "true");
+      span.textContent = iconName;
+      btn.appendChild(span);
+      const lab = document.createElement("span");
+      lab.className = "text-[11px] font-bold text-on-surface-variant text-center";
+      lab.textContent = name;
+      cell.appendChild(btn);
+      cell.appendChild(lab);
+      row.appendChild(cell);
+    });
+    const addWrap = document.createElement("div");
+    addWrap.className = "flex flex-col items-center gap-2 justify-center";
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.id = "income-open-custom-btn";
+    addBtn.className =
+      "w-[4.5rem] h-[4.5rem] rounded-full bg-secondary-container/80 text-on-secondary-container border-2 border-dashed border-secondary/50 flex items-center justify-center hover:bg-secondary-container transition-all active:scale-90";
+    addBtn.setAttribute("aria-label", "新增收入類型");
+    addBtn.innerHTML =
+      '<span class="material-symbols-outlined text-[2rem]" aria-hidden="true">add</span>';
+    const addLab = document.createElement("span");
+    addLab.className = "text-[11px] font-bold text-secondary text-center leading-tight tracking-wide";
+    addLab.textContent = "新增";
+    addWrap.appendChild(addBtn);
+    addWrap.appendChild(addLab);
+    row.appendChild(addWrap);
+    updateIncomePickUi();
+  }
+
+  async function bootIncomeCategories() {
+    const cats = await readIncomeCategories();
+    if (!isInIframe()) writeIncomeCategoriesLocal(cats);
+    if (!cats.includes(selectedIncomeCategory)) {
+      selectedIncomeCategory = cats[0] || "薪水";
+    }
+    activeIncomePickId = incomeSlugPickId(selectedIncomeCategory);
+    await renderDynamicIncomeCells();
+    updateIncomePickUi();
+  }
+
+  async function setCategoriesAll(list) {
+    const merged = normalizeCategories(Array.isArray(list) ? list : []);
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cat:setAll", { categories: merged });
+      return !res.timeout && res.ok !== false;
+    }
+    writeCategoriesLocal(merged);
+    return true;
+  }
+
+  function iconOptionsHtml(selected) {
+    const sel = String(selected || "category");
+    return ICON_PICKLIST.map(
+      (name) =>
+        `<option value="${name}" ${name === sel ? "selected" : ""}>${name.replace(/_/g, " ")}</option>`
+    ).join("");
+  }
+
+  function openCategoryEditor() {
+    categoryEditorOverlay.classList.remove("hidden");
+    categoryEditorOverlay.setAttribute("aria-hidden", "false");
+    void readCatIconsFull().then((icons) => {
+      categoryEditorDefaultRows.innerHTML = "";
+      DEFAULT_CATEGORIES.forEach((name) => {
+        const iconName = icons[name] || DEFAULT_CAT_ICONS[name] || "category";
+        const row = document.createElement("div");
+        row.className = "flex items-center gap-2 flex-wrap";
+        row.innerHTML = `
+          <span class="w-20 shrink-0 text-sm font-bold text-on-surface">${name}</span>
+          <select class="editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-cat-name="${name.replace(/"/g, "&quot;")}">
+            ${iconOptionsHtml(iconName)}
+          </select>
+        `;
+        categoryEditorDefaultRows.appendChild(row);
+      });
+
+      readCategories().then((cats) => {
+        const customs = cats.filter((c) => !DEFAULT_CATEGORIES.includes(c));
+        categoryEditorCustomRows.innerHTML = "";
+        customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "category"));
+        if (customs.length === 0) appendCustomEditorRow("", "category");
+      });
+    });
+  }
+
+  function closeCategoryEditor() {
+    categoryEditorOverlay.classList.add("hidden");
+    categoryEditorOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  categoryEditorOverlay?.addEventListener("click", (e) => {
+    if (e.target === categoryEditorOverlay) closeCategoryEditor();
+  });
+
+  function appendCustomEditorRow(name, iconName) {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-2 flex-wrap category-editor-custom-row";
+    row.innerHTML = `
+      <input type="text" class="custom-cat-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="分類名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
+      <select class="custom-cat-icon px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface min-w-[140px]">
+        ${iconOptionsHtml(iconName)}
+      </select>
+      <button type="button" class="editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
+        <span class="material-symbols-outlined text-lg">delete</span>
+      </button>
+    `;
+    row.querySelector(".editor-remove-custom").addEventListener("click", () => {
+      row.remove();
+      if (!categoryEditorCustomRows.querySelector(".category-editor-custom-row")) {
+        appendCustomEditorRow("", "category");
+      }
+    });
+    categoryEditorCustomRows.appendChild(row);
+  }
+
+  async function saveCategoryEditor() {
+    const icons = { ...(await readCatIconsFull()) };
+    categoryEditorDefaultRows.querySelectorAll(".editor-def-icon").forEach((sel) => {
+      const n = sel.getAttribute("data-cat-name");
+      if (n) icons[n] = sel.value;
+    });
+
+    const customNames = [];
+    const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
+    for (const row of customRowEls) {
+      const nm = row.querySelector(".custom-cat-name")?.value?.trim();
+      const ic = row.querySelector(".custom-cat-icon")?.value || "category";
+      if (!nm) continue;
+      if (customNames.includes(nm)) {
+        alert("自訂分類名稱不可重複：" + nm);
+        return;
+      }
+      customNames.push(nm);
+      icons[nm] = ic;
+    }
+
+    const fullList = normalizeCategories([...DEFAULT_CATEGORIES, ...customNames]);
+    const ok = await setCategoriesAll(fullList);
+    if (!ok) {
+      alert("無法儲存分類清單，請重試。");
+      return;
+    }
+    await writeCatIconsFull(icons);
+    await bootCategories();
+    selectedCategory = categorySelect.value || selectedCategory;
+    syncPickIdFromSelect();
+    setTxFlow(txFlow);
+    closeCategoryEditor();
+  }
+
+  function openIncomeCategoryEditor() {
+    incomeCategoryEditorOverlay?.classList.remove("hidden");
+    incomeCategoryEditorOverlay?.setAttribute("aria-hidden", "false");
+    void readIncomeIconsFull().then((icons) => {
+      if (!incomeEditorDefaultRows) return;
+      incomeEditorDefaultRows.innerHTML = "";
+      DEFAULT_INCOME_CATEGORIES.forEach((name) => {
+        const iconName = icons[name] || DEFAULT_INCOME_ICONS[name] || "payments";
+        const row = document.createElement("div");
+        row.className = "flex items-center gap-2 flex-wrap";
+        row.innerHTML = `
+          <span class="w-20 shrink-0 text-sm font-bold text-on-surface">${name}</span>
+          <select class="income-editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-income-name="${name.replace(/"/g, "&quot;")}">
+            ${iconOptionsHtml(iconName)}
+          </select>
+        `;
+        incomeEditorDefaultRows.appendChild(row);
+      });
+
+      readIncomeCategories().then((cats) => {
+        const customs = cats.filter((c) => !DEFAULT_INCOME_CATEGORIES.includes(c));
+        incomeEditorCustomRows.innerHTML = "";
+        customs.forEach((name) => appendIncomeCustomEditorRow(name, icons[name] || "payments"));
+        if (customs.length === 0) appendIncomeCustomEditorRow("", "payments");
+      });
+    });
+  }
+
+  function closeIncomeCategoryEditor() {
+    incomeCategoryEditorOverlay?.classList.add("hidden");
+    incomeCategoryEditorOverlay?.setAttribute("aria-hidden", "true");
+  }
+
+  incomeCategoryEditorOverlay?.addEventListener("click", (e) => {
+    if (e.target === incomeCategoryEditorOverlay) closeIncomeCategoryEditor();
+  });
+
+  function appendIncomeCustomEditorRow(name, iconName) {
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-2 flex-wrap income-editor-custom-row";
+    row.innerHTML = `
+      <input type="text" class="income-custom-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="收入類型名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
+      <select class="income-custom-icon px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface min-w-[140px]">
+        ${iconOptionsHtml(iconName)}
+      </select>
+      <button type="button" class="income-editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
+        <span class="material-symbols-outlined text-lg">delete</span>
+      </button>
+    `;
+    row.querySelector(".income-editor-remove-custom").addEventListener("click", () => {
+      row.remove();
+      if (!incomeEditorCustomRows.querySelector(".income-editor-custom-row")) {
+        appendIncomeCustomEditorRow("", "payments");
+      }
+    });
+    incomeEditorCustomRows.appendChild(row);
+  }
+
+  async function saveIncomeCategoryEditor() {
+    const icons = { ...(await readIncomeIconsFull()) };
+    incomeEditorDefaultRows.querySelectorAll(".income-editor-def-icon").forEach((sel) => {
+      const n = sel.getAttribute("data-income-name");
+      if (n) icons[n] = sel.value;
+    });
+
+    const customNames = [];
+    const customRowEls = incomeEditorCustomRows.querySelectorAll(".income-editor-custom-row");
+    for (const row of customRowEls) {
+      const nm = row.querySelector(".income-custom-name")?.value?.trim();
+      const ic = row.querySelector(".income-custom-icon")?.value || "payments";
+      if (!nm) continue;
+      if (DEFAULT_INCOME_CATEGORIES.includes(nm)) {
+        alert("此名稱與預設收入類型重複：" + nm);
+        return;
+      }
+      if (customNames.includes(nm)) {
+        alert("自訂收入類型名稱不可重複：" + nm);
+        return;
+      }
+      customNames.push(nm);
+      icons[nm] = ic;
+    }
+
+    const fullList = normalizeIncomeCategories([...DEFAULT_INCOME_CATEGORIES, ...customNames]);
+    const ok = await setIncomeCategoriesAll(fullList);
+    if (!ok) {
+      alert("無法儲存收入類型，請重試。");
+      return;
+    }
+    await writeIncomeIconsFull(icons);
+    await bootIncomeCategories();
+    setTxFlow(txFlow);
+    closeIncomeCategoryEditor();
+  }
+
+  document.getElementById("edit-income-categories-btn")?.addEventListener("click", () => openIncomeCategoryEditor());
+  incomeCategoryEditorCloseBtn?.addEventListener("click", () => closeIncomeCategoryEditor());
+  incomeCategoryEditorCancelBtn?.addEventListener("click", () => closeIncomeCategoryEditor());
+  incomeEditorAddRowBtn?.addEventListener("click", () => appendIncomeCustomEditorRow("", "payments"));
+  incomeCategoryEditorSaveBtn?.addEventListener("click", async () => {
+    await saveIncomeCategoryEditor();
+  });
+
+  editCategoriesBtn?.addEventListener("click", () => openCategoryEditor());
+  categoryEditorCloseBtn?.addEventListener("click", () => closeCategoryEditor());
+  categoryEditorCancelBtn?.addEventListener("click", () => closeCategoryEditor());
+  categoryEditorAddRowBtn?.addEventListener("click", () => appendCustomEditorRow("", "category"));
+  categoryEditorSaveBtn?.addEventListener("click", async () => {
+    await saveCategoryEditor();
+  });
+
+  async function readCategories() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cat:list", {});
+      return Array.isArray(res.categories) ? normalizeCategories(res.categories) : [...DEFAULT_CATEGORIES];
+    }
+    return readCategoriesLocal();
+  }
+
+  async function addCategory(name) {
+    const n = String(name || "").trim();
+    if (!n) return { ok: false };
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cat:add", { name: n });
+      return { ok: !!res.ok, categories: Array.isArray(res.categories) ? normalizeCategories(res.categories) : null };
+    }
+    const current = readCategoriesLocal();
+    writeCategoriesLocal([...current, n]);
+    return { ok: true, categories: readCategoriesLocal() };
+  }
+
+  function renderCategorySelect(categories) {
+    const list = normalizeCategories(categories);
+    const current = String(categorySelect.value || selectedCategory || "其他");
+    categorySelect.innerHTML = list.map((c) => `<option value="${c.replace(/"/g, "&quot;")}">${c}</option>`).join("");
+    if (list.includes(current)) categorySelect.value = current;
+    else {
+      categorySelect.value = list[0] || "其他";
+      selectedCategory = categorySelect.value;
+    }
+  }
+
+  async function addTransaction(record) {
+    if (isInIframe()) {
+      await requestParent("stitch:tx:add", { record });
+      return;
+    }
+    const all = readTransactionsLocal();
+    all.unshift(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+
+  function readTransactionsLocal() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function saveTransaction() {
+    const flow = txFlow === "income" ? "income" : "expense";
+
+    if (flow === "expense" && invoiceLineItems.length > 0) {
+      const invRaw = (document.getElementById("tx-invoice-number")?.value || "").trim().toUpperCase();
+      const baseNote = (noteInput.value || "").trim();
+      const nSave = [];
+      for (let i = 0; i < invoiceLineItems.length; i++) {
+        const line = invoiceLineItems[i];
+        const amt = Math.round(Number(line.amount));
+        const cat = line.category || categorySelect.value || "其他";
+        if (!Number.isFinite(amt) || amt <= 0) continue;
+        const bits = [baseNote, line.name, invRaw ? "發票 " + invRaw : ""].filter(Boolean);
+        nSave.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 9) + i,
+          amount: amt,
+          category: cat,
+          note: bits.join(" · "),
+          createdAt: createdAtForTransaction(),
+          bookedDate: transactionDateYmd,
+          flow: "expense",
+          source: "einvoice",
+          invoiceNumber: invRaw || undefined,
+          lineLabel: line.name,
+        });
+      }
+      if (nSave.length === 0) {
+        alert("明細金額有誤，請檢查掃描結果。");
+        return;
+      }
+      for (const rec of nSave) {
+        await addTransaction(rec);
+      }
+      clearInvoiceScanData();
+      amountInput = "";
+      noteInput.value = "";
+      transactionDateYmd = ymdFromDate(new Date());
+      syncTxDateUi();
+      updateAmountDisplay();
+      alert("已依明細儲存 " + nSave.length + " 筆支出（圓餅圖將分類加總）。");
+      return;
+    }
+
+    const amount = Number(amountInput || "0");
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert("請先輸入大於 0 的金額。");
+      return;
+    }
+
+    const cat =
+      flow === "income"
+        ? selectedIncomeCategory || "薪水"
+        : categorySelect.value || selectedCategory || "其他";
+    if (flow === "expense") selectedCategory = cat;
+
+    const invNote = (document.getElementById("tx-invoice-number")?.value || "").trim();
+    let note = (noteInput.value || "").trim();
+    if (flow === "expense" && invNote) {
+      note = [note, "發票 " + invNote.toUpperCase()].filter(Boolean).join(" · ");
+    }
+
+    const record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      amount: Number(amount.toFixed(2)),
+      category: cat,
+      note,
+      createdAt: createdAtForTransaction(),
+      bookedDate: transactionDateYmd,
+      flow,
+    };
+    if (flow === "expense" && invNote) {
+      record.source = "einvoice";
+      record.invoiceNumber = invNote.toUpperCase();
+    }
+
+    await addTransaction(record);
+
+    amountInput = "";
+    noteInput.value = "";
+    if (document.getElementById("tx-invoice-number")) document.getElementById("tx-invoice-number").value = "";
+    transactionDateYmd = ymdFromDate(new Date());
+    syncTxDateUi();
+    updateAmountDisplay();
+    alert(flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。");
+  }
+
+  async function bootCategories() {
+    const cats = await readCategories();
+    // 初始化：確保本機也有 categories（非 iframe 情境）
+    if (!isInIframe()) writeCategoriesLocal(cats);
+    renderCategorySelect(cats);
+    selectedCategory = categorySelect.value || "其他";
+    await renderDynamicCategoryCells();
+    syncPickIdFromSelect();
+  }
+
+  categorySelect.addEventListener("change", () => {
+    selectedCategory = categorySelect.value || "其他";
+    if (txFlow === "expense") syncPickIdFromSelect();
+  });
+
+  addCategoryBtn.addEventListener("click", () => openCustomCategoryModal("expense"));
+
+  saveCustomCategoryBtn.addEventListener("click", async () => {
+    const name = customCategoryInput.value;
+    const trimmed = String(name).trim();
+    if (customCategoryTargetFlow === "income") {
+      if (DEFAULT_INCOME_CATEGORIES.includes(trimmed)) {
+        alert("此名稱與預設收入類型重複，請換個名稱。");
+        return;
+      }
+      const res = await addIncomeCategory(name);
+      if (!res.ok) {
+        alert("請輸入有效的收入類型名稱。");
+        return;
+      }
+      const icons = await readIncomeIconsFull();
+      icons[trimmed] = pendingCustomIcon || "payments";
+      await writeIncomeIconsFull(icons);
+      await bootIncomeCategories();
+      selectedIncomeCategory = trimmed;
+      activeIncomePickId = incomeSlugPickId(trimmed);
+      updateIncomePickUi();
+      setTxFlow(txFlow);
+      closeCustomCategoryModal();
+      return;
+    }
+    const res = await addCategory(name);
+    if (!res.ok) {
+      alert("請輸入有效的類別名稱。");
+      return;
+    }
+    const icons = await readCatIconsFull();
+    icons[trimmed] = pendingCustomIcon || "label";
+    await writeCatIconsFull(icons);
+    const cats = res.categories || (await readCategories());
+    renderCategorySelect(cats);
+    categorySelect.value = trimmed;
+    selectedCategory = categorySelect.value;
+    await renderDynamicCategoryCells();
+    syncPickIdFromSelect();
+    closeCustomCategoryModal();
+  });
+
+  customCategoryInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveCustomCategoryBtn.click();
+    }
+  });
+
+  saveButton.addEventListener("click", () => {
+    saveTransaction();
+  });
+
+  noteInput.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const qrOv = document.getElementById("add-qr-scanner-overlay");
+    if (qrOv && !qrOv.classList.contains("hidden")) return;
+    if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) return;
+    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) return;
+    if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) return;
+    e.preventDefault();
+    saveTransaction();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || (!e.ctrlKey && !e.metaKey)) return;
+    const qrOv = document.getElementById("add-qr-scanner-overlay");
+    if (qrOv && !qrOv.classList.contains("hidden")) {
+      e.preventDefault();
+      return;
+    }
+    if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
+      e.preventDefault();
+      saveCustomCategoryBtn?.click();
+      return;
+    }
+    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) {
+      e.preventDefault();
+      incomeCategoryEditorSaveBtn?.click();
+      return;
+    }
+    if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) {
+      e.preventDefault();
+      categoryEditorSaveBtn?.click();
+      return;
+    }
+    e.preventDefault();
+    saveTransaction();
+  });
+
+  document.getElementById("add-close-btn")?.addEventListener("click", () => {
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage({ type: "stitch:embed:navigate", route: "home" }, "*");
+      } catch (e) {
+        window.parent.location.hash = "#home";
+      }
+      return;
+    }
+    window.location.href = "../home/code.html";
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const qrOv = document.getElementById("add-qr-scanner-overlay");
+    if (qrOv && !qrOv.classList.contains("hidden")) {
+      closeInvoiceQrScanner();
+      e.preventDefault();
+      return;
+    }
+    if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
+      closeCustomCategoryModal();
+      e.preventDefault();
+      return;
+    }
+    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) {
+      closeIncomeCategoryEditor();
+      e.preventDefault();
+      return;
+    }
+    if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) {
+      closeCategoryEditor();
+      e.preventDefault();
+    }
+  });
+
+  syncTxDateUi();
+  updateAmountDisplay();
+  Promise.all([bootCategories(), bootIncomeCategories()]).then(() => setTxFlow("expense"));
+
+</script>
+</body></html>

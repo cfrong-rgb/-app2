@@ -3717,54 +3717,77 @@ const STORAGE_KEY = "stitch_transactions";
     return gy + "-" + pad2(mm) + "-" + pad2(dd);
   }
 
-  /** 從整段密碼找出「發票號碼+民國日」；取最後一組有效日期（容忍前綴雜訊） */
-  function findInvoiceRocYmdInCompact(compact) {
-    const re = /[A-Z]{2}\d{8}(\d{7})/gi;
-    let m;
-    let last = null;
-    while ((m = re.exec(compact)) !== null) {
-      const ymd = parseRocSevenDigitsToYmd(m[1]);
-      if (ymd) last = ymd;
-    }
-    return last;
+  /** 對齊到第一組發票字軌十碼（略過前綴雜訊／不可見字元；NFKC 可修正部分全形數字） */
+  function alignTaiwanInvoiceCompact(raw) {
+    const tryOne = (s) => {
+      const compact = String(s || "")
+        .trim()
+        .replace(/^\uFEFF/, "")
+        .replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+      const idx = compact.search(/[A-Z]{2}\d{8}/i);
+      if (idx < 0) return null;
+      return compact.slice(idx);
+    };
+    let a = tryOne(raw);
+    if (!a && raw) a = tryOne(String(raw).normalize("NFKC"));
+    return a;
   }
 
-  /** 財政部左側 QR：77 碼等（長度依店家可能不同，至少需發票號+日期 17 字） */
-  function parseTaiwanInvoiceLeftQr(raw) {
-    const text = String(raw || "").trim().replace(/\s/g, "");
-    if (text.length < 17) return null;
-    let inv = "";
-    let rocStr = "";
-    const head = text.match(/^([A-Z]{2}\d{8})(\d{7})/i);
-    if (head) {
-      inv = head[1].toUpperCase();
-      rocStr = head[2];
-    } else {
-      inv = text.slice(0, 10).toUpperCase();
-      if (!/^[A-Z]{2}\d{8}$/i.test(inv)) {
-        const inner = text.match(/([A-Z]{2})(\d{8})(\d{7})/i);
-        if (!inner) return null;
-        inv = (inner[1] + inner[2]).toUpperCase();
-        rocStr = inner[3];
-      } else {
-        rocStr = text.slice(10, 17);
-      }
+  /** 從整段字串推測民國日：只採用「對齊後字軌」後的 7 碼，避免末段加密區誤判 */
+  function findInvoiceRocYmdInCompact(compact) {
+    const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+    const aligned = alignTaiwanInvoiceCompact(c);
+    if (!aligned || aligned.length < 17) return null;
+    const m = aligned.match(/^([A-Z]{2}\d{8})(\d{7})/i);
+    if (!m) return null;
+    return parseRocSevenDigitsToYmd(m[2]);
+  }
+
+  const INVOICE_AMOUNT_MAX_NT = 200000000;
+
+  function pickInvoiceHexAmounts(sales, total) {
+    let s = sales;
+    let t = total;
+    if (s != null && t != null && s > 0 && t > 0 && t < s) {
+      const x = s;
+      s = t;
+      t = x;
     }
+    const ok = (n) => n != null && n > 0 && n <= INVOICE_AMOUNT_MAX_NT;
+    if (ok(t)) return { totalAmount: t, salesAmount: s };
+    if (ok(s)) return { totalAmount: s, salesAmount: s };
+    if (t != null && t > INVOICE_AMOUNT_MAX_NT && ok(s)) return { totalAmount: s, salesAmount: s };
+    return { totalAmount: null, salesAmount: s };
+  }
+
+  /** 財政部左側 QR：對齊字軌後依欄位位置讀取；金額做含稅≥未稅與上限檢查 */
+  function parseTaiwanInvoiceLeftQr(raw) {
+    const text = alignTaiwanInvoiceCompact(raw);
+    if (!text || text.length < 17) return null;
+    const inv10 = text.slice(0, 10).toUpperCase();
+    if (!/^[A-Z]{2}\d{8}$/.test(inv10)) return null;
+    const rocStr = text.slice(10, 17);
     const dateYmd = parseRocSevenDigitsToYmd(rocStr);
     if (!dateYmd) return null;
-    let total = null;
     let sales = null;
+    let total = null;
     if (text.length >= 37) {
       sales = hexToAmount(text.slice(21, 29));
       total = hexToAmount(text.slice(29, 37));
     }
-    const amountMain = total != null ? total : sales;
+    const picked = pickInvoiceHexAmounts(sales, total);
     return {
-      invoiceNumber: inv.slice(0, 2) + "-" + inv.slice(2),
+      invoiceNumber: inv10.slice(0, 2) + "-" + inv10.slice(2),
       dateYmd,
-      totalAmount: amountMain,
-      salesAmount: sales,
+      totalAmount: picked.totalAmount,
+      salesAmount: picked.salesAmount,
     };
+  }
+
+  try {
+    window.__stitchParseTaiwanInvoiceLeftQr = parseTaiwanInvoiceLeftQr;
+  } catch (e) {
+    /* ignore */
   }
 
   /** 右側 QR：嘗試 ** 分段、冒號分隔、JSON 等 */
@@ -3925,7 +3948,7 @@ const STORAGE_KEY = "stitch_transactions";
     }
     const lines = parseTaiwanInvoiceRightQr(text);
     if (lines.length > 0) {
-      const compactGuess = String(text || "").replace(/\s/g, "");
+      const compactGuess = String(text || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
       const guessYmd = findInvoiceRocYmdInCompact(compactGuess);
       if (guessYmd) {
         transactionDateYmd = guessYmd;
@@ -5673,46 +5696,77 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return gy + "-" + String(mm).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
   }
 
-  function invFindRocYmdInCompact(compact) {
-    const re = /[A-Z]{2}\d{8}(\d{7})/gi;
-    let m;
-    let last = null;
-    while ((m = re.exec(compact)) !== null) {
-      const y = invRocSevenToYmd(m[1]);
-      if (y) last = y;
+  const INV_AMOUNT_MAX_NT = 200000000;
+
+  function invAlignTaiwanInvoiceCompact(raw) {
+    const tryOne = (s) => {
+      const compact = String(s || "")
+        .trim()
+        .replace(/^\uFEFF/, "")
+        .replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+      const idx = compact.search(/[A-Z]{2}\d{8}/i);
+      if (idx < 0) return null;
+      return compact.slice(idx);
+    };
+    let a = tryOne(raw);
+    if (!a && raw) a = tryOne(String(raw).normalize("NFKC"));
+    return a;
+  }
+
+  function invPickHexAmounts(sales, total) {
+    let s = sales;
+    let t = total;
+    if (s != null && t != null && s > 0 && t > 0 && t < s) {
+      const x = s;
+      s = t;
+      t = x;
     }
-    return last;
+    const ok = (n) => n != null && n > 0 && n <= INV_AMOUNT_MAX_NT;
+    if (ok(t)) return t;
+    if (ok(s)) return s;
+    if (t != null && t > INV_AMOUNT_MAX_NT && ok(s)) return s;
+    return null;
+  }
+
+  function invFindRocYmdInCompact(compact) {
+    const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+    const aligned = invAlignTaiwanInvoiceCompact(c);
+    if (!aligned || aligned.length < 17) return null;
+    const m = aligned.match(/^([A-Z]{2}\d{8})(\d{7})/i);
+    if (!m) return null;
+    return invRocSevenToYmd(m[2]);
   }
 
   /** 從電子發票 QR／圖片辨識文字擷取欄位（優先購買日，解析失敗才用今天） */
   function parseQrToForm(text) {
     const raw = String(text || "").trim();
     const dateEl = document.getElementById("inv-f-date");
+    const numEl = document.getElementById("inv-f-num");
+    const amtEl = document.getElementById("inv-f-amount");
     document.getElementById("inv-f-store").value = "";
-    document.getElementById("inv-f-num").value = "";
-    document.getElementById("inv-f-amount").value = "";
+    numEl.value = "";
+    amtEl.value = "";
     dateEl.value = "";
 
-    const compact = raw.replace(/\s/g, "");
-    const ymdBest = invFindRocYmdInCompact(compact);
-    if (ymdBest) dateEl.value = ymdBest;
-
-    if (compact.length >= 17) {
-      const invMatch = compact.match(/([A-Z]{2}\d{8})/i);
-      if (invMatch) {
-        const inv10 = invMatch[1].toUpperCase();
-        if (/^[A-Z]{2}\d{8}$/.test(inv10)) {
-          document.getElementById("inv-f-num").value = inv10.slice(0, 2) + "-" + inv10.slice(2);
-        }
+    const compact = raw.replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+    const parseLeft =
+      typeof window.__stitchParseTaiwanInvoiceLeftQr === "function" ? window.__stitchParseTaiwanInvoiceLeftQr : null;
+    const left = parseLeft ? parseLeft(raw) : null;
+    if (left && left.dateYmd) {
+      dateEl.value = left.dateYmd;
+      if (left.invoiceNumber) numEl.value = left.invoiceNumber;
+      if (left.totalAmount != null && left.totalAmount > 0) amtEl.value = String(left.totalAmount);
+    } else {
+      const ymdBest = invFindRocYmdInCompact(compact);
+      if (ymdBest) dateEl.value = ymdBest;
+      const aligned = invAlignTaiwanInvoiceCompact(compact);
+      if (aligned && aligned.length >= 17) {
+        const inv10 = aligned.slice(0, 10).toUpperCase();
+        if (/^[A-Z]{2}\d{8}$/.test(inv10)) numEl.value = inv10.slice(0, 2) + "-" + inv10.slice(2);
       }
-    }
-
-    if (compact.length >= 37) {
-      const total = hexToAmountInv(compact.slice(29, 37));
-      const sales = hexToAmountInv(compact.slice(21, 29));
-      const useAmt = total != null && total > 0 ? total : sales;
-      if (useAmt != null && useAmt > 0) {
-        document.getElementById("inv-f-amount").value = String(useAmt);
+      if (aligned && aligned.length >= 37) {
+        const useAmt = invPickHexAmounts(hexToAmountInv(aligned.slice(21, 29)), hexToAmountInv(aligned.slice(29, 37)));
+        if (useAmt != null) amtEl.value = String(useAmt);
       }
     }
 
@@ -5720,9 +5774,9 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       const parts = raw.split("**");
       for (const p of parts) {
         const mAmt = p.match(/[:：]\s*(\d{1,6})\s*$/);
-        if (mAmt && !document.getElementById("inv-f-amount").value) {
+        if (mAmt && !amtEl.value) {
           const n = parseInt(mAmt[1], 10);
-          if (n > 0 && n < 1000000) document.getElementById("inv-f-amount").value = String(n);
+          if (n > 0 && n < 1000000) amtEl.value = String(n);
         }
       }
     }
@@ -5735,8 +5789,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       }
     }
 
-    const mInv = raw.match(/\b([A-Z]{2})[\s-]?([0-9]{8})\b/i);
-    if (mInv) document.getElementById("inv-f-num").value = mInv[1].toUpperCase() + "-" + mInv[2];
+    if (!numEl.value) {
+      const mInv = raw.match(/\b([A-Z]{2})[\s-]?([0-9]{8})\b/i);
+      if (mInv) numEl.value = mInv[1].toUpperCase() + "-" + mInv[2];
+    }
 
     if (!dateEl.value) {
       const t = new Date();
