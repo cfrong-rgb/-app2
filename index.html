@@ -989,59 +989,17 @@ body {
 <button type="button" id="flow-income-btn" role="tab" aria-selected="false" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all text-on-surface-variant">收入</button>
 </div>
 </div>
-<!-- Amount Input Area (The Cloud) -->
-<div class="relative mb-10">
-<div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
-<div class="text-center py-8">
-<span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入金額 · 支出</span>
-<div class="flex items-center justify-center gap-1 flex-wrap">
-<span class="text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
-<span class="text-5xl sm:text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
-</div>
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-4 mb-1.5">數字欄（對照鍵盤輸入）</p>
-<label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
-<input type="text" readonly id="amount-field-mirror" tabindex="-1" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none" value="0" aria-live="polite"/>
-<p class="text-[11px] text-on-surface-variant mt-2 px-2" id="amount-echo-hint">顯示與鍵盤輸入同步；小數最多兩位。</p>
-<div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
-<button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
-<span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
-</button>
-<span class="text-[11px] font-bold text-on-surface-variant tracking-wide">掃描發票 QR Code</span>
-<p class="text-[10px] text-on-surface-variant/90 text-center max-w-xs leading-relaxed px-2">先掃左側（發票資訊），再掃右側（明細）。僅本機解析，格式依店家而異。</p>
-</div>
-<div id="invoice-fields-wrap" class="mt-4 w-full max-w-md mx-auto space-y-3">
-<div>
-<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1" for="tx-invoice-number">發票號碼</label>
-<input type="text" id="tx-invoice-number" class="w-full bg-white/80 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-3 font-mono font-bold text-on-surface text-sm uppercase" placeholder="例 AB-12345678" maxlength="12" autocomplete="off"/>
-</div>
-<div id="invoice-store-row" class="hidden rounded-2xl border border-primary/20 bg-primary-container/25 px-4 py-3 text-left">
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">店家／賣方</p>
-<p class="text-sm font-bold text-on-surface leading-snug" id="invoice-store-text"></p>
-<p class="text-[10px] text-on-surface-variant mt-1 hidden" id="invoice-seller-tax-hint"></p>
-</div>
-<button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
-</div>
-<div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
-<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
-<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">店家名稱見上方「店家／賣方」；每筆可調整類別，儲存時依類別各寫一筆。</p>
-<div id="invoice-lines-list" class="space-y-3"></div>
-</div>
-<div id="add-expense-select-block" class="mt-6 w-full max-w-none mx-auto">
-<div class="flex items-end justify-between gap-3 mb-2">
-<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block" for="category-select">分類</label>
+<select id="category-select" class="sr-only" tabindex="-1" aria-hidden="true"></select>
+<!-- ① 選擇類別（支出） -->
+<div class="mb-10" id="expense-category-section">
+<div class="flex items-center justify-between mb-5 ml-1 gap-3 flex-wrap">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">選擇類別</h2>
+<div class="flex items-center gap-2">
 <button class="w-10 h-10 rounded-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 flex items-center justify-center hover:bg-white transition active:scale-95" id="add-category-btn" type="button" aria-label="新增自訂類別">
 <span class="material-symbols-outlined text-primary">add</span>
 </button>
-</div>
-<select class="w-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-4 font-bold text-on-surface focus:ring-0 focus:border-secondary transition-all" id="category-select"></select>
-</div>
-</div>
-</div>
-<!-- Category quick-pick（支出） -->
-<div class="mb-10" id="expense-category-section">
-<div class="flex items-center justify-between mb-5 ml-1 gap-3">
-<h2 class="text-xl font-bold text-on-surface tracking-tight">選擇類別</h2>
 <button type="button" class="shrink-0 text-xs font-bold text-primary uppercase tracking-widest px-4 py-2.5 rounded-full bg-primary-container/50 border border-primary/15 hover:bg-primary-container active:scale-95 transition" id="edit-categories-btn">編輯分類</button>
+</div>
 </div>
 <div class="grid grid-cols-4 sm:grid-cols-5 gap-y-7 gap-x-3" id="category-grid">
 <div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_breakfast">
@@ -1151,23 +1109,70 @@ body {
 </div>
 <div class="flex flex-wrap justify-center gap-6 sm:gap-8" id="income-category-row"></div>
 </div>
-<!-- Numeric Keypad -->
-<div class="grid grid-cols-3 gap-4 mb-12" id="keypad">
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">4</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">5</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">6</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">7</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">8</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">9</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">0</button>
-<button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low text-error rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">
-<span class="material-symbols-outlined">backspace</span>
-</button>
+<!-- ② 輸入價格（算式／結果／發票） -->
+<div class="relative mb-10 scroll-mt-28" id="add-amount-entry-block">
+<div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
+<div class="text-center py-6 px-2">
+<span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入價格 · 支出</span>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">算式與過程</p>
+<p id="calc-process-display" class="text-xs sm:text-sm font-mono text-on-surface min-h-[2.75rem] break-all px-2 py-2 rounded-xl bg-surface-container-low/80 border border-outline-variant/25 mb-3 text-left max-w-md mx-auto" aria-live="polite"></p>
+<div class="flex items-center justify-center gap-1 flex-wrap">
+<span class="text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
+<span class="text-5xl sm:text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
 </div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-3 mb-1.5">數字欄（與鍵盤同步）</p>
+<label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
+<input type="text" readonly id="amount-field-mirror" tabindex="0" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/50" value="0" aria-live="polite" title="顯示與鍵盤輸入同步"/>
+<p class="text-[11px] text-on-surface-variant mt-2 px-2" id="amount-echo-hint">數字與 + − × ÷；「=」將結果寫入金額；C 清除。</p>
+<div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
+<button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
+<span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
+</button>
+<span class="text-[11px] font-bold text-on-surface-variant tracking-wide">掃描發票 QR Code</span>
+<p class="text-[10px] text-on-surface-variant/90 text-center max-w-xs leading-relaxed px-2">先掃左側（發票資訊），再掃右側（明細）。僅本機解析，格式依店家而異。</p>
+</div>
+<div id="invoice-fields-wrap" class="mt-4 w-full max-w-md mx-auto space-y-3">
+<div>
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1" for="tx-invoice-number">發票號碼</label>
+<input type="text" id="tx-invoice-number" class="w-full bg-white/80 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-3 font-mono font-bold text-on-surface text-sm uppercase" placeholder="例 AB-12345678" maxlength="12" autocomplete="off"/>
+</div>
+<div id="invoice-store-row" class="hidden rounded-2xl border border-primary/20 bg-primary-container/25 px-4 py-3 text-left">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">店家／賣方</p>
+<p class="text-sm font-bold text-on-surface leading-snug" id="invoice-store-text"></p>
+<p class="text-[10px] text-on-surface-variant mt-1 hidden" id="invoice-seller-tax-hint"></p>
+</div>
+<button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
+</div>
+<div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
+<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
+<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">店家名稱見上方「店家／賣方」；每筆可調整類別，儲存時依類別各寫一筆。</p>
+<div id="invoice-lines-list" class="space-y-3"></div>
+</div>
+</div>
+</div>
+<!-- 計算機鍵盤 -->
+<div class="grid grid-cols-4 gap-2 mb-4 scroll-mt-24 max-w-md mx-auto" id="calc-keypad" aria-label="價格計算機">
+<button type="button" data-calc="clear" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">C</button>
+<button type="button" data-calc="/" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">÷</button>
+<button type="button" data-calc="*" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">×</button>
+<button type="button" data-calc="back" class="h-14 flex items-center justify-center bg-surface-container-high text-error rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined">backspace</span></button>
+<button type="button" data-calc="7" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">7</button>
+<button type="button" data-calc="8" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">8</button>
+<button type="button" data-calc="9" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">9</button>
+<button type="button" data-calc="-" class="h-14 text-2xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">−</button>
+<button type="button" data-calc="4" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">4</button>
+<button type="button" data-calc="5" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">5</button>
+<button type="button" data-calc="6" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">6</button>
+<button type="button" data-calc="+" class="h-14 text-2xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">+</button>
+<button type="button" data-calc="1" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
+<button type="button" data-calc="2" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
+<button type="button" data-calc="3" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
+<button type="button" data-calc="=" class="h-14 text-2xl font-bold bg-primary-container text-on-primary-container rounded-xl hover:opacity-95 active:scale-95 transition-all">=</button>
+<button type="button" data-calc="0" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all col-span-2">0</button>
+<button type="button" data-calc="." class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
+<div class="h-14" aria-hidden="true"></div>
+</div>
+<button type="button" id="add-step-to-note-btn" class="w-full max-w-md mx-auto mb-10 py-3.5 px-4 rounded-2xl bg-secondary-container text-on-secondary-container text-sm font-extrabold border border-secondary/25 shadow-sm active:scale-[0.99] transition-transform">下一步：備註（可略過）</button>
 <!-- Date & Note（日期以透明 input 覆蓋整列，避免行動版無法開啟原生選擇器） -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
 <label id="tx-date-trigger" class="relative flex items-center justify-between p-6 bg-surface-container-low rounded-xl group cursor-pointer hover:bg-surface-container-highest transition-colors text-left w-full overflow-hidden min-h-[5.5rem]">
@@ -1183,11 +1188,11 @@ body {
 <span class="material-symbols-outlined text-on-surface-variant shrink-0" aria-hidden="true">expand_more</span>
 </div>
 </label>
-<div class="p-6 bg-surface-container-low rounded-xl flex items-center gap-3 group hover:bg-surface-container-highest transition-colors">
+<div class="p-6 bg-surface-container-low rounded-xl flex items-center gap-3 group hover:bg-surface-container-highest transition-colors scroll-mt-24" id="add-note-section">
 <span class="material-symbols-outlined text-primary">notes</span>
 <div class="flex-1">
 <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">備註</p>
-<input class="w-full bg-transparent border-none p-0 text-on-surface placeholder:text-outline focus:ring-0 font-bold" id="note-input" placeholder="這筆錢花在哪裡？" type="text"/>
+<input class="w-full bg-transparent border-none p-0 text-on-surface placeholder:text-outline focus:ring-0 font-bold" id="note-input" placeholder="選填：補充說明後再儲存" type="text"/>
 </div>
 </div>
 </div>
@@ -2936,12 +2941,6 @@ const STORAGE_KEY = "stitch_transactions";
     };
   }
 
-  function escapeCsvCell(val) {
-    const s = String(val ?? "");
-    if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-    return s;
-  }
-
   function escapeXmlCell(val) {
     return String(val ?? "")
       .replace(/&/g, "&amp;")
@@ -3401,6 +3400,8 @@ const STORAGE_KEY = "stitch_transactions";
   ];
 
   let amountInput = "";
+  /** 價格計算機目前算式（ASCII：* / + -） */
+  let calcWorking = "";
   let selectedCategory = "飲食";
   /** 快捷圖示列一次只亮一格；與實際儲存分類（可能多格同值）分開 */
   let activeCategoryPickId = "food_breakfast";
@@ -3411,7 +3412,7 @@ const STORAGE_KEY = "stitch_transactions";
 
   const amountDisplay = document.getElementById("amount-display");
   const amountFieldMirror = document.getElementById("amount-field-mirror");
-  const keypad = document.getElementById("keypad");
+  const calcKeypad = document.getElementById("calc-keypad");
   const noteInput = document.getElementById("note-input");
   const categoryGrid = document.getElementById("category-grid");
   const saveButton = document.getElementById("save-transaction-btn");
@@ -3733,6 +3734,7 @@ const STORAGE_KEY = "stitch_transactions";
     invoiceSellerTaxId = data.sellerTaxId || "";
     renderInvoiceStoreUi();
     if (data.totalAmount != null && Number.isFinite(data.totalAmount) && data.totalAmount > 0) {
+      resetCalcWorkingAndTape();
       amountInput = String(data.totalAmount);
       normalizeAfterTyping();
       updateAmountDisplay();
@@ -3788,6 +3790,7 @@ const STORAGE_KEY = "stitch_transactions";
   function syncTotalFromInvoiceLines() {
     if (!invoiceLineItems.length) return;
     const sum = invoiceLineItems.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    resetCalcWorkingAndTape();
     amountInput = sum ? String(sum) : "";
     normalizeAfterTyping();
     updateAmountDisplay();
@@ -3800,6 +3803,7 @@ const STORAGE_KEY = "stitch_transactions";
     renderInvoiceStoreUi();
     const invEl = document.getElementById("tx-invoice-number");
     if (invEl) invEl.value = "";
+    resetCalcWorkingAndTape();
     amountInput = "";
     normalizeAfterTyping();
     updateAmountDisplay();
@@ -3991,8 +3995,55 @@ const STORAGE_KEY = "stitch_transactions";
     return intFmt + "." + String(decPart).slice(0, 2);
   }
 
+  function normalizeExprForEval(s) {
+    return String(s || "")
+      .replace(/×/g, "*")
+      .replace(/÷/g, "/")
+      .replace(/−/g, "-");
+  }
+
+  function tryEvalExpr(s) {
+    const t = normalizeExprForEval(s).trim();
+    if (!t) return NaN;
+    if (!/^[\d\s+\-*/.()]+$/.test(t.replace(/\s/g, ""))) return NaN;
+    try {
+      const v = Function('"use strict"; return (' + t + ")")();
+      return typeof v === "number" && Number.isFinite(v) ? v : NaN;
+    } catch (e) {
+      return NaN;
+    }
+  }
+
+  function formatCalcResult(n) {
+    if (!Number.isFinite(n)) return "";
+    const r = Math.round(n * 100) / 100;
+    return String(r);
+  }
+
+  function resetCalcWorkingAndTape() {
+    calcWorking = "";
+    const el = document.getElementById("calc-process-display");
+    if (el) el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
+  }
+
+  function updateCalcTape() {
+    const el = document.getElementById("calc-process-display");
+    if (!el) return;
+    const w = calcWorking.trim();
+    if (!w) {
+      el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
+      return;
+    }
+    el.textContent = w.replace(/\*/g, "×").replace(/\//g, "÷");
+  }
+
   function updateAmountDisplay() {
-    const live = formatAmountLive(amountInput);
+    let showStr = amountInput || "0";
+    if (calcWorking.trim()) {
+      const pv = tryEvalExpr(calcWorking);
+      if (Number.isFinite(pv)) showStr = formatCalcResult(pv);
+    }
+    const live = formatAmountLive(showStr);
     if (amountDisplay) amountDisplay.textContent = live;
     if (amountFieldMirror) amountFieldMirror.value = live;
   }
@@ -4008,38 +4059,81 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
-  keypad.addEventListener("click", (event) => {
-    if (invoiceSplitActive()) {
-      return;
-    }
-    const btn = event.target.closest("button");
-    if (!btn) return;
-
-    const key = btn.textContent.trim();
-    if (key === "") return;
-
-    if (key === "backspace") {
-      amountInput = amountInput.slice(0, -1);
-      updateAmountDisplay();
-      return;
-    }
-
-    if (key === ".") {
-      if (!amountInput.includes(".")) {
-        amountInput = amountInput ? amountInput + "." : "0.";
+  /** 選完類別後捲到數字鍵盤（上方即為數字欄與金額），方便接著輸入價格 */
+  function scrollToAmountEntryAfterCategory() {
+    requestAnimationFrame(() => {
+      const pad = document.getElementById("calc-keypad");
+      const mirror = document.getElementById("amount-field-mirror");
+      if (pad) pad.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (mirror) {
+        try {
+          mirror.focus({ preventScroll: true });
+        } catch (e) {}
       }
-      updateAmountDisplay();
-      return;
-    }
+    });
+  }
 
-    if (!/^\d$/.test(key)) return;
-    const decimalPart = amountInput.includes(".") ? amountInput.split(".")[1] : "";
-    if (amountInput.includes(".") && decimalPart.length >= 2) return;
+  function scrollToNoteStep() {
+    requestAnimationFrame(() => {
+      document.getElementById("add-note-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      noteInput?.focus();
+    });
+  }
 
-    amountInput += key;
-    normalizeAfterTyping();
-    updateAmountDisplay();
-  });
+  if (calcKeypad) {
+    calcKeypad.addEventListener("click", (event) => {
+      if (invoiceSplitActive()) return;
+      const btn = event.target.closest("button[data-calc]");
+      if (!btn) return;
+      const k = btn.getAttribute("data-calc");
+      if (k === "clear") {
+        resetCalcWorkingAndTape();
+        amountInput = "";
+        updateAmountDisplay();
+        return;
+      }
+      if (k === "back") {
+        calcWorking = calcWorking.slice(0, -1);
+        updateCalcTape();
+        updateAmountDisplay();
+        return;
+      }
+      if (k === "=") {
+        const v = tryEvalExpr(calcWorking);
+        if (!Number.isFinite(v)) {
+          alert("算式不正確或無法計算，請檢查數字與運算符號。");
+          return;
+        }
+        const disp = calcWorking.replace(/\*/g, "×").replace(/\//g, "÷");
+        const line = disp + " = " + formatCalcResult(v);
+        amountInput = formatCalcResult(v);
+        calcWorking = "";
+        const el = document.getElementById("calc-process-display");
+        if (el) el.textContent = line;
+        updateAmountDisplay();
+        return;
+      }
+      if (k === "/" || k === "*" || k === "+" || k === "-") {
+        calcWorking += k;
+        updateCalcTape();
+        updateAmountDisplay();
+        return;
+      }
+      if (k === ".") {
+        calcWorking += ".";
+        updateCalcTape();
+        updateAmountDisplay();
+        return;
+      }
+      if (/^\d$/.test(k)) {
+        calcWorking += k;
+        updateCalcTape();
+        updateAmountDisplay();
+      }
+    });
+  }
+
+  document.getElementById("add-step-to-note-btn")?.addEventListener("click", () => scrollToNoteStep());
 
   function updateIncomePickUi() {
     document.querySelectorAll(".income-cell").forEach((cell) => {
@@ -4097,7 +4191,6 @@ const STORAGE_KEY = "stitch_transactions";
       amountFieldMirror.classList.toggle("text-on-surface", txFlow === "expense");
       amountFieldMirror.classList.toggle("text-secondary", txFlow === "income");
     }
-    document.getElementById("add-expense-select-block")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
     editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
@@ -4144,6 +4237,7 @@ const STORAGE_KEY = "stitch_transactions";
     selectedIncomeCategory = cell.getAttribute("data-income-cat") || "薪水";
     activeIncomePickId = cell.getAttribute("data-income-pick-id") || incomeSlugPickId(selectedIncomeCategory);
     updateIncomePickUi();
+    scrollToAmountEntryAfterCategory();
   });
 
   function updateCategorySelection() {
@@ -4204,6 +4298,7 @@ const STORAGE_KEY = "stitch_transactions";
     categorySelect.value = val;
     selectedCategory = val;
     updateCategorySelection();
+    scrollToAmountEntryAfterCategory();
   });
 
   function slugPickId(name) {
@@ -4818,7 +4913,6 @@ const STORAGE_KEY = "stitch_transactions";
         await addTransaction(rec);
       }
       clearInvoiceScanData();
-      amountInput = "";
       noteInput.value = "";
       transactionDateYmd = ymdFromDate(new Date());
       syncTxDateUi();
@@ -4861,6 +4955,7 @@ const STORAGE_KEY = "stitch_transactions";
 
     await addTransaction(record);
 
+    resetCalcWorkingAndTape();
     amountInput = "";
     noteInput.value = "";
     if (document.getElementById("tx-invoice-number")) document.getElementById("tx-invoice-number").value = "";
@@ -4883,6 +4978,7 @@ const STORAGE_KEY = "stitch_transactions";
   categorySelect.addEventListener("change", () => {
     selectedCategory = categorySelect.value || "其他";
     if (txFlow === "expense") syncPickIdFromSelect();
+    scrollToAmountEntryAfterCategory();
   });
 
   addCategoryBtn.addEventListener("click", () => openCustomCategoryModal("expense"));
@@ -5008,6 +5104,7 @@ const STORAGE_KEY = "stitch_transactions";
     }
   });
 
+  resetCalcWorkingAndTape();
   syncTxDateUi();
   updateAmountDisplay();
   Promise.all([bootCategories(), bootIncomeCategories()]).then(() => setTxFlow("expense"));
