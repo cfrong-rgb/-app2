@@ -989,8 +989,8 @@ body {
 <button type="button" id="flow-income-btn" role="tab" aria-selected="false" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all text-on-surface-variant">收入</button>
 </div>
 </div>
-<!-- Amount Input Area (The Cloud) -->
-<div class="relative mb-10">
+<!-- Amount Input Area（選完類別會捲回此區對照金額） -->
+<div class="relative mb-10 scroll-mt-28" id="add-amount-entry-block">
 <div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
 <div class="text-center py-8">
 <span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入金額 · 支出</span>
@@ -1000,7 +1000,7 @@ body {
 </div>
 <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-4 mb-1.5">數字欄（對照鍵盤輸入）</p>
 <label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
-<input type="text" readonly id="amount-field-mirror" tabindex="-1" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none" value="0" aria-live="polite"/>
+<input type="text" readonly id="amount-field-mirror" tabindex="0" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/50" value="0" aria-live="polite" title="目前輸入的數字（與下方鍵盤同步）"/>
 <p class="text-[11px] text-on-surface-variant mt-2 px-2" id="amount-echo-hint">顯示與鍵盤輸入同步；小數最多兩位。</p>
 <div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
 <button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
@@ -1028,7 +1028,7 @@ body {
 </div>
 <div id="add-expense-select-block" class="mt-6 w-full max-w-none mx-auto">
 <div class="flex items-end justify-between gap-3 mb-2">
-<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block" for="category-select">分類</label>
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block" for="category-select">選擇類別</label>
 <button class="w-10 h-10 rounded-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 flex items-center justify-center hover:bg-white transition active:scale-95" id="add-category-btn" type="button" aria-label="新增自訂類別">
 <span class="material-symbols-outlined text-primary">add</span>
 </button>
@@ -1040,7 +1040,7 @@ body {
 <!-- Category quick-pick（支出） -->
 <div class="mb-10" id="expense-category-section">
 <div class="flex items-center justify-between mb-5 ml-1 gap-3">
-<h2 class="text-xl font-bold text-on-surface tracking-tight">選擇類別</h2>
+<h2 class="text-xl font-bold text-on-surface tracking-tight">快捷圖示</h2>
 <button type="button" class="shrink-0 text-xs font-bold text-primary uppercase tracking-widest px-4 py-2.5 rounded-full bg-primary-container/50 border border-primary/15 hover:bg-primary-container active:scale-95 transition" id="edit-categories-btn">編輯分類</button>
 </div>
 <div class="grid grid-cols-4 sm:grid-cols-5 gap-y-7 gap-x-3" id="category-grid">
@@ -1152,7 +1152,7 @@ body {
 <div class="flex flex-wrap justify-center gap-6 sm:gap-8" id="income-category-row"></div>
 </div>
 <!-- Numeric Keypad -->
-<div class="grid grid-cols-3 gap-4 mb-12" id="keypad">
+<div class="grid grid-cols-3 gap-4 mb-12 scroll-mt-24" id="keypad" aria-label="金額數字鍵盤">
 <button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
 <button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
 <button class="h-16 flex items-center justify-center text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
@@ -4002,6 +4002,20 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
+  /** 選完類別後捲到數字鍵盤（上方即為數字欄與金額），方便接著輸入價格 */
+  function scrollToAmountEntryAfterCategory() {
+    requestAnimationFrame(() => {
+      const keypad = document.getElementById("keypad");
+      const mirror = document.getElementById("amount-field-mirror");
+      if (keypad) keypad.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (mirror) {
+        try {
+          mirror.focus({ preventScroll: true });
+        } catch (e) {}
+      }
+    });
+  }
+
   keypad.addEventListener("click", (event) => {
     if (invoiceSplitActive()) {
       return;
@@ -4138,6 +4152,7 @@ const STORAGE_KEY = "stitch_transactions";
     selectedIncomeCategory = cell.getAttribute("data-income-cat") || "薪水";
     activeIncomePickId = cell.getAttribute("data-income-pick-id") || incomeSlugPickId(selectedIncomeCategory);
     updateIncomePickUi();
+    scrollToAmountEntryAfterCategory();
   });
 
   function updateCategorySelection() {
@@ -4198,6 +4213,7 @@ const STORAGE_KEY = "stitch_transactions";
     categorySelect.value = val;
     selectedCategory = val;
     updateCategorySelection();
+    scrollToAmountEntryAfterCategory();
   });
 
   function slugPickId(name) {
@@ -4877,6 +4893,7 @@ const STORAGE_KEY = "stitch_transactions";
   categorySelect.addEventListener("change", () => {
     selectedCategory = categorySelect.value || "其他";
     if (txFlow === "expense") syncPickIdFromSelect();
+    scrollToAmountEntryAfterCategory();
   });
 
   addCategoryBtn.addEventListener("click", () => openCustomCategoryModal("expense"));
