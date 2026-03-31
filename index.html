@@ -877,10 +877,10 @@ body {
 <input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註..." type="search" autocomplete="off"/>
 </div>
 </div>
-<!-- 進階區間匯出 CSV（大地色系） -->
+<!-- 進階區間匯出 Excel（大地色系） -->
 <div class="mb-6 p-5 rounded-2xl bg-surface-container-low border border-primary/12 shadow-[0_8px_28px_rgba(114,86,56,0.07)]">
-<p class="text-xs font-bold text-primary uppercase tracking-widest mb-1">進階 · 區間匯出 CSV</p>
-<p class="text-[11px] text-on-surface-variant mb-4 leading-relaxed">選擇起訖日期後匯出；檔案為 UTF-8 並含 BOM，Excel 開啟中文不亂碼。</p>
+<p class="text-xs font-bold text-primary uppercase tracking-widest mb-1">進階 · 區間匯出</p>
+<p class="text-[11px] text-on-surface-variant mb-4 leading-relaxed">匯出為 Excel 可讀格式（.xls，SpreadsheetML），Microsoft Office 內建 Excel 可直接開啟，無須另裝程式。</p>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
 <div>
 <label class="text-[11px] font-semibold text-primary/80 block mb-1.5" for="export-date-start">開始日期</label>
@@ -893,7 +893,7 @@ body {
 </div>
 <button type="button" class="w-full py-3.5 rounded-xl bg-primary text-on-primary text-sm font-bold shadow-[0_6px_20px_rgba(114,86,56,0.22)] border border-primary-dim/20 active:scale-[0.99] transition flex items-center justify-center gap-2" id="export-csv-btn">
 <span class="material-symbols-outlined text-lg" aria-hidden="true">download</span>
-匯出 CSV（UTF-8 含 BOM）
+匯出 Excel（.xls）
 </button>
 </div>
 <div class="space-y-4" id="local-transactions-list"></div>
@@ -994,10 +994,14 @@ body {
 <div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
 <div class="text-center py-8">
 <span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入金額 · 支出</span>
-<div class="flex items-center justify-center gap-1">
+<div class="flex items-center justify-center gap-1 flex-wrap">
 <span class="text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
-<span class="text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200" id="amount-display">0.00</span>
+<span class="text-5xl sm:text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
 </div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-4 mb-1.5">數字欄（對照鍵盤輸入）</p>
+<label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
+<input type="text" readonly id="amount-field-mirror" tabindex="-1" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none" value="0" aria-live="polite"/>
+<p class="text-[11px] text-on-surface-variant mt-2 px-2" id="amount-echo-hint">顯示與鍵盤輸入同步；小數最多兩位。</p>
 <div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
 <button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
 <span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
@@ -1010,11 +1014,16 @@ body {
 <label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1" for="tx-invoice-number">發票號碼</label>
 <input type="text" id="tx-invoice-number" class="w-full bg-white/80 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-3 font-mono font-bold text-on-surface text-sm uppercase" placeholder="例 AB-12345678" maxlength="12" autocomplete="off"/>
 </div>
+<div id="invoice-store-row" class="hidden rounded-2xl border border-primary/20 bg-primary-container/25 px-4 py-3 text-left">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">店家／賣方</p>
+<p class="text-sm font-bold text-on-surface leading-snug" id="invoice-store-text"></p>
+<p class="text-[10px] text-on-surface-variant mt-1 hidden" id="invoice-seller-tax-hint"></p>
+</div>
 <button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
 </div>
 <div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
-<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">掃描明細列表</h3>
-<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">每筆可調整消費類別；儲存時會依類別各寫入一筆紀錄，圓餅圖會分別統計。</p>
+<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
+<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">店家名稱見上方「店家／賣方」；每筆可調整類別，儲存時依類別各寫一筆。</p>
 <div id="invoice-lines-list" class="space-y-3"></div>
 </div>
 <div id="add-expense-select-block" class="mt-6 w-full max-w-none mx-auto">
@@ -2927,10 +2936,35 @@ const STORAGE_KEY = "stitch_transactions";
     };
   }
 
-  function escapeCsvCell(val) {
-    const s = String(val ?? "");
-    if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-    return s;
+  function escapeXmlCell(val) {
+    return String(val ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /** Excel 2003 XML（SpreadsheetML），Office 可直接以 Excel 開啟 */
+  function buildExcel2003Xml(rows) {
+    const head =
+      '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>';
+    const ns =
+      'xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"';
+    let t =
+      head +
+      `<Workbook ${ns}><Worksheet ss:Name="記帳"><Table>`;
+    for (const row of rows) {
+      t += "<Row>";
+      for (const cell of row) {
+        const isNum = typeof cell === "number" && Number.isFinite(cell);
+        const typ = isNum ? "Number" : "String";
+        const inner = isNum ? String(cell) : escapeXmlCell(cell);
+        t += `<Cell><Data ss:Type="${typ}">${inner}</Data></Cell>`;
+      }
+      t += "</Row>";
+    }
+    t += "</Table></Worksheet></Workbook>";
+    return t;
   }
 
   function parseLocalDateBoundary(ymd, endOfDay) {
@@ -3005,25 +3039,24 @@ const STORAGE_KEY = "stitch_transactions";
       return;
     }
     const headerRow = ["日期", "時間", "收支", "分類", "備註", "金額", "紀錄 ID"];
-    const rows = inRange.map((item) => {
+    const dataRows = inRange.map((item) => {
       const flowLabel = isIncomeTransaction(item) ? "收入" : "支出";
       return [
-        escapeCsvCell(formatExportBookedYmd(item)),
-        escapeCsvCell(formatExportTimeHms(item)),
-        escapeCsvCell(flowLabel),
-        escapeCsvCell(item.category || ""),
-        escapeCsvCell(item.note || ""),
-        escapeCsvCell(Number(item.amount) || 0),
-        escapeCsvCell(item.id || ""),
-      ].join(",");
+        formatExportBookedYmd(item),
+        formatExportTimeHms(item),
+        flowLabel,
+        item.category || "",
+        item.note || "",
+        Number(item.amount) || 0,
+        item.id || "",
+      ];
     });
-    const bom = "\uFEFF";
-    const csv = bom + [headerRow.join(","), ...rows].join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const xml = buildExcel2003Xml([headerRow, ...dataRows]);
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `記帳匯出_${startVal}_${endVal}.csv`;
+    a.download = `記帳匯出_${startVal}_${endVal}.xls`;
     a.click();
     URL.revokeObjectURL(url);
   });
@@ -3371,6 +3404,7 @@ const STORAGE_KEY = "stitch_transactions";
   let activeIncomePickId = "inc_salary";
 
   const amountDisplay = document.getElementById("amount-display");
+  const amountFieldMirror = document.getElementById("amount-field-mirror");
   const keypad = document.getElementById("keypad");
   const noteInput = document.getElementById("note-input");
   const categoryGrid = document.getElementById("category-grid");
@@ -3435,6 +3469,8 @@ const STORAGE_KEY = "stitch_transactions";
 
   /** 發票掃描：拆項明細（儲存時各寫一筆） */
   let invoiceLineItems = [];
+  let invoiceStoreName = "";
+  let invoiceSellerTaxId = "";
   let lastQrDecoded = "";
   let qrDecodeCooldownUntil = 0;
   let html5QrInstance = null;
@@ -3544,11 +3580,17 @@ const STORAGE_KEY = "stitch_transactions";
       total = hexToAmount(text.slice(29, 37));
     }
     const picked = pickInvoiceHexAmounts(sales, total);
+    let sellerTaxId = "";
+    if (text.length >= 53) {
+      const sid = text.slice(45, 53);
+      if (/^\d{8}$/.test(sid)) sellerTaxId = sid;
+    }
     return {
       invoiceNumber: inv10.slice(0, 2) + "-" + inv10.slice(2),
       dateYmd,
       totalAmount: picked.totalAmount,
       salesAmount: picked.salesAmount,
+      sellerTaxId,
     };
   }
 
@@ -3558,12 +3600,15 @@ const STORAGE_KEY = "stitch_transactions";
     /* ignore */
   }
 
-  /** 右側 QR：嘗試 ** 分段、冒號分隔、JSON 等 */
+  /** 右側 QR：** 分段、冒號分隔、JSON；並嘗試擷取店名 */
   function parseTaiwanInvoiceRightQr(raw) {
     const text = String(raw || "").trim();
-    if (text.length < 8) return [];
+    const result = { storeName: "", items: [] };
+    if (text.length < 8) return result;
     const allowed = Array.from(categorySelect?.options || []).map((o) => o.value);
-    const items = [];
+    const items = result.items;
+    let storeHint = "";
+
     const pushItem = (name, amt) => {
       const n = Math.round(Number(amt));
       if (!name || !Number.isFinite(n) || n <= 0) return;
@@ -3576,6 +3621,32 @@ const STORAGE_KEY = "stitch_transactions";
         category: guessCategoryFromItemName(nm, allowed),
       });
     };
+
+    const extractStoreBeforeStar = () => {
+      if (!text.includes("**")) return;
+      const headPart = text.split(/\*\*/)[0].trim();
+      const lines = headPart.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
+      const lab = /^(?:店名|商店|賣方|營業人|商店名稱|公司名稱|銷售方)[:：]\s*(.+)$/i;
+      for (const line of lines) {
+        const lm = line.match(lab);
+        if (lm) {
+          storeHint = lm[1].trim().slice(0, 80);
+          return;
+        }
+      }
+      for (const line of lines) {
+        if (/^[A-Z]{2}\d{8}/i.test(line)) continue;
+        if (/^\d+[.:：]/.test(line)) continue;
+        if (/^[:：]/.test(line)) continue;
+        if (line.split(":").length >= 5) continue;
+        if (line.length >= 2 && line.length <= 60 && /[:：]/.test(line) === false && !/^\d+$/.test(line)) {
+          storeHint = line.slice(0, 80);
+          return;
+        }
+      }
+    };
+    extractStoreBeforeStar();
+
     if (text.includes("**")) {
       const parts = text.split(/\*\*/).map((p) => p.trim()).filter(Boolean);
       for (const p of parts) {
@@ -3591,14 +3662,25 @@ const STORAGE_KEY = "stitch_transactions";
           if (first && Number.isFinite(amt) && amt > 0) pushItem(first, amt);
         }
       }
-      if (items.length) return items;
+      if (items.length) {
+        result.storeName = storeHint;
+        return result;
+      }
     }
-    const lineRe = /[:：]\s*(\d{1,6})\s*$/;
     for (const line of text.split(/[\r\n;；]/)) {
-      const m = line.trim().match(/^([^:：]{1,30})[:：]\s*(\d{1,6})\s*$/);
+      const m = line.trim().match(/^([^:：]{1,40})[:：]\s*(\d{1,7})\s*$/);
       if (m) pushItem(m[1].trim(), m[2]);
     }
-    if (items.length) return items;
+    if (items.length) {
+      result.storeName = storeHint;
+      return result;
+    }
+    if (!storeHint) {
+      const fl = text.split(/[\r\n]/)[0].trim();
+      if (fl && fl.length < 60 && !/^\d+[.:：]/.test(fl) && !/^[A-Z]{2}\d{8}/i.test(fl)) {
+        storeHint = fl.slice(0, 80);
+      }
+    }
     try {
       const j = JSON.parse(text);
       if (Array.isArray(j)) {
@@ -3609,7 +3691,29 @@ const STORAGE_KEY = "stitch_transactions";
     } catch (e) {
       /* ignore */
     }
-    return items;
+    result.storeName = storeHint;
+    return result;
+  }
+
+  function renderInvoiceStoreUi() {
+    const row = document.getElementById("invoice-store-row");
+    const txt = document.getElementById("invoice-store-text");
+    const hint = document.getElementById("invoice-seller-tax-hint");
+    if (!row || !txt) return;
+    if (invoiceSellerTaxId && hint) {
+      hint.textContent = "賣方統編：" + invoiceSellerTaxId;
+      hint.classList.remove("hidden");
+    } else if (hint) {
+      hint.textContent = "";
+      hint.classList.add("hidden");
+    }
+    if (invoiceStoreName || invoiceSellerTaxId) {
+      row.classList.remove("hidden");
+      txt.textContent = invoiceStoreName || "（店名請對照發票紙本或右側 QR 明細）";
+    } else {
+      row.classList.add("hidden");
+      txt.textContent = "";
+    }
   }
 
   function applyInvoiceLeftParsed(data) {
@@ -3620,6 +3724,8 @@ const STORAGE_KEY = "stitch_transactions";
       transactionDateYmd = data.dateYmd;
       syncTxDateUi();
     }
+    invoiceSellerTaxId = data.sellerTaxId || "";
+    renderInvoiceStoreUi();
     if (data.totalAmount != null && Number.isFinite(data.totalAmount) && data.totalAmount > 0) {
       amountInput = String(data.totalAmount);
       normalizeAfterTyping();
@@ -3683,6 +3789,9 @@ const STORAGE_KEY = "stitch_transactions";
 
   function clearInvoiceScanData() {
     invoiceLineItems = [];
+    invoiceStoreName = "";
+    invoiceSellerTaxId = "";
+    renderInvoiceStoreUi();
     const invEl = document.getElementById("tx-invoice-number");
     if (invEl) invEl.value = "";
     amountInput = "";
@@ -3714,7 +3823,8 @@ const STORAGE_KEY = "stitch_transactions";
       });
       return;
     }
-    const lines = parseTaiwanInvoiceRightQr(text);
+    const rightParsed = parseTaiwanInvoiceRightQr(text);
+    const lines = rightParsed.items || [];
     if (lines.length > 0) {
       const compactGuess = String(text || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
       const guessYmd = findInvoiceRocYmdInCompact(compactGuess);
@@ -3722,7 +3832,12 @@ const STORAGE_KEY = "stitch_transactions";
         transactionDateYmd = guessYmd;
         syncTxDateUi();
       }
+      invoiceStoreName = rightParsed.storeName || invoiceStoreName;
       invoiceLineItems = lines;
+      renderInvoiceStoreUi();
+      if (invoiceStoreName && noteInput && !String(noteInput.value || "").trim()) {
+        noteInput.value = invoiceStoreName;
+      }
       renderInvoiceLinesList();
       try {
         if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
@@ -3847,15 +3962,33 @@ const STORAGE_KEY = "stitch_transactions";
     if (confirm("清除發票掃描資料（含明細）？")) clearInvoiceScanData();
   });
 
-  function formatAmountText(raw) {
-    if (!raw) return "0.00";
-    const n = Number(raw);
-    if (Number.isNaN(n)) return "0.00";
-    return n.toFixed(2);
+  /** 與鍵盤輸入同步顯示（千分位、保留輸入中的小數點狀態） */
+  function formatAmountLive(raw) {
+    if (raw === "" || raw == null) return "0";
+    const s = String(raw);
+    if (s === ".") return "0.";
+    const endsDot = /\.$/.test(s) && s.split(".").length <= 2;
+    let intPart;
+    let decPart = null;
+    if (s.includes(".")) {
+      const parts = s.split(".");
+      intPart = parts[0] ?? "";
+      decPart = parts[1] ?? "";
+    } else {
+      intPart = s;
+    }
+    let intClean = intPart.replace(/^0+(?=\d)/, "");
+    if (intClean === "") intClean = "0";
+    const intFmt = intClean.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    if (decPart === null) return intFmt;
+    if (endsDot && decPart === "") return intFmt + ".";
+    return intFmt + "." + String(decPart).slice(0, 2);
   }
 
   function updateAmountDisplay() {
-    amountDisplay.textContent = formatAmountText(amountInput);
+    const live = formatAmountLive(amountInput);
+    if (amountDisplay) amountDisplay.textContent = live;
+    if (amountFieldMirror) amountFieldMirror.value = live;
   }
 
   function normalizeAfterTyping() {
@@ -3954,6 +4087,10 @@ const STORAGE_KEY = "stitch_transactions";
       amountDisplay.classList.toggle("text-on-surface", txFlow === "expense");
       amountDisplay.classList.toggle("text-secondary", txFlow === "income");
     }
+    if (amountFieldMirror) {
+      amountFieldMirror.classList.toggle("text-on-surface", txFlow === "expense");
+      amountFieldMirror.classList.toggle("text-secondary", txFlow === "income");
+    }
     document.getElementById("add-expense-select-block")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
@@ -3966,6 +4103,9 @@ const STORAGE_KEY = "stitch_transactions";
     if (txFlow !== "expense") {
       closeInvoiceQrScanner();
       invoiceLineItems = [];
+      invoiceStoreName = "";
+      invoiceSellerTaxId = "";
+      renderInvoiceStoreUi();
       const invEl = document.getElementById("tx-invoice-number");
       if (invEl) invEl.value = "";
       renderInvoiceLinesList();
