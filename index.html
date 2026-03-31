@@ -587,6 +587,39 @@ body {
         html.stitch-single-app #category-editor-sheet {
             max-height: min(32rem, calc(100vh - 5rem));
         }
+        /* 計算機區：鍵盤完整落在視窗內、不被裁切 */
+        #calc-keypad-wrap {
+            width: 100%;
+            max-width: 22rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #calc-keypad {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        #calc-keypad button[data-calc] {
+            min-height: 2.75rem;
+            height: auto;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        @media (min-width: 640px) {
+            #calc-keypad button[data-calc] {
+                min-height: 3rem;
+            }
+        }
+        #add-floating-save-bar.save-bar-pulse {
+            animation: saveBarPulse 1.2s ease-out 2;
+        }
+        @keyframes saveBarPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(114, 86, 56, 0);
+            }
+            40% {
+                box-shadow: 0 0 0 6px rgba(114, 86, 56, 0.35);
+            }
+        }
         html.theme-frost:not(.dark) body {
           background-color: #edf4fc !important;
         }
@@ -1114,16 +1147,49 @@ body {
 <div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
 <div class="text-center py-6 px-2">
 <span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入價格 · 支出</span>
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">算式與過程</p>
-<p id="calc-process-display" class="text-xs sm:text-sm font-mono text-on-surface min-h-[2.75rem] break-all px-2 py-2 rounded-xl bg-surface-container-low/80 border border-outline-variant/25 mb-3 text-left max-w-md mx-auto" aria-live="polite"></p>
-<div class="flex items-center justify-center gap-1 flex-wrap">
-<span class="text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
-<span class="text-5xl sm:text-6xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
+<div class="rounded-2xl border border-outline-variant/30 bg-surface-container-low/90 px-3 py-3 sm:px-4 mb-4 max-w-md mx-auto w-full shadow-sm">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 text-left">計算過程（輸入中）</p>
+<p id="calc-process-display" class="text-base sm:text-lg font-mono text-on-surface min-h-[4.25rem] sm:min-h-[4.5rem] break-all px-2 py-2 rounded-xl bg-white/70 border border-outline-variant/30 mb-3 text-left leading-snug" aria-live="polite"></p>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 text-left">即時金額預覽</p>
+<div class="flex items-center justify-center gap-1 flex-wrap mb-1">
+<span class="text-3xl sm:text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
+<span class="text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
 </div>
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-3 mb-1.5">數字欄（與鍵盤同步）</p>
 <label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
-<input type="text" readonly id="amount-field-mirror" tabindex="0" class="w-full max-w-sm mx-auto block text-center font-mono text-xl sm:text-2xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-3 py-3 shadow-inner outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/50" value="0" aria-live="polite" title="顯示與鍵盤輸入同步"/>
-<p class="text-[11px] text-on-surface-variant mt-2 px-2" id="amount-echo-hint">數字與 + − × ÷；「=」將結果寫入金額；C 清除。</p>
+<input type="text" readonly id="amount-field-mirror" tabindex="0" class="w-full max-w-sm mx-auto block text-center font-mono text-lg sm:text-xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-2 py-2.5 shadow-inner outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/50" value="0" aria-live="polite" title="顯示與鍵盤輸入同步"/>
+<p class="text-[11px] text-on-surface-variant mt-2 px-1 text-left" id="amount-echo-hint">使用下方鍵盤輸入數字與 + − × ÷；按「=」寫入金額並可儲存；C 清除。</p>
+<div id="calc-keypad-wrap" class="mt-4">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 text-center">計算機（完整鍵盤）</p>
+<div class="grid grid-cols-4 gap-1.5 sm:gap-2 mb-1 scroll-mt-24 w-full" id="calc-keypad" aria-label="價格計算機">
+<button type="button" data-calc="clear" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">C</button>
+<button type="button" data-calc="/" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">÷</button>
+<button type="button" data-calc="*" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">×</button>
+<button type="button" data-calc="back" class="min-h-[2.75rem] sm:min-h-[3rem] flex items-center justify-center bg-surface-container-high text-error rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined text-xl">backspace</span></button>
+<button type="button" data-calc="7" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">7</button>
+<button type="button" data-calc="8" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">8</button>
+<button type="button" data-calc="9" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">9</button>
+<button type="button" data-calc="-" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">−</button>
+<button type="button" data-calc="4" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">4</button>
+<button type="button" data-calc="5" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">5</button>
+<button type="button" data-calc="6" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">6</button>
+<button type="button" data-calc="+" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">+</button>
+<button type="button" data-calc="1" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
+<button type="button" data-calc="2" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
+<button type="button" data-calc="3" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
+<button type="button" data-calc="=" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-primary-container text-on-primary-container rounded-xl hover:opacity-95 active:scale-95 transition-all">=</button>
+<button type="button" data-calc="0" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all col-span-2">0</button>
+<button type="button" data-calc="." class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
+</div>
+</div>
+<div id="calc-result-line" class="hidden mt-3 rounded-xl bg-primary-container/35 border border-primary/25 px-3 py-2.5 text-center" aria-live="polite">
+<p class="text-[10px] font-bold text-on-primary-container/90 uppercase tracking-widest mb-0.5">計算結果</p>
+<p id="calc-result-text" class="text-lg sm:text-xl font-extrabold text-on-surface font-mono"></p>
+</div>
+<div id="calc-equals-save-row" class="hidden mt-4 w-full max-w-md mx-auto">
+<button type="button" id="calc-inline-save-btn" class="w-full min-h-[52px] py-3.5 px-4 rounded-2xl bg-primary text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md border border-primary/20"><span class="material-symbols-outlined" aria-hidden="true">save</span> 儲存交易</button>
+<p class="text-[10px] text-center text-on-surface-variant mt-2 px-2">將寫入本機明細；亦可使用畫面底部固定列。</p>
+</div>
+</div>
 <div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
 <button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
 <span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
@@ -1149,28 +1215,6 @@ body {
 <div id="invoice-lines-list" class="space-y-3"></div>
 </div>
 </div>
-</div>
-<!-- 計算機鍵盤 -->
-<div class="grid grid-cols-4 gap-2 mb-4 scroll-mt-24 max-w-md mx-auto" id="calc-keypad" aria-label="價格計算機">
-<button type="button" data-calc="clear" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">C</button>
-<button type="button" data-calc="/" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">÷</button>
-<button type="button" data-calc="*" class="h-14 text-lg font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">×</button>
-<button type="button" data-calc="back" class="h-14 flex items-center justify-center bg-surface-container-high text-error rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined">backspace</span></button>
-<button type="button" data-calc="7" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">7</button>
-<button type="button" data-calc="8" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">8</button>
-<button type="button" data-calc="9" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">9</button>
-<button type="button" data-calc="-" class="h-14 text-2xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">−</button>
-<button type="button" data-calc="4" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">4</button>
-<button type="button" data-calc="5" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">5</button>
-<button type="button" data-calc="6" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">6</button>
-<button type="button" data-calc="+" class="h-14 text-2xl font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">+</button>
-<button type="button" data-calc="1" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">1</button>
-<button type="button" data-calc="2" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">2</button>
-<button type="button" data-calc="3" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">3</button>
-<button type="button" data-calc="=" class="h-14 text-2xl font-bold bg-primary-container text-on-primary-container rounded-xl hover:opacity-95 active:scale-95 transition-all">=</button>
-<button type="button" data-calc="0" class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all col-span-2">0</button>
-<button type="button" data-calc="." class="h-14 text-2xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
-<div class="h-14" aria-hidden="true"></div>
 </div>
 <button type="button" id="add-step-to-note-btn" class="w-full max-w-md mx-auto mb-10 py-3.5 px-4 rounded-2xl bg-secondary-container text-on-secondary-container text-sm font-extrabold border border-secondary/25 shadow-sm active:scale-[0.99] transition-transform">下一步：備註（可略過）</button>
 <!-- Date & Note（日期以透明 input 覆蓋整列，避免行動版無法開啟原生選擇器） -->
@@ -1199,7 +1243,7 @@ body {
 </main>
 <!-- Floating Action Bar（嵌入父 App 時由 CSS 上移，避免被底部導覽遮住） -->
 <div id="add-floating-save" class="fixed bottom-0 left-0 right-0 w-full p-4 sm:p-6 flex flex-col items-center gap-1.5 z-[55] box-border pointer-events-none">
-<div class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
+<div id="add-floating-save-bar" class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
 <button type="button" class="flex-1 min-h-[52px] py-4 px-6 sm:px-8 bg-primary rounded-full text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation" id="save-transaction-btn"><span class="material-symbols-outlined" aria-hidden="true">save</span> <span id="save-transaction-label">儲存交易</span></button>
 </div>
 <p class="pointer-events-none text-center text-[10px] font-semibold text-on-surface-variant/80 tracking-wide px-2 max-w-md" id="add-save-hint">備註欄按 Enter 儲存 · 任意處 ⌘Enter / Ctrl+Enter 亦可</p>
@@ -4020,7 +4064,22 @@ const STORAGE_KEY = "stitch_transactions";
     return String(r);
   }
 
+  function formatCalcResultPretty(n) {
+    const s = formatCalcResult(n);
+    if (!s) return "";
+    const num = Number(s);
+    if (!Number.isFinite(num)) return s;
+    return num.toLocaleString("zh-TW", { maximumFractionDigits: 2 });
+  }
+
+  function hidePostEqualsPromo() {
+    document.getElementById("calc-result-line")?.classList.add("hidden");
+    document.getElementById("calc-equals-save-row")?.classList.add("hidden");
+    document.getElementById("add-floating-save-bar")?.classList.remove("save-bar-pulse");
+  }
+
   function resetCalcWorkingAndTape() {
+    hidePostEqualsPromo();
     calcWorking = "";
     const el = document.getElementById("calc-process-display");
     if (el) el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
@@ -4034,6 +4093,7 @@ const STORAGE_KEY = "stitch_transactions";
       el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
       return;
     }
+    hidePostEqualsPromo();
     el.textContent = w.replace(/\*/g, "×").replace(/\//g, "÷");
   }
 
@@ -4062,9 +4122,10 @@ const STORAGE_KEY = "stitch_transactions";
   /** 選完類別後捲到數字鍵盤（上方即為數字欄與金額），方便接著輸入價格 */
   function scrollToAmountEntryAfterCategory() {
     requestAnimationFrame(() => {
-      const pad = document.getElementById("calc-keypad");
+      const wrap = document.getElementById("calc-keypad-wrap");
+      const block = document.getElementById("add-amount-entry-block");
       const mirror = document.getElementById("amount-field-mirror");
-      if (pad) pad.scrollIntoView({ behavior: "smooth", block: "center" });
+      (wrap || block)?.scrollIntoView({ behavior: "smooth", block: "start" });
       if (mirror) {
         try {
           mirror.focus({ preventScroll: true });
@@ -4111,6 +4172,18 @@ const STORAGE_KEY = "stitch_transactions";
         const el = document.getElementById("calc-process-display");
         if (el) el.textContent = line;
         updateAmountDisplay();
+        const rLine = document.getElementById("calc-result-line");
+        const rText = document.getElementById("calc-result-text");
+        if (rLine && rText) {
+          rText.textContent = formatCalcResultPretty(v) + " 元";
+          rLine.classList.remove("hidden");
+        }
+        document.getElementById("calc-equals-save-row")?.classList.remove("hidden");
+        requestAnimationFrame(() => {
+          document.getElementById("calc-equals-save-row")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          document.getElementById("add-floating-save")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          document.getElementById("add-floating-save-bar")?.classList.add("save-bar-pulse");
+        });
         return;
       }
       if (k === "/" || k === "*" || k === "+" || k === "-") {
@@ -5032,6 +5105,10 @@ const STORAGE_KEY = "stitch_transactions";
   });
 
   saveButton.addEventListener("click", () => {
+    saveTransaction();
+  });
+
+  document.getElementById("calc-inline-save-btn")?.addEventListener("click", () => {
     saveTransaction();
   });
 
