@@ -611,6 +611,14 @@ body {
         #add-floating-save-bar.save-bar-pulse {
             animation: saveBarPulse 1.2s ease-out 2;
         }
+        #calc-process-display {
+            white-space: pre-wrap;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+            max-height: min(55vh, 16rem);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
         @keyframes saveBarPulse {
             0%,
             100% {
@@ -1146,21 +1154,11 @@ body {
 <div class="relative mb-10 scroll-mt-28" id="add-amount-entry-block">
 <div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
 <div class="text-center py-6 px-2">
-<span class="text-on-surface-variant font-semibold tracking-wider text-sm block mb-2 uppercase" id="amount-hint-text">輸入價格 · 支出</span>
-<div class="rounded-2xl border border-outline-variant/30 bg-surface-container-low/90 px-3 py-3 sm:px-4 mb-4 max-w-md mx-auto w-full shadow-sm">
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1.5 text-left">計算過程（輸入中）</p>
-<p id="calc-process-display" class="text-base sm:text-lg font-mono text-on-surface min-h-[4.25rem] sm:min-h-[4.5rem] break-all px-2 py-2 rounded-xl bg-white/70 border border-outline-variant/30 mb-3 text-left leading-snug" aria-live="polite"></p>
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 text-left">即時金額預覽</p>
-<div class="flex items-center justify-center gap-1 flex-wrap mb-1">
-<span class="text-3xl sm:text-4xl font-bold text-primary transition-colors duration-200" id="amount-currency-symbol">$</span>
-<span class="text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tighter transition-colors duration-200 break-all" id="amount-display">0</span>
+<div class="rounded-2xl border border-outline-variant/30 bg-surface-container-low/90 px-3 py-3 sm:px-4 mb-3 max-w-md mx-auto w-full shadow-sm">
+<p id="calc-process-display" class="text-lg sm:text-xl font-mono text-on-surface min-h-[3.5rem] px-3 py-3 rounded-xl bg-white/80 border border-outline-variant/30 text-left leading-relaxed" aria-live="polite" tabindex="0" role="textbox" aria-label="計算過程與結果"></p>
 </div>
-<label class="sr-only" for="amount-field-mirror">金額輸入預覽</label>
-<input type="text" readonly id="amount-field-mirror" tabindex="0" class="w-full max-w-sm mx-auto block text-center font-mono text-lg sm:text-xl font-bold text-on-surface bg-white/85 border-2 border-outline-variant/45 rounded-2xl px-2 py-2.5 shadow-inner outline-none focus:ring-2 focus:ring-primary/35 focus:border-primary/50" value="0" aria-live="polite" title="顯示與鍵盤輸入同步"/>
-<p class="text-[11px] text-on-surface-variant mt-2 px-1 text-left" id="amount-echo-hint">使用下方鍵盤輸入數字與 + − × ÷；按「=」寫入金額並可儲存；C 清除。</p>
-<div id="calc-keypad-wrap" class="mt-4">
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 text-center">計算機（完整鍵盤）</p>
-<div class="grid grid-cols-4 gap-1.5 sm:gap-2 mb-1 scroll-mt-24 w-full" id="calc-keypad" aria-label="價格計算機">
+<div id="calc-keypad-wrap" class="mt-1">
+<div class="grid grid-cols-4 gap-1.5 sm:gap-2 mb-1 scroll-mt-24 w-full max-w-md mx-auto" id="calc-keypad" aria-label="計算機">
 <button type="button" data-calc="clear" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">C</button>
 <button type="button" data-calc="/" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">÷</button>
 <button type="button" data-calc="*" class="min-h-[2.75rem] sm:min-h-[3rem] text-base font-bold bg-surface-container-high rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">×</button>
@@ -1180,14 +1178,6 @@ body {
 <button type="button" data-calc="0" class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all col-span-2">0</button>
 <button type="button" data-calc="." class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
 </div>
-</div>
-<div id="calc-result-line" class="hidden mt-3 rounded-xl bg-primary-container/35 border border-primary/25 px-3 py-2.5 text-center" aria-live="polite">
-<p class="text-[10px] font-bold text-on-primary-container/90 uppercase tracking-widest mb-0.5">計算結果</p>
-<p id="calc-result-text" class="text-lg sm:text-xl font-extrabold text-on-surface font-mono"></p>
-</div>
-<div id="calc-equals-save-row" class="hidden mt-4 w-full max-w-md mx-auto">
-<button type="button" id="calc-inline-save-btn" class="w-full min-h-[52px] py-3.5 px-4 rounded-2xl bg-primary text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md border border-primary/20"><span class="material-symbols-outlined" aria-hidden="true">save</span> 儲存交易</button>
-<p class="text-[10px] text-center text-on-surface-variant mt-2 px-2">將寫入本機明細；亦可使用畫面底部固定列。</p>
 </div>
 </div>
 <div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
@@ -1213,7 +1203,6 @@ body {
 <h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
 <p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">店家名稱見上方「店家／賣方」；每筆可調整類別，儲存時依類別各寫一筆。</p>
 <div id="invoice-lines-list" class="space-y-3"></div>
-</div>
 </div>
 </div>
 <button type="button" id="add-step-to-note-btn" class="w-full max-w-md mx-auto mb-10 py-3.5 px-4 rounded-2xl bg-secondary-container text-on-secondary-container text-sm font-extrabold border border-secondary/25 shadow-sm active:scale-[0.99] transition-transform">下一步：備註（可略過）</button>
@@ -1246,7 +1235,6 @@ body {
 <div id="add-floating-save-bar" class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
 <button type="button" class="flex-1 min-h-[52px] py-4 px-6 sm:px-8 bg-primary rounded-full text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation" id="save-transaction-btn"><span class="material-symbols-outlined" aria-hidden="true">save</span> <span id="save-transaction-label">儲存交易</span></button>
 </div>
-<p class="pointer-events-none text-center text-[10px] font-semibold text-on-surface-variant/80 tracking-wide px-2 max-w-md" id="add-save-hint">備註欄按 Enter 儲存 · 任意處 ⌘Enter / Ctrl+Enter 亦可</p>
 </div>
 <!-- 發票 QR 相機掃描（全螢幕） -->
 <div id="add-qr-scanner-overlay" class="fixed inset-0 hidden flex-col bg-gradient-to-b from-[#3a3228]/96 via-[#2a241c]/97 to-[#1a1510]/98 backdrop-blur-xl" aria-hidden="true">
@@ -1937,6 +1925,12 @@ function __stitchBuildBridge() {
   writeCategories(readCategories());
   writeIncomeCategories(readIncomeCategories());
 
+  function notifyTransactionsChanged() {
+    try {
+      window.dispatchEvent(new CustomEvent("stitch:transactions:changed"));
+    } catch (e) {}
+  }
+
   return function __STITCH_BRIDGE__(type, payload) {
     const requestId = payload && payload.requestId != null ? payload.requestId : "_";
     const p = payload || {};
@@ -1949,11 +1943,13 @@ function __stitchBuildBridge() {
       const items = readAll();
       items.unshift(record);
       writeAll(items);
+      notifyTransactionsChanged();
       return { type: "stitch:tx:add:result", requestId, ok: true };
     }
     if (type === "stitch:tx:delete") {
       const id = String(p.id || "");
       writeAll(readAll().filter((t) => String(t?.id) !== id));
+      notifyTransactionsChanged();
       return { type: "stitch:tx:delete:result", requestId, ok: true };
     }
     if (type === "stitch:tx:update") {
@@ -1979,6 +1975,7 @@ function __stitchBuildBridge() {
       if (patch.flow === "income" || patch.flow === "expense") cur.flow = patch.flow;
       items[idx] = cur;
       writeAll(items);
+      notifyTransactionsChanged();
       return { type: "stitch:tx:update:result", requestId, ok: true };
     }
     if (type === "stitch:cat:list") {
@@ -3348,6 +3345,12 @@ const STORAGE_KEY = "stitch_transactions";
     renderTransactions();
   });
 
+  window.addEventListener("stitch:route", (e) => {
+    const r = e.detail && e.detail.route;
+    if (r === "history") void renderTransactions();
+  });
+  window.addEventListener("stitch:transactions:changed", () => void renderTransactions());
+
   updateChipStyles();
   setDrawerOpen(false);
   renderTransactions();
@@ -3446,6 +3449,8 @@ const STORAGE_KEY = "stitch_transactions";
   let amountInput = "";
   /** 價格計算機目前算式（ASCII：* / + -） */
   let calcWorking = "";
+  /** 畫面上為「按 = 後」的完整列（避免被 updateAmountDisplay 覆寫） */
+  let calcTapeShowsEqualsResult = false;
   let selectedCategory = "飲食";
   /** 快捷圖示列一次只亮一格；與實際儲存分類（可能多格同值）分開 */
   let activeCategoryPickId = "food_breakfast";
@@ -3454,8 +3459,6 @@ const STORAGE_KEY = "stitch_transactions";
   let selectedIncomeCategory = "薪水";
   let activeIncomePickId = "inc_salary";
 
-  const amountDisplay = document.getElementById("amount-display");
-  const amountFieldMirror = document.getElementById("amount-field-mirror");
   const calcKeypad = document.getElementById("calc-keypad");
   const noteInput = document.getElementById("note-input");
   const categoryGrid = document.getElementById("category-grid");
@@ -4064,25 +4067,16 @@ const STORAGE_KEY = "stitch_transactions";
     return String(r);
   }
 
-  function formatCalcResultPretty(n) {
-    const s = formatCalcResult(n);
-    if (!s) return "";
-    const num = Number(s);
-    if (!Number.isFinite(num)) return s;
-    return num.toLocaleString("zh-TW", { maximumFractionDigits: 2 });
-  }
-
   function hidePostEqualsPromo() {
-    document.getElementById("calc-result-line")?.classList.add("hidden");
-    document.getElementById("calc-equals-save-row")?.classList.add("hidden");
     document.getElementById("add-floating-save-bar")?.classList.remove("save-bar-pulse");
   }
 
   function resetCalcWorkingAndTape() {
     hidePostEqualsPromo();
+    calcTapeShowsEqualsResult = false;
     calcWorking = "";
     const el = document.getElementById("calc-process-display");
-    if (el) el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
+    if (el) el.textContent = "";
   }
 
   function updateCalcTape() {
@@ -4090,22 +4084,29 @@ const STORAGE_KEY = "stitch_transactions";
     if (!el) return;
     const w = calcWorking.trim();
     if (!w) {
-      el.textContent = "（例：100+50 或 200−50×2，按「=」寫入金額）";
+      if (calcTapeShowsEqualsResult && amountInput) return;
+      el.textContent = "";
+      hidePostEqualsPromo();
       return;
     }
+    calcTapeShowsEqualsResult = false;
     hidePostEqualsPromo();
     el.textContent = w.replace(/\*/g, "×").replace(/\//g, "÷");
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
   }
 
   function updateAmountDisplay() {
-    let showStr = amountInput || "0";
-    if (calcWorking.trim()) {
-      const pv = tryEvalExpr(calcWorking);
-      if (Number.isFinite(pv)) showStr = formatCalcResult(pv);
+    const el = document.getElementById("calc-process-display");
+    if (!el) return;
+    if (calcWorking.trim()) return;
+    if (calcTapeShowsEqualsResult) return;
+    if (amountInput) {
+      el.textContent = formatAmountLive(amountInput);
+      return;
     }
-    const live = formatAmountLive(showStr);
-    if (amountDisplay) amountDisplay.textContent = live;
-    if (amountFieldMirror) amountFieldMirror.value = live;
+    el.textContent = "";
   }
 
   function normalizeAfterTyping() {
@@ -4124,11 +4125,11 @@ const STORAGE_KEY = "stitch_transactions";
     requestAnimationFrame(() => {
       const wrap = document.getElementById("calc-keypad-wrap");
       const block = document.getElementById("add-amount-entry-block");
-      const mirror = document.getElementById("amount-field-mirror");
+      const tape = document.getElementById("calc-process-display");
       (wrap || block)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (mirror) {
+      if (tape) {
         try {
-          mirror.focus({ preventScroll: true });
+          tape.focus({ preventScroll: true });
         } catch (e) {}
       }
     });
@@ -4169,18 +4170,15 @@ const STORAGE_KEY = "stitch_transactions";
         const line = disp + " = " + formatCalcResult(v);
         amountInput = formatCalcResult(v);
         calcWorking = "";
+        calcTapeShowsEqualsResult = true;
         const el = document.getElementById("calc-process-display");
-        if (el) el.textContent = line;
-        updateAmountDisplay();
-        const rLine = document.getElementById("calc-result-line");
-        const rText = document.getElementById("calc-result-text");
-        if (rLine && rText) {
-          rText.textContent = formatCalcResultPretty(v) + " 元";
-          rLine.classList.remove("hidden");
+        if (el) {
+          el.textContent = line;
+          requestAnimationFrame(() => {
+            el.scrollTop = el.scrollHeight;
+          });
         }
-        document.getElementById("calc-equals-save-row")?.classList.remove("hidden");
         requestAnimationFrame(() => {
-          document.getElementById("calc-equals-save-row")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
           document.getElementById("add-floating-save")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
           document.getElementById("add-floating-save-bar")?.classList.add("save-bar-pulse");
         });
@@ -4249,21 +4247,6 @@ const STORAGE_KEY = "stitch_transactions";
     }
     const titleEl = document.getElementById("add-page-title");
     if (titleEl) titleEl.textContent = txFlow === "income" ? "新增收入" : "新增支出";
-    const hintEl = document.getElementById("amount-hint-text");
-    if (hintEl) hintEl.textContent = txFlow === "income" ? "輸入金額 · 收入" : "輸入金額 · 支出";
-    const sym = document.getElementById("amount-currency-symbol");
-    if (sym) {
-      sym.classList.toggle("text-primary", txFlow === "expense");
-      sym.classList.toggle("text-secondary", txFlow === "income");
-    }
-    if (amountDisplay) {
-      amountDisplay.classList.toggle("text-on-surface", txFlow === "expense");
-      amountDisplay.classList.toggle("text-secondary", txFlow === "income");
-    }
-    if (amountFieldMirror) {
-      amountFieldMirror.classList.toggle("text-on-surface", txFlow === "expense");
-      amountFieldMirror.classList.toggle("text-secondary", txFlow === "income");
-    }
     document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
     editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
@@ -4940,6 +4923,9 @@ const STORAGE_KEY = "stitch_transactions";
     const all = readTransactionsLocal();
     all.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    try {
+      window.dispatchEvent(new CustomEvent("stitch:transactions:changed"));
+    } catch (e) {}
   }
 
   function readTransactionsLocal() {
@@ -5105,10 +5091,6 @@ const STORAGE_KEY = "stitch_transactions";
   });
 
   saveButton.addEventListener("click", () => {
-    saveTransaction();
-  });
-
-  document.getElementById("calc-inline-save-btn")?.addEventListener("click", () => {
     saveTransaction();
   });
 
