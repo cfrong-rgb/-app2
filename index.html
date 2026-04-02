@@ -730,28 +730,38 @@ body {
 html.stitch-single-app {
   height: 100%;
   height: 100dvh;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 html.stitch-single-app body {
   min-height: 100dvh !important;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 html.stitch-single-app main.wrap {
   flex: 1 1 auto;
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
+  width: 100%;
+  max-width: min(1100px, 100%);
+  box-sizing: border-box;
 }
 html.stitch-single-app #stitch-stage {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  width: 100%;
   max-width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
 }
 /* 各頁視圖：豎屏不橫向溢出（片段內 <main> 已改為 .stitch-page-main） */
 html.stitch-single-app .stitch-view {
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
@@ -763,6 +773,20 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
   min-width: 0;
   box-sizing: border-box;
 }
+/* 明細／發票：避免條碼 SVG、卡片列在窄屏撐出右側 */
+html.stitch-single-app [data-stitch-view="history"] .stitch-page-main,
+html.stitch-single-app [data-stitch-view="invoice"] .stitch-page-main {
+  width: 100%;
+  max-width: 100%;
+}
+html.stitch-single-app [data-stitch-view="invoice"] #inv-barcode-svg {
+  max-width: 100%;
+  height: auto;
+}
+html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
+  max-width: 100%;
+  overflow: hidden;
+}
 
 </style>
 </head>
@@ -770,11 +794,17 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <main class="wrap">
   <div class="stitch-stage" id="stitch-stage">
 <div class="stitch-view" data-stitch-view="home" hidden>
-<!-- TopAppBar（精簡：標題 + 捷徑） -->
+<!-- TopAppBar：月份選擇 + 捷徑 -->
 <header class="glass-nav w-full top-0 z-40 sticky">
-<div class="flex justify-between items-center gap-3 w-full max-w-screen-xl mx-auto px-6 py-3">
-<span class="text-sm font-extrabold tracking-tight text-[#725638]">私人帳本</span>
-<div class="flex items-center gap-1 shrink-0 relative z-10">
+<div class="flex justify-between items-center gap-2 w-full max-w-screen-xl mx-auto px-4 sm:px-6 py-3 min-w-0">
+<div class="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+<span class="shrink-0 inline-flex items-center justify-center px-2 py-1 rounded-full bg-primary text-on-primary text-[10px] sm:text-xs font-extrabold" aria-hidden="true">月</span>
+<button type="button" id="home-month-trigger" class="flex items-center gap-0.5 min-w-0 max-w-[70%] sm:max-w-none rounded-xl pl-1 pr-1.5 py-1.5 -ml-0.5 hover:bg-surface-container-low/90 active:scale-[0.99] transition touch-manipulation text-left" aria-expanded="false" aria-haspopup="dialog" aria-controls="home-month-picker-panel">
+<span id="home-month-label" class="text-sm font-extrabold text-[#725638] truncate tabular-nums">—</span>
+<span class="material-symbols-outlined text-[#725638] text-xl sm:text-2xl shrink-0">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-0.5 shrink-0 relative z-10">
 <button type="button" class="p-2 rounded-full hover:bg-surface-container-low text-[#725638] active:scale-95 transition cursor-pointer touch-manipulation" id="home-profile-btn" aria-label="個人檔案 · 修改名稱與大頭貼">
 <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0, 'wght' 500, 'opsz' 24;">person</span>
 </button>
@@ -784,6 +814,23 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 </div>
 </div>
 </header>
+<!-- 月份選擇面板 -->
+<div class="fixed inset-0 z-[75] hidden flex items-start justify-center pt-14 sm:pt-20 px-4 pb-8" id="home-month-picker-overlay" aria-hidden="true">
+<div class="absolute inset-0 bg-[#0e0e0c]/45 backdrop-blur-[2px]" id="home-month-picker-backdrop" tabindex="-1"></div>
+<div class="relative w-full max-w-sm bg-surface rounded-2xl shadow-2xl border border-outline-variant/25 p-4 sm:p-5" id="home-month-picker-panel" role="dialog" aria-modal="true" aria-labelledby="home-month-picker-year-label">
+<div class="flex items-center justify-between gap-2 mb-4">
+<button type="button" id="home-month-year-prev" class="p-2 rounded-full hover:bg-surface-container-low text-primary active:scale-95" aria-label="上一年">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<p id="home-month-picker-year-label" class="text-lg font-extrabold text-primary tabular-nums">2026 年</p>
+<button type="button" id="home-month-year-next" class="p-2 rounded-full hover:bg-surface-container-low text-primary active:scale-95" aria-label="下一年">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-3 gap-2 sm:gap-3" id="home-month-grid"></div>
+<button type="button" class="mt-4 w-full py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low rounded-xl" id="home-month-picker-close">關閉</button>
+</div>
+</div>
 <!-- 通知面板 -->
 <div class="fixed inset-0 bg-[#0e0e0c]/40 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-4 hidden" id="home-notifications-panel" aria-hidden="true">
 <div class="bg-surface w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-outline-variant/25 max-h-[70dvh] overflow-y-auto">
@@ -811,8 +858,8 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <!-- Monthly Category Pie (Chart.js) -->
 <section>
 <div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)]">
-<div class="flex items-center justify-between mb-4">
-<h2 class="text-xl font-extrabold tracking-tight text-primary">本月支出分佈</h2>
+<div class="flex items-center justify-between mb-4 gap-2">
+<h2 class="text-xl font-extrabold tracking-tight text-primary min-w-0" id="home-chart-section-title">支出分佈</h2>
 <span class="material-symbols-outlined text-primary shrink-0" style="font-variation-settings: 'FILL' 1, 'wght' 600, 'opsz' 24;">donut_large</span>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -848,12 +895,12 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="glass-card rounded-3xl p-6 shadow-[0_12px_40px_rgba(114,86,56,0.08)]">
 <div class="flex items-center justify-between gap-6">
 <div>
-<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">今日總支出</p>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2" id="home-spotlight-title">今日總支出</p>
 <div class="flex items-baseline gap-2">
 <span class="text-2xl font-extrabold text-primary">$</span>
 <span class="text-5xl md:text-6xl font-extrabold tracking-tighter text-on-surface" id="today-total-amount">0.00</span>
 </div>
-<p class="text-sm text-on-surface-variant mt-2">自動從本機紀錄加總（重新整理不會消失）</p>
+<p class="text-sm text-on-surface-variant mt-2" id="home-spotlight-sub">自動從本機紀錄加總（重新整理不會消失）</p>
 </div>
 <div class="w-14 h-14 rounded-2xl bg-primary-container/60 flex items-center justify-center shrink-0">
 <span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1, 'wght' 600, 'opsz' 24;">payments</span>
@@ -927,8 +974,8 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 </header>
 <div role="main" class="stitch-page-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
 <!-- Editorial Filter Section -->
-<section class="mb-10 mt-4">
-<div class="flex overflow-x-auto gap-3 hide-scrollbar py-2" id="category-filter-chips" role="tablist" aria-label="分類篩選">
+<section class="mb-10 mt-4 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain touch-pan-x">
+<div class="flex w-max gap-3 hide-scrollbar py-2" id="category-filter-chips" role="tablist" aria-label="分類篩選">
 <button type="button" class="filter-chip px-6 py-2 bg-primary text-on-primary rounded-full text-sm font-medium whitespace-nowrap shadow-sm active:scale-95 duration-200" data-filter="" aria-selected="true">
           全部紀錄
         </button>
@@ -1303,7 +1350,7 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 </div>
 <div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
 <div>
-<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-3">預設分類 · 圖示</p>
+<p class="text-[11px] font-bold text-on-surface-variant mb-3">選擇類別捷徑 · 圖示</p>
 <div class="space-y-3" id="category-editor-default-rows"></div>
 </div>
 <div>
@@ -1621,7 +1668,6 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="flex justify-between items-center relative z-10 gap-4 flex-wrap">
 <div>
 <h2 class="text-2xl font-bold text-primary">本月預算總覽</h2>
-<p class="text-on-surface-variant text-sm mt-1">與首頁、記帳紀錄連動（LocalStorage）</p>
 </div>
 <div class="text-right">
 <p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">本月預算</p>
@@ -1636,24 +1682,14 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden">
 <div class="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500" id="profile-budget-bar" style="width: 0%;"></div>
 </div>
-<p class="text-sm text-secondary font-medium flex items-center gap-2" id="profile-budget-hint">
-<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">eco</span>
-<span id="profile-budget-hint-text">載入中…</span>
-</p>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+<div class="grid grid-cols-1 gap-4 pt-4">
 <div class="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20">
-<span class="block text-xs font-bold text-on-surface-variant uppercase mb-1">設定預算</span>
-<p class="text-xs text-on-surface-variant mb-2">於下方輸入整數金額後儲存（與首頁「可用餘額」相同）</p>
+<span class="block text-xs font-bold text-on-surface-variant uppercase mb-2">設定預算</span>
 <div class="flex gap-2">
 <input class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-outline-variant/40 text-sm font-bold" id="budget-amount-input" type="number" min="0" step="1" placeholder="例如 30000"/>
 <button type="button" class="px-3 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold shrink-0" id="save-budget-btn">儲存</button>
 </div>
-<p class="text-[10px] text-on-surface-variant mt-1.5">輸入金額後按 Enter 可儲存</p>
-</div>
-<div class="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20 sm:col-span-2">
-<span class="block text-xs font-bold text-on-surface-variant uppercase mb-1">說明</span>
-<p class="text-sm text-on-surface-variant leading-relaxed">預算儲存於 <code class="text-xs bg-surface-container-high px-1 rounded">stitch_monthly_budget</code>。未設定時首頁會改顯示「本月累計支出」。</p>
 </div>
 </div>
 </div>
@@ -1703,12 +1739,10 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 </div>
 <h3 class="text-xl font-bold">通知偏好</h3>
 </div>
-<p class="text-xs text-on-surface-variant -mt-4 mb-6">以下開關僅存於本機，供首頁「通知」摘要顯示；實際推播需未來瀏覽器／系統支援。</p>
 <div class="space-y-6">
 <div class="flex items-center justify-between gap-3">
 <div>
 <p class="font-bold">預算提醒</p>
-<p class="text-sm text-on-surface-variant">接近預算上限時提示（摘要）</p>
 </div>
 <button type="button" class="pref-toggle relative w-12 h-6 rounded-full shrink-0 bg-primary" data-pref="notifyBudget" role="switch" aria-checked="true">
 <span class="toggle-knob absolute top-1 right-1 w-4 h-4 rounded-full bg-on-primary shadow-sm"></span>
@@ -1717,7 +1751,6 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="flex items-center justify-between gap-3">
 <div>
 <p class="font-bold">每日關心</p>
-<p class="text-sm text-on-surface-variant">早晨記帳提醒（摘要）</p>
 </div>
 <button type="button" class="pref-toggle relative w-12 h-6 rounded-full shrink-0 bg-primary" data-pref="notifyDaily" role="switch" aria-checked="true">
 <span class="toggle-knob absolute top-1 right-1 w-4 h-4 rounded-full bg-on-primary shadow-sm"></span>
@@ -1726,7 +1759,6 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="flex items-center justify-between gap-3">
 <div>
 <p class="font-bold">每週摘要</p>
-<p class="text-sm text-on-surface-variant">一週消費整理（摘要）</p>
 </div>
 <button type="button" class="pref-toggle relative w-12 h-6 rounded-full shrink-0 bg-outline-variant" data-pref="notifyWeekly" role="switch" aria-checked="false">
 <span class="toggle-knob absolute top-1 left-1 w-4 h-4 rounded-full bg-surface shadow-sm"></span>
@@ -1745,7 +1777,6 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 <div class="space-y-6">
 <div>
 <label class="block text-sm font-bold text-on-surface-variant uppercase mb-3">色彩主題</label>
-<p class="text-xs text-on-surface-variant mb-3 leading-relaxed">選擇後會寫入本機並套用到首頁、新增、明細、發票等各頁（含從首頁嵌入開啟時的外框導覽）。</p>
 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
 <button type="button" class="theme-choice p-4 border-2 border-primary bg-surface rounded-xl flex flex-col items-center gap-2 transition ring-offset-2" data-theme="hearth" id="theme-btn-hearth">
 <div class="flex gap-1">
@@ -1934,6 +1965,11 @@ function __stitchBuildBridge() {
   function writeDisplayName(name) {
     const t = String(name || "").trim();
     localStorage.setItem(DISPLAY_NAME_KEY, t || "我的私人帳本");
+    try {
+      window.dispatchEvent(
+        new CustomEvent("stitch:display-name:updated", { detail: { displayName: readDisplayName() } })
+      );
+    } catch (e) {}
   }
   function readAvatarDataUrl() {
     const s = localStorage.getItem(USER_AVATAR_KEY);
@@ -2195,6 +2231,7 @@ const STORAGE_KEY = "stitch_transactions";
   const BUDGET_KEY = "stitch_monthly_budget";
   const PREFS_KEY = "stitch_prefs";
   const THEME_KEY = "stitch_ui_theme";
+  const HOME_VIEW_MONTH_KEY = "stitch_home_view_ym";
   const todayTotalEl = document.getElementById("today-total-amount");
   const monthNetEl = document.getElementById("month-net-amount");
   const monthFlowDetailEl = document.getElementById("month-flow-detail");
@@ -2205,6 +2242,116 @@ const STORAGE_KEY = "stitch_transactions";
   const chartCanvas = document.getElementById("monthly-category-chart");
   const legendRoot = document.getElementById("monthly-category-legend");
   let monthlyChart = null;
+
+  let viewMonthYear = new Date().getFullYear();
+  let viewMonthIndex = new Date().getMonth();
+  let pickerYear = viewMonthYear;
+
+  function initViewMonthFromStorage() {
+    try {
+      const s = localStorage.getItem(HOME_VIEW_MONTH_KEY);
+      if (s && /^\d{4}-\d{2}$/.test(s)) {
+        const [y, mo] = s.split("-").map(Number);
+        if (y >= 2000 && y <= 2100 && mo >= 1 && mo <= 12) {
+          viewMonthYear = y;
+          viewMonthIndex = mo - 1;
+          return;
+        }
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    const n = new Date();
+    viewMonthYear = n.getFullYear();
+    viewMonthIndex = n.getMonth();
+  }
+
+  function persistViewMonth() {
+    try {
+      localStorage.setItem(
+        HOME_VIEW_MONTH_KEY,
+        `${viewMonthYear}-${String(viewMonthIndex + 1).padStart(2, "0")}`
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function viewMonthAnchor() {
+    return new Date(viewMonthYear, viewMonthIndex, 1, 12, 0, 0);
+  }
+
+  function isViewingCurrentMonth() {
+    const n = new Date();
+    return viewMonthYear === n.getFullYear() && viewMonthIndex === n.getMonth();
+  }
+
+  function updateMonthLabel() {
+    const el = document.getElementById("home-month-label");
+    if (el) el.textContent = `${viewMonthYear}年${viewMonthIndex + 1}月`;
+  }
+
+  function updateChartSectionTitle() {
+    const el = document.getElementById("home-chart-section-title");
+    if (el) el.textContent = `${viewMonthYear}年${viewMonthIndex + 1}月 支出分佈`;
+  }
+
+  function openMonthPicker() {
+    const overlay = document.getElementById("home-month-picker-overlay");
+    const trigger = document.getElementById("home-month-trigger");
+    if (!overlay) return;
+    pickerYear = viewMonthYear;
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    trigger?.setAttribute("aria-expanded", "true");
+    renderMonthGrid();
+  }
+
+  function closeMonthPicker() {
+    const overlay = document.getElementById("home-month-picker-overlay");
+    const trigger = document.getElementById("home-month-trigger");
+    if (!overlay) return;
+    overlay.classList.add("hidden");
+    overlay.setAttribute("aria-hidden", "true");
+    trigger?.setAttribute("aria-expanded", "false");
+  }
+
+  function renderMonthGrid() {
+    const grid = document.getElementById("home-month-grid");
+    const yLabel = document.getElementById("home-month-picker-year-label");
+    if (!grid) return;
+    if (yLabel) yLabel.textContent = `${pickerYear} 年`;
+    const labels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+    grid.innerHTML = labels
+      .map((label, mi) => {
+        const selected = pickerYear === viewMonthYear && mi === viewMonthIndex;
+        const cls = selected
+          ? "border-primary bg-primary-container text-primary shadow-sm border-2"
+          : "border-outline-variant/50 bg-white text-on-surface hover:bg-surface-container-low border";
+        return `<button type="button" class="home-month-cell py-3 rounded-2xl text-sm font-extrabold transition active:scale-[0.98] ${cls}" data-month="${mi}">${label}</button>`;
+      })
+      .join("");
+    grid.querySelectorAll(".home-month-cell").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mi = Number(btn.getAttribute("data-month"));
+        if (Number.isNaN(mi)) return;
+        viewMonthYear = pickerYear;
+        viewMonthIndex = mi;
+        persistViewMonth();
+        closeMonthPicker();
+        refreshHomeDashboard();
+      });
+    });
+  }
+
+  async function refreshHomeDashboard() {
+    updateMonthLabel();
+    updateChartSectionTitle();
+    await loadGreeting();
+    await renderSpotlightTotal();
+    await renderMainBalance();
+    await renderMonthlyCategoryChart();
+  }
 
   function applyStitchTheme(theme, persist) {
     const t = theme || "hearth";
@@ -2373,11 +2520,13 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   async function renderMainBalance() {
-    const now = new Date();
+    const anchor = viewMonthAnchor();
     const items = await readTransactions();
-    const monthSpend = sumMonthExpense(items, now);
-    const monthIn = sumMonthIncome(items, now);
+    const monthSpend = sumMonthExpense(items, anchor);
+    const monthIn = sumMonthIncome(items, anchor);
     const budget = await readMonthlyBudget();
+    const cur = isViewingCurrentMonth();
+    const mLabel = cur ? "本月" : "該月";
 
     if (monthNetEl) {
       const net = monthIn - monthSpend;
@@ -2388,10 +2537,10 @@ const STORAGE_KEY = "stitch_transactions";
     }
     if (monthFlowDetailEl) {
       monthFlowDetailEl.textContent =
-        "本月收入 $" + formatMoney(monthIn) + " · 本月支出 $" + formatMoney(monthSpend);
+        mLabel + "收入 $" + formatMoney(monthIn) + " · " + mLabel + "支出 $" + formatMoney(monthSpend);
     }
 
-    if (budget != null) {
+    if (budget != null && cur) {
       balanceLabelEl.textContent = "可用餘額";
       const remaining = budget - monthSpend;
       balanceMainEl.textContent = "$" + formatMoney(remaining);
@@ -2402,27 +2551,49 @@ const STORAGE_KEY = "stitch_transactions";
         formatMoney(monthSpend) +
         (monthIn > 0 ? " · 已收入 $" + formatMoney(monthIn) : "");
     } else {
-      balanceLabelEl.textContent = "本月累計支出";
+      balanceLabelEl.textContent = cur ? "本月累計支出" : "該月累計支出";
       balanceMainEl.textContent = "$" + formatMoney(monthSpend);
-      balanceSubEl.textContent =
-        monthIn > 0 ? "本月收入 $" + formatMoney(monthIn) + " · 淨額 $" + formatMoney(monthIn - monthSpend) : "";
+      if (!cur && budget != null) {
+        balanceSubEl.textContent =
+          mLabel + "收支檢視 · 月預算僅於「當月」顯示餘額" +
+          (monthIn > 0 ? " · " + mLabel + "收入 $" + formatMoney(monthIn) : "");
+      } else {
+        balanceSubEl.textContent =
+          monthIn > 0 ? mLabel + "收入 $" + formatMoney(monthIn) + " · 淨額 $" + formatMoney(monthIn - monthSpend) : "";
+      }
     }
   }
 
-  async function renderTodayTotal() {
-    const now = new Date();
+  async function renderSpotlightTotal() {
+    const spotlightTitle = document.getElementById("home-spotlight-title");
+    const spotlightSub = document.getElementById("home-spotlight-sub");
     const items = await readTransactions();
-    const total = items.reduce((sum, item) => {
-      if (!isExpenseTransaction(item)) return sum;
-      const createdAt = new Date(item.createdAt);
-      if (Number.isNaN(createdAt.getTime())) return sum;
-      if (!isSameLocalDay(createdAt, now)) return sum;
-      const amount = Number(item.amount);
-      if (!Number.isFinite(amount)) return sum;
-      return sum + Math.max(0, amount);
-    }, 0);
+    const realNow = new Date();
+    const cur = isViewingCurrentMonth();
 
-    todayTotalEl.textContent = formatMoney(total);
+    if (spotlightTitle) spotlightTitle.textContent = cur ? "今日總支出" : "當月總支出";
+    if (spotlightSub) {
+      spotlightSub.textContent = cur
+        ? "自動從本機紀錄加總（重新整理不會消失）"
+        : "所選月份之支出合計（非「今日」）";
+    }
+
+    let total = 0;
+    if (cur) {
+      total = items.reduce((sum, item) => {
+        if (!isExpenseTransaction(item)) return sum;
+        const createdAt = new Date(item.createdAt);
+        if (Number.isNaN(createdAt.getTime())) return sum;
+        if (!isSameLocalDay(createdAt, realNow)) return sum;
+        const amount = Number(item.amount);
+        if (!Number.isFinite(amount)) return sum;
+        return sum + Math.max(0, amount);
+      }, 0);
+    } else {
+      total = sumMonthExpense(items, viewMonthAnchor());
+    }
+
+    if (todayTotalEl) todayTotalEl.textContent = formatMoney(total);
   }
 
   function hashHue(str) {
@@ -2449,13 +2620,13 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   async function renderMonthlyCategoryChart() {
-    const now = new Date();
+    const anchor = viewMonthAnchor();
     const items = await readTransactions();
     const monthItems = items.filter((item) => {
       if (!isExpenseTransaction(item)) return false;
       const d = new Date(item.createdAt);
       if (Number.isNaN(d.getTime())) return false;
-      if (!isSameLocalMonth(d, now)) return false;
+      if (!isSameLocalMonth(d, anchor)) return false;
       const amount = Number(item.amount);
       return Number.isFinite(amount) && amount > 0;
     });
@@ -2467,9 +2638,12 @@ const STORAGE_KEY = "stitch_transactions";
     }, {});
 
     const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const ymHint = `${viewMonthYear}年${viewMonthIndex + 1}月`;
     if (entries.length === 0) {
       legendRoot.innerHTML =
-        '<div class="p-4 rounded-2xl bg-surface-container-low text-on-surface-variant text-sm">本月尚無支出資料，先去新增一筆吧。</div>';
+        '<div class="p-4 rounded-2xl bg-surface-container-low text-on-surface-variant text-sm">' +
+        ymHint +
+        " 尚無支出資料，可先切換月份或前往新增記帳。</div>";
       if (monthlyChart) {
         monthlyChart.destroy();
         monthlyChart = null;
@@ -2609,12 +2783,42 @@ const STORAGE_KEY = "stitch_transactions";
     navigateHomeRoute("profile");
   });
 
+  initViewMonthFromStorage();
+
+  document.getElementById("home-month-trigger")?.addEventListener("click", () => openMonthPicker());
+  document.getElementById("home-month-picker-backdrop")?.addEventListener("click", () => closeMonthPicker());
+  document.getElementById("home-month-picker-close")?.addEventListener("click", () => closeMonthPicker());
+  document.getElementById("home-month-year-prev")?.addEventListener("click", () => {
+    pickerYear = Math.max(2000, pickerYear - 1);
+    renderMonthGrid();
+  });
+  document.getElementById("home-month-year-next")?.addEventListener("click", () => {
+    pickerYear = Math.min(2100, pickerYear + 1);
+    renderMonthGrid();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMonthPicker();
+  });
+
+  window.addEventListener("stitch:route", (e) => {
+    try {
+      if (e && e.detail && e.detail.route === "home") refreshHomeDashboard();
+    } catch (err) {
+      /* ignore */
+    }
+  });
+  window.addEventListener("stitch:display-name:updated", () => {
+    loadGreeting();
+  });
+  window.addEventListener("stitch:transactions:changed", () => {
+    refreshHomeDashboard();
+  });
+
   initStitchTheme();
   loadGreeting();
   loadHeaderAvatar();
-  renderTodayTotal();
-  renderMainBalance();
-  renderMonthlyCategoryChart();
+  refreshHomeDashboard();
 })();
 
 (function stitchPage_history() {
@@ -3204,12 +3408,12 @@ const STORAGE_KEY = "stitch_transactions";
           ? '<span class="shrink-0 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">收入</span>'
           : '<span class="shrink-0 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-primary-container/80 text-primary">支出</span>';
         return `
-          <div class="glass-card rounded-2xl overflow-hidden group" data-transaction-id="${String(item.id || "")}">
-            <div class="flex items-stretch">
-              <div class="w-2" style="background:${barColor}"></div>
-              <div class="flex-1 p-5 min-w-0">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0 flex-1">
+          <div class="glass-card rounded-2xl overflow-hidden group max-w-full min-w-0" data-transaction-id="${String(item.id || "")}">
+            <div class="flex items-stretch min-w-0 max-w-full">
+              <div class="w-2 shrink-0" style="background:${barColor}"></div>
+              <div class="flex-1 p-4 sm:p-5 min-w-0 overflow-hidden">
+                <div class="flex items-start justify-between gap-2 sm:gap-3 min-w-0">
+                  <div class="min-w-0 flex-1 overflow-hidden">
                     <div class="flex items-center gap-2 mb-2 flex-wrap">
                       ${flowBadge}
                       <span class="inline-flex flex-row items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap max-w-full" style="background:${meta.pillBg};color:${meta.pillText}">
@@ -3219,9 +3423,9 @@ const STORAGE_KEY = "stitch_transactions";
                     </div>
                     <p class="text-sm text-on-surface-variant line-clamp-2 break-words">${escapeHtml(note)}</p>
                   </div>
-                  <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                    <div class="text-right">
-                      <p class="text-xl font-extrabold tracking-tight ${inc ? "text-secondary" : "text-on-surface"}">${formatTxAmount(item)}</p>
+                  <div class="flex items-center gap-0.5 sm:gap-2 shrink-0">
+                    <div class="text-right min-w-0 max-w-[9rem] sm:max-w-none">
+                      <p class="text-lg sm:text-xl font-extrabold tracking-tight tabular-nums truncate ${inc ? "text-secondary" : "text-on-surface"}">${formatTxAmount(item)}</p>
                       <p class="text-[11px] text-on-surface-variant tracking-widest mt-2">${formatDate(item.createdAt)}</p>
                     </div>
                     <div class="flex flex-col gap-0.5 sm:flex-row sm:items-center">
@@ -3415,6 +3619,63 @@ const STORAGE_KEY = "stitch_transactions";
     購物: "shopping_bag",
     其他: "category",
   };
+  /** 與「選擇類別」網格一致：捷徑列標籤、父類（寫入交易／圓餅圖）、預設圖示 */
+  const EXPENSE_CATEGORY_SHORTCUTS = [
+    { pickId: "food_breakfast", label: "早餐", parent: "飲食", defaultIcon: "free_breakfast" },
+    { pickId: "food_lunch", label: "午餐", parent: "飲食", defaultIcon: "lunch_dining" },
+    { pickId: "food_dinner", label: "晚餐", parent: "飲食", defaultIcon: "dinner_dining" },
+    { pickId: "food_cafe", label: "咖啡", parent: "飲食", defaultIcon: "local_cafe" },
+    { pickId: "trans_bus", label: "交通", parent: "交通", defaultIcon: "directions_bus" },
+    { pickId: "trans_gas", label: "加油", parent: "交通", defaultIcon: "local_gas_station" },
+    { pickId: "trans_park", label: "停車", parent: "交通", defaultIcon: "local_parking" },
+    { pickId: "shop_bag", label: "購物", parent: "購物", defaultIcon: "shopping_bag" },
+    { pickId: "shop_mart", label: "超市", parent: "購物", defaultIcon: "shopping_cart" },
+    { pickId: "misc_movie", label: "娛樂", parent: "其他", defaultIcon: "movie" },
+    { pickId: "misc_bill", label: "帳單", parent: "其他", defaultIcon: "receipt_long" },
+    { pickId: "misc_home", label: "居家", parent: "其他", defaultIcon: "home" },
+    { pickId: "misc_travel", label: "旅遊", parent: "其他", defaultIcon: "flight_takeoff" },
+    { pickId: "misc_health", label: "健康", parent: "其他", defaultIcon: "fitness_center" },
+    { pickId: "misc_school", label: "學習", parent: "其他", defaultIcon: "school" },
+  ];
+  /** 圖示下拉選單顯示中文（value 仍為 Material Symbols 名稱） */
+  const ICON_NAME_ZH = {
+    restaurant_menu: "餐廳／菜單",
+    free_breakfast: "早餐",
+    lunch_dining: "午餐",
+    dinner_dining: "晚餐",
+    local_cafe: "咖啡廳",
+    bakery_dining: "烘焙",
+    directions_bus: "公車",
+    directions_car: "汽車",
+    local_gas_station: "加油站",
+    local_parking: "停車",
+    train: "火車",
+    two_wheeler: "機車／腳踏車",
+    shopping_bag: "購物袋",
+    shopping_cart: "購物車",
+    payments: "付款",
+    home: "居家",
+    movie: "電影／娛樂",
+    receipt_long: "帳單／收據",
+    flight_takeoff: "飛行／旅遊",
+    fitness_center: "健身／健康",
+    school: "學校／學習",
+    category: "分類",
+    sell: "出售",
+    pets: "寵物",
+    child_care: "育兒",
+    label: "標籤",
+    work: "工作",
+    savings: "儲蓄",
+    card_giftcard: "禮物卡",
+    local_offer: "優惠",
+    star: "星星",
+    favorite: "最愛",
+  };
+  function iconLabelZh(name) {
+    const n = String(name || "");
+    return ICON_NAME_ZH[n] || n.replace(/_/g, " ");
+  }
   const DEFAULT_INCOME_CATEGORIES = ["薪水", "獎金", "回饋", "交易"];
   const DEFAULT_INCOME_ICONS = {
     薪水: "account_balance_wallet",
@@ -3457,8 +3718,8 @@ const STORAGE_KEY = "stitch_transactions";
     "favorite",
   ];
 
-  /** 自訂類別彈窗可選的 Material 圖示（精簡一組常用） */
-  const CUSTOM_CATEGORY_ICON_CHOICES = [
+  /** 自訂類別彈窗：原有 13 個 + 生活場景約 120 個（Material Symbols 名稱，與上方不重複） */
+  const CUSTOM_CATEGORY_ICON_CHOICES_BASE = [
     "label",
     "category",
     "sell",
@@ -3473,6 +3734,129 @@ const STORAGE_KEY = "stitch_transactions";
     "star",
     "favorite",
   ];
+  const CUSTOM_CATEGORY_ICON_CHOICES_EXTRA = [
+    "restaurant",
+    "ramen_dining",
+    "icecream",
+    "egg_alt",
+    "liquor",
+    "wine_bar",
+    "local_bar",
+    "takeaway_dining",
+    "set_meal",
+    "rice_bowl",
+    "brunch_dining",
+    "outdoor_grill",
+    "soup_kitchen",
+    "emoji_food_beverage",
+    "free_breakfast",
+    "lunch_dining",
+    "dinner_dining",
+    "local_cafe",
+    "bakery_dining",
+    "restaurant_menu",
+    "directions_subway",
+    "flight",
+    "electric_scooter",
+    "electric_car",
+    "local_taxi",
+    "airport_shuttle",
+    "pedal_bike",
+    "motorcycle",
+    "sailing",
+    "tram",
+    "directions_car",
+    "local_gas_station",
+    "local_parking",
+    "train",
+    "two_wheeler",
+    "store",
+    "storefront",
+    "shopping_bag",
+    "checkroom",
+    "watch",
+    "styler",
+    "diamond",
+    "chair",
+    "bed",
+    "single_bed",
+    "shower",
+    "kitchen",
+    "door_front",
+    "window",
+    "thermostat_auto",
+    "water_drop",
+    "cleaning_services",
+    "handyman",
+    "build",
+    "construction",
+    "plumbing",
+    "electrical_services",
+    "carpenter",
+    "local_hospital",
+    "medication",
+    "medical_services",
+    "monitor_heart",
+    "spa",
+    "self_improvement",
+    "psychology",
+    "vaccine",
+    "dentist",
+    "elderly",
+    "pregnant_woman",
+    "sports_esports",
+    "theater_comedy",
+    "music_note",
+    "library_music",
+    "live_tv",
+    "podcasts",
+    "celebration",
+    "festival",
+    "menu_book",
+    "science",
+    "biotech",
+    "calculate",
+    "edit_note",
+    "school",
+    "account_balance",
+    "credit_score",
+    "point_of_sale",
+    "request_quote",
+    "currency_bitcoin",
+    "real_estate_agent",
+    "atm",
+    "park",
+    "forest",
+    "wb_sunny",
+    "thunderstorm",
+    "ac_unit",
+    "recycling",
+    "compost",
+    "energy_savings_leaf",
+    "groups",
+    "diversity_3",
+    "boy",
+    "support_agent",
+    "face_retouching_natural",
+    "phone_iphone",
+    "laptop_mac",
+    "tablet_mac",
+    "headphones",
+    "mic",
+    "videocam",
+    "photo_camera",
+    "print",
+    "router",
+    "key",
+    "lock",
+    "inbox",
+    "mail",
+    "map",
+    "place",
+    "explore",
+    "flag",
+  ];
+  const CUSTOM_CATEGORY_ICON_CHOICES = CUSTOM_CATEGORY_ICON_CHOICES_BASE.concat(CUSTOM_CATEGORY_ICON_CHOICES_EXTRA);
 
   /** 新增「收入類型」時可選圖示（含預設收入圖示） */
   const INCOME_CUSTOM_ICON_CHOICES = [
@@ -4722,8 +5106,29 @@ const STORAGE_KEY = "stitch_transactions";
     const sel = String(selected || "category");
     return ICON_PICKLIST.map(
       (name) =>
-        `<option value="${name}" ${name === sel ? "selected" : ""}>${name.replace(/_/g, " ")}</option>`
+        `<option value="${name}" ${name === sel ? "selected" : ""}>${iconLabelZh(name)}</option>`
     ).join("");
+  }
+
+  function resolveShortcutIcon(pickId, parent, icons) {
+    const o = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
+    if (o[pickId]) return o[pickId];
+    if (o[parent]) return o[parent];
+    const row = EXPENSE_CATEGORY_SHORTCUTS.find((r) => r.pickId === pickId);
+    if (row) return row.defaultIcon;
+    return DEFAULT_CAT_ICONS[parent] || "category";
+  }
+
+  async function applyExpenseGridIconsFromStorage() {
+    if (!categoryGrid) return;
+    const icons = await readCatIconsFull();
+    categoryGrid.querySelectorAll(".category-cell:not(.category-cell-custom)").forEach((cell) => {
+      const pickId = cell.getAttribute("data-pick-id");
+      const parent = cell.getAttribute("data-category-value");
+      const span = cell.querySelector(".category-pick-btn .material-symbols-outlined");
+      if (!span || !pickId || !parent) return;
+      span.textContent = resolveShortcutIcon(pickId, parent, icons);
+    });
   }
 
   function openCategoryEditor() {
@@ -4731,24 +5136,24 @@ const STORAGE_KEY = "stitch_transactions";
     categoryEditorOverlay.setAttribute("aria-hidden", "false");
     void readCatIconsFull().then((icons) => {
       categoryEditorDefaultRows.innerHTML = "";
-      DEFAULT_CATEGORIES.forEach((name) => {
-        const iconName = icons[name] || DEFAULT_CAT_ICONS[name] || "category";
-        const row = document.createElement("div");
-        row.className = "flex items-center gap-2 flex-wrap";
-        row.innerHTML = `
-          <span class="w-20 shrink-0 text-sm font-bold text-on-surface">${name}</span>
-          <select class="editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-cat-name="${name.replace(/"/g, "&quot;")}">
+      EXPENSE_CATEGORY_SHORTCUTS.forEach((row) => {
+        const iconName = resolveShortcutIcon(row.pickId, row.parent, icons);
+        const el = document.createElement("div");
+        el.className = "flex items-center gap-2 flex-wrap";
+        el.innerHTML = `
+          <span class="w-[4.5rem] shrink-0 text-sm font-bold text-on-surface">${row.label}</span>
+          <select class="editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-pick-id="${row.pickId.replace(/"/g, "&quot;")}">
             ${iconOptionsHtml(iconName)}
           </select>
         `;
-        categoryEditorDefaultRows.appendChild(row);
+        categoryEditorDefaultRows.appendChild(el);
       });
 
       readCategories().then((cats) => {
         const customs = cats.filter((c) => !DEFAULT_CATEGORIES.includes(c));
         categoryEditorCustomRows.innerHTML = "";
-        customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "category"));
-        if (customs.length === 0) appendCustomEditorRow("", "category");
+        customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "label"));
+        if (customs.length === 0) appendCustomEditorRow("", "label");
       });
     });
   }
@@ -4786,8 +5191,8 @@ const STORAGE_KEY = "stitch_transactions";
   async function saveCategoryEditor() {
     const icons = { ...(await readCatIconsFull()) };
     categoryEditorDefaultRows.querySelectorAll(".editor-def-icon").forEach((sel) => {
-      const n = sel.getAttribute("data-cat-name");
-      if (n) icons[n] = sel.value;
+      const pid = sel.getAttribute("data-pick-id");
+      if (pid) icons[pid] = sel.value;
     });
 
     const customNames = [];
@@ -5076,6 +5481,7 @@ const STORAGE_KEY = "stitch_transactions";
     renderCategorySelect(cats);
     selectedCategory = categorySelect.value || "其他";
     await renderDynamicCategoryCells();
+    await applyExpenseGridIconsFromStorage();
     syncPickIdFromSelect();
   }
 
@@ -5428,14 +5834,14 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const mzh = monthZh(d.getMonth() + 1);
         const num = r.invoiceNumber ? `${mzh} ${escapeHtml(r.invoiceNumber)}` : mzh + " · 無號碼";
         return `
-          <div class="flex gap-3 px-4 py-3 items-start" data-id="${escapeHtml(r.id)}">
-            <div class="text-2xl font-extrabold text-on-surface-variant w-8 shrink-0 text-center">${day}</div>
-            <div class="flex-1 min-w-0">
+          <div class="flex gap-2 sm:gap-3 px-3 sm:px-4 py-3 items-start min-w-0 w-full max-w-full overflow-hidden" data-id="${escapeHtml(r.id)}">
+            <div class="text-xl sm:text-2xl font-extrabold text-on-surface-variant w-7 sm:w-8 shrink-0 text-center">${day}</div>
+            <div class="flex-1 min-w-0 overflow-hidden">
               <p class="font-bold text-secondary truncate">${escapeHtml(r.storeName || "未命名店家")}</p>
-              <p class="text-xs text-on-surface-variant mt-0.5">${num}</p>
-              <span class="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-invoice-blue border border-blue-100">${escapeHtml(r.carrierTag || "手機條碼")}</span>
+              <p class="text-xs text-on-surface-variant mt-0.5 break-all line-clamp-2">${num}</p>
+              <span class="inline-block mt-1 max-w-full truncate text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-invoice-blue border border-blue-100">${escapeHtml(r.carrierTag || "手機條碼")}</span>
             </div>
-            <div class="font-extrabold text-on-surface shrink-0">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
+            <div class="font-extrabold text-on-surface shrink-0 text-sm sm:text-base tabular-nums text-right whitespace-nowrap">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
             <button type="button" class="inv-del-btn p-1 text-on-surface-variant hover:text-red-600 shrink-0" data-id="${escapeHtml(r.id)}" aria-label="刪除">
               <span class="material-symbols-outlined text-xl">delete</span>
             </button>
@@ -6270,7 +6676,10 @@ const BUDGET_KEY = "stitch_monthly_budget";
       localStorage.setItem("stitch_display_name", name);
     }
     document.getElementById("profile-display-name").textContent = name;
-    alert("名稱已儲存，返回首頁即可看到更新後的問候語。");
+    try {
+      window.dispatchEvent(new CustomEvent("stitch:display-name:updated", { detail: { displayName: name } }));
+    } catch (e) {}
+    alert("名稱已儲存。");
   });
 
   document.getElementById("budget-amount-input")?.addEventListener("keydown", (e) => {
@@ -6307,7 +6716,6 @@ const BUDGET_KEY = "stitch_monthly_budget";
     const spentEl = document.getElementById("profile-budget-spent");
     const leftEl = document.getElementById("profile-budget-left");
     const barEl = document.getElementById("profile-budget-bar");
-    const hintEl = document.getElementById("profile-budget-hint-text");
 
     spentEl.textContent = "$" + formatMoney(spent);
 
@@ -6315,7 +6723,6 @@ const BUDGET_KEY = "stitch_monthly_budget";
       capEl.textContent = "未設定";
       leftEl.textContent = "—";
       barEl.style.width = "0%";
-      hintEl.textContent = "尚未設定本月預算，首頁將顯示「本月累計支出」。";
       document.getElementById("budget-amount-input").placeholder = "輸入金額以啟用";
       return;
     }
@@ -6325,11 +6732,6 @@ const BUDGET_KEY = "stitch_monthly_budget";
     leftEl.textContent = "$" + formatMoney(left);
     const pct = Math.min(100, Math.round((spent / budget) * 100));
     barEl.style.width = pct + "%";
-    if (spent <= budget) {
-      hintEl.textContent = "本月已使用約 " + pct + "% 預算，繼續保持理性消費。";
-    } else {
-      hintEl.textContent = "本月支出已超過預算，可檢視明細或調整預算。";
-    }
     document.getElementById("budget-amount-input").value = String(Math.round(budget));
   }
 
