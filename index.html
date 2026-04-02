@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>私人帳本</title>
 <meta name="theme-color" content="#725638" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="format-detection" content="telephone=no" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icon.png" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -672,6 +674,38 @@ body {
             color: #fdd6af !important;
             border-radius: 9999px !important;
         }
+        /* 自訂類別圖示：連字 + 每格強制裁切，避免連字失效時英文詞溢出疊到鄰格（如出現怪字） */
+        #custom-category-icon-picker {
+            line-height: 0;
+        }
+        #custom-category-icon-picker .custom-icon-choice {
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            contain: layout paint;
+        }
+        #custom-category-icon-picker .custom-icon-choice .material-symbols-outlined {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 1.35rem;
+            height: 1.35rem;
+            max-width: 1.35rem;
+            max-height: 1.35rem;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: block;
+            font-size: 1.35rem;
+            line-height: 1;
+            text-align: center;
+            font-feature-settings: "liga" 1;
+            font-variant-ligatures: common-ligatures;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            pointer-events: none;
+        }
 
 /* --- invoice --- */
 body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -985,9 +1019,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="交通" aria-selected="false">
           交通
         </button>
-<button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="餐飲" aria-selected="false">
-          餐飲
-        </button>
 <button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="住家" aria-selected="false">
           住家
         </button>
@@ -1151,8 +1182,8 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 <span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">晚餐</span>
 </div>
-<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="餐飲" data-pick-id="food_cafe">
-<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="咖啡，餐飲">
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_cafe">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="咖啡，飲食">
 <span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">local_cafe</span>
 </button>
 <span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">咖啡</span>
@@ -1181,8 +1212,8 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 <span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">購物</span>
 </div>
-<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="餐飲" data-pick-id="shop_mart">
-<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="超市，購物">
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="shop_mart">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="超市，飲食">
 <span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">shopping_cart</span>
 </button>
 <span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">超市</span>
@@ -1288,6 +1319,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <p class="text-[10px] text-on-surface-variant mt-1 hidden" id="invoice-seller-tax-hint"></p>
 </div>
 <button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
+<p id="invoice-lottery-result" class="text-sm font-semibold text-on-surface text-center hidden" role="status" aria-live="polite"></p>
 </div>
 <div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
 <h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
@@ -1423,7 +1455,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">圖示</p>
 <div class="flex flex-wrap gap-2" id="custom-category-icon-picker" role="group" aria-label="選擇類別圖示"></div>
 </div>
-<p class="text-[10px] text-on-surface-variant leading-relaxed">名稱欄按 Enter 可儲存；亦可 ⌘Enter／Ctrl+Enter。</p>
+<p class="text-[10px] text-on-surface-variant leading-relaxed">名稱欄按 Enter 可儲存。</p>
 </div>
 <div class="shrink-0 grid grid-cols-2 gap-3 px-6 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
 <button type="button" class="py-4 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-95 transition-transform" id="custom-category-cancel-btn">取消</button>
@@ -1903,7 +1935,7 @@ function __stitchBuildBridge() {
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
   const USER_AVATAR_KEY = "userAvatar";
-  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "餐飲", "住家", "服飾"];
+  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾"];
   const DEFAULT_INCOME_CATEGORIES = ["薪水", "獎金", "回饋", "交易"];
 
   function safeParseJson(raw) {
@@ -1920,6 +1952,7 @@ function __stitchBuildBridge() {
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
     if (x === "其他") return "住家";
+    if (x === "餐飲") return "飲食";
     return x;
   }
   function normalizeCategories(list) {
@@ -2275,6 +2308,234 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   });
 }
+
+/**
+ * 統一發票對獎：抓取第三方 JSON（invoice.98goto.com）並比對備註／發票欄位中的發票號碼。
+ * 依交易日期推算期別（ROC 年 + 雙月期別），與開獎資料比對後回傳中文說明。
+ */
+(function (global) {
+  "use strict";
+
+  var LOTTERY_URL = "https://invoice.98goto.com/api/echo_json";
+  var CACHE_MS = 6 * 60 * 60 * 1000;
+  var memoryCache = { at: 0, list: null };
+
+  var PRIZE_AMOUNTS = {
+    特別獎: 10000000,
+    特獎: 2000000,
+    頭獎: 200000,
+    二獎: 40000,
+    三獎: 10000,
+    四獎: 4000,
+    五獎: 1000,
+    六獎: 200,
+  };
+
+  /** 西元 YYYY-MM-DD → 期別鍵：ROC3位 + 期別2位（1～2月=01…11～12月=06） */
+  function ymdToInvTermKey(ymd) {
+    var m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return null;
+    var y = Number(m[1]);
+    var mo = Number(m[2]);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || mo < 1 || mo > 12) return null;
+    var roc = y - 1911;
+    var period = Math.ceil(mo / 2);
+    return String(roc).padStart(3, "0") + String(period).padStart(2, "0");
+  }
+
+  function normalizeRocPeriodKey(roc, monthStart) {
+    var p = Math.ceil(Number(monthStart) / 2);
+    return String(roc).padStart(3, "0") + String(p).padStart(2, "0");
+  }
+
+  /** 從 API 標題「115年 01~02月」取得期別鍵 */
+  function parsePeriodTitle(title) {
+    var t = String(title || "").replace(/<[^>]+>/g, " ");
+    var m = t.match(/(\d{2,3})\s*年\s*(\d{1,2})\s*[~～]\s*(\d{1,2})\s*月/);
+    if (!m) return null;
+    var roc = Number(m[1]);
+    var m1 = Number(m[2]);
+    return normalizeRocPeriodKey(roc, m1);
+  }
+
+  function concatDigits(htmlSlice) {
+    return String(htmlSlice || "").replace(/[^0-9]/g, "");
+  }
+
+  function parsePrizeBlock(html) {
+    var special = "";
+    var grand = "";
+    var first = [];
+    var m0 = html.match(/特別獎[^0-9]*<span[^>]*>([0-9]{8})<\/span>/);
+    if (m0) special = m0[1];
+    var i特 = html.indexOf("特獎");
+    var i頭 = html.indexOf("頭獎");
+    if (i特 >= 0 && i頭 > i特) {
+      var chunk = html.slice(i特, i頭);
+      var d = concatDigits(chunk);
+      if (d.length >= 8) grand = d.slice(0, 8);
+      var re = /([0-9]{2,5})<span[^>]*class="red"[^>]*>([0-9]{3})<\/span>/g;
+      var mm;
+      while ((mm = re.exec(chunk))) {
+        var n = (mm[1] + mm[2]).replace(/\D/g, "");
+        if (n.length === 8) grand = n;
+      }
+    }
+    if (i頭 >= 0) {
+      var tail = html.slice(i頭);
+      var re2 = /([0-9]{2,5})<span[^>]*class="red"[^>]*>([0-9]{3})<\/span>/g;
+      var m2;
+      while ((m2 = re2.exec(tail))) {
+        var num = (m2[1] + m2[2]).replace(/\D/g, "");
+        if (num.length === 8) first.push(num);
+      }
+    }
+    return { special: special, grand: grand, first: first };
+  }
+
+  function flattenApiPayload(data) {
+    var out = [];
+    function push(obj) {
+      if (!obj || !obj.title) return;
+      var key = parsePeriodTitle(obj.title);
+      var prizes = parsePrizeBlock(obj.description || "");
+      if (key && (prizes.special || prizes.grand || (prizes.first && prizes.first.length)))
+        out.push({ invTermKey: key, prizes: prizes });
+    }
+    var i;
+    var arr = data.new || [];
+    for (i = 0; i < arr.length; i++) push(arr[i]);
+    var old = data.old || [];
+    for (i = 0; i < old.length; i++) {
+      var batch = old[i];
+      if (Array.isArray(batch)) {
+        var j;
+        for (j = 0; j < batch.length; j++) push(batch[j]);
+      }
+    }
+    return out;
+  }
+
+  async function loadWinningList() {
+    var now = Date.now();
+    if (memoryCache.list && now - memoryCache.at < CACHE_MS) return memoryCache.list;
+    var res = await fetch(LOTTERY_URL, { cache: "default" });
+    if (!res.ok) throw new Error("fetch");
+    var data = await res.json();
+    var list = flattenApiPayload(data);
+    memoryCache = { at: now, list: list };
+    return list;
+  }
+
+  function matchEightDigits(inv8, row) {
+    var p = row.prizes;
+    if (!inv8 || inv8.length !== 8) return null;
+    if (p.special && inv8 === p.special) return { grade: "特別獎", amount: PRIZE_AMOUNTS.特別獎 };
+    if (p.grand && inv8 === p.grand) return { grade: "特獎", amount: PRIZE_AMOUNTS.特獎 };
+    var i;
+    for (i = 0; i < (p.first || []).length; i++) {
+      if (inv8 === p.first[i]) return { grade: "頭獎", amount: PRIZE_AMOUNTS.頭獎 };
+    }
+    for (i = 0; i < (p.first || []).length; i++) {
+      var h = p.first[i];
+      if (inv8.slice(1) === h.slice(1)) return { grade: "二獎", amount: PRIZE_AMOUNTS.二獎 };
+    }
+    for (i = 0; i < (p.first || []).length; i++) {
+      h = p.first[i];
+      if (inv8.slice(2) === h.slice(2)) return { grade: "三獎", amount: PRIZE_AMOUNTS.三獎 };
+    }
+    for (i = 0; i < (p.first || []).length; i++) {
+      h = p.first[i];
+      if (inv8.slice(3) === h.slice(3)) return { grade: "四獎", amount: PRIZE_AMOUNTS.四獎 };
+    }
+    for (i = 0; i < (p.first || []).length; i++) {
+      h = p.first[i];
+      if (inv8.slice(4) === h.slice(4)) return { grade: "五獎", amount: PRIZE_AMOUNTS.五獎 };
+    }
+    for (i = 0; i < (p.first || []).length; i++) {
+      h = p.first[i];
+      if (inv8.slice(5) === h.slice(5)) return { grade: "六獎", amount: PRIZE_AMOUNTS.六獎 };
+    }
+    return null;
+  }
+
+  function extractInvoicesFromText(text) {
+    var s = String(text || "");
+    var out = [];
+    var re = /\b([A-Za-z]{2})[-\s]?([0-9]{8})\b/g;
+    var m;
+    while ((m = re.exec(s))) {
+      out.push({ letters: m[1].toUpperCase(), digits: m[2], raw: m[1].toUpperCase() + m[2] });
+    }
+    return out;
+  }
+
+  function formatAmount(n) {
+    return Number(n).toLocaleString("zh-Hant-TW");
+  }
+
+  function formatResult(inv, hit) {
+    if (hit)
+      return (
+        "恭喜中獎：" +
+        hit.grade +
+        "，獎金新台幣 " +
+        formatAmount(hit.amount) +
+        " 元（發票 " +
+        inv +
+        "）。"
+      );
+    return "未中獎（發票 " + inv + "）。";
+  }
+
+  /**
+   * @param {{ invoiceRaw?: string, note?: string, bookedDateYmd?: string }} o
+   * @returns {Promise<string>} 一行中文說明
+   */
+  async function checkInvoice(o) {
+    var invField = String((o && o.invoiceRaw) || "").trim().toUpperCase().replace(/\s+/g, "");
+    var note = String((o && o.note) || "");
+    var ymd = (o && o.bookedDateYmd) || "";
+    var combined = [invField, note].filter(Boolean).join(" ");
+    var codes = extractInvoicesFromText(combined);
+    if (codes.length === 0) return "";
+
+    var termKey = ymdToInvTermKey(ymd);
+    if (!termKey) return "無法對獎：請確認記帳日期。";
+
+    var list;
+    try {
+      list = await loadWinningList();
+    } catch (e) {
+      return "無法取得開獎資料（請連線後再試）。";
+    }
+
+    var row = null;
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].invTermKey === termKey) {
+        row = list[i];
+        break;
+      }
+    }
+    if (!row) return "本期（期別 " + termKey + "）尚無開獎資料或未收錄。";
+
+    var lines = [];
+    for (i = 0; i < codes.length; i++) {
+      var d = codes[i].digits;
+      var hit = matchEightDigits(d, row);
+      lines.push(formatResult(codes[i].raw, hit));
+    }
+    return lines.join(" ");
+  }
+
+  global.StitchLottery = {
+    checkInvoice: checkInvoice,
+    ymdToInvTermKey: ymdToInvTermKey,
+    extractInvoicesFromText: extractInvoicesFromText,
+    LOTTERY_DATA_URL: LOTTERY_URL,
+  };
+})(typeof window !== "undefined" ? window : globalThis);
 
 (function stitchPage_home() {
 "use strict";
@@ -2658,11 +2919,11 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   function categoryPalette(category) {
-    const c = String(category || "住家").trim() || "住家";
+    let c = String(category || "住家").trim() || "住家";
+    if (c === "餐飲") c = "飲食";
     const palette = {
       "飲食": { dot: "#fb923c", fill: "#fff7ed", label: "飲食" },
       "交通": { dot: "#3b82f6", fill: "#eff6ff", label: "交通" },
-      "餐飲": { dot: "#ea580c", fill: "#fff7ed", label: "餐飲" },
       "住家": { dot: "#64748b", fill: "#f8fafc", label: "住家" },
       "服飾": { dot: "#a855f7", fill: "#faf5ff", label: "服飾" },
       "購物": { dot: "#8b5cf6", fill: "#f5f3ff", label: "購物" },
@@ -2900,11 +3161,10 @@ const STORAGE_KEY = "stitch_transactions";
   const CATEGORIES_KEY = "stitch_categories";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
-  const DEFAULT_CATEGORIES = ["飲食", "交通", "餐飲", "住家", "服飾"];
+  const DEFAULT_CATEGORIES = ["飲食", "交通", "住家", "服飾"];
   const DEFAULT_CAT_ICONS = {
     飲食: "restaurant_menu",
     交通: "directions_bus",
-    餐飲: "ramen_dining",
     住家: "home",
     服飾: "checkroom",
     購物: "shopping_bag",
@@ -2949,6 +3209,7 @@ const STORAGE_KEY = "stitch_transactions";
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
     if (x === "其他") return "住家";
+    if (x === "餐飲") return "飲食";
     return x;
   }
   function normalizeCategoriesLocal(list) {
@@ -3025,7 +3286,12 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
-  const MATERIAL_ICON_ALIASES = { vaccine: "syringe", emoji_food_beverage: "fastfood" };
+  const MATERIAL_ICON_ALIASES = {
+    vaccine: "medical_services",
+    vaccines: "medical_services",
+    syringe: "medical_services",
+    emoji_food_beverage: "fastfood",
+  };
   function normalizeMaterialIcon(name) {
     const raw = String(name || "").trim();
     if (!raw) return "label";
@@ -3285,11 +3551,11 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   function categoryMeta(category) {
-    const c = String(category || "住家").trim() || "住家";
+    let c = String(category || "住家").trim() || "住家";
+    if (c === "餐飲") c = "飲食";
     const map = {
       飲食: { label: "飲食", dot: "#fb923c", pillBg: "#fff7ed", pillText: "#9a3412" },
       交通: { label: "交通", dot: "#3b82f6", pillBg: "#eff6ff", pillText: "#1d4ed8" },
-      餐飲: { label: "餐飲", dot: "#ea580c", pillBg: "#fff7ed", pillText: "#9a3412" },
       住家: { label: "住家", dot: "#64748b", pillBg: "#f8fafc", pillText: "#334155" },
       服飾: { label: "服飾", dot: "#a855f7", pillBg: "#faf5ff", pillText: "#6b21a8" },
       購物: { label: "購物", dot: "#8b5cf6", pillBg: "#f5f3ff", pillText: "#6d28d9" },
@@ -3444,7 +3710,9 @@ const STORAGE_KEY = "stitch_transactions";
     if (activeCategoryFilter) {
       filtered = filtered.filter((item) => {
         const cat = String(item.category || "");
-        return cat.includes(activeCategoryFilter);
+        if (cat.includes(activeCategoryFilter)) return true;
+        if (activeCategoryFilter === "飲食" && cat === "餐飲") return true;
+        return false;
       });
     }
 
@@ -3662,8 +3930,19 @@ const STORAGE_KEY = "stitch_transactions";
       alert("儲存失敗，請重試。");
       return;
     }
+    let lotteryLine = "";
+    if (editTxFlow === "expense" && typeof StitchLottery !== "undefined" && StitchLottery) {
+      try {
+        lotteryLine = await StitchLottery.checkInvoice({
+          invoiceRaw: item.invoiceNumber ? String(item.invoiceNumber) : "",
+          note: note,
+          bookedDateYmd: ymd,
+        });
+      } catch (e) {}
+    }
     closeEditTransaction();
     await renderTransactions();
+    if (lotteryLine) alert(lotteryLine);
   });
 
   searchInput?.addEventListener("input", () => {
@@ -3691,11 +3970,10 @@ const STORAGE_KEY = "stitch_transactions";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
   /** 支出主分類（寫入交易／圓餅圖） */
-  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "餐飲", "住家", "服飾"];
+  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾"];
   const DEFAULT_CAT_ICONS = {
     飲食: "restaurant_menu",
     交通: "directions_bus",
-    餐飲: "ramen_dining",
     住家: "home",
     服飾: "checkroom",
   };
@@ -3704,12 +3982,12 @@ const STORAGE_KEY = "stitch_transactions";
     { pickId: "food_breakfast", label: "早餐", parent: "飲食", defaultIcon: "free_breakfast" },
     { pickId: "food_lunch", label: "午餐", parent: "飲食", defaultIcon: "lunch_dining" },
     { pickId: "food_dinner", label: "晚餐", parent: "飲食", defaultIcon: "dinner_dining" },
-    { pickId: "food_cafe", label: "咖啡", parent: "餐飲", defaultIcon: "local_cafe" },
+    { pickId: "food_cafe", label: "咖啡", parent: "飲食", defaultIcon: "local_cafe" },
     { pickId: "trans_bus", label: "交通", parent: "交通", defaultIcon: "directions_bus" },
     { pickId: "trans_gas", label: "加油", parent: "交通", defaultIcon: "local_gas_station" },
     { pickId: "trans_park", label: "停車", parent: "交通", defaultIcon: "local_parking" },
     { pickId: "shop_bag", label: "購物", parent: "服飾", defaultIcon: "shopping_bag" },
-    { pickId: "shop_mart", label: "超市", parent: "餐飲", defaultIcon: "shopping_cart" },
+    { pickId: "shop_mart", label: "超市", parent: "飲食", defaultIcon: "shopping_cart" },
     { pickId: "misc_movie", label: "娛樂", parent: "服飾", defaultIcon: "movie" },
     { pickId: "misc_bill", label: "帳單", parent: "住家", defaultIcon: "receipt_long" },
     { pickId: "misc_home", label: "居家", parent: "住家", defaultIcon: "home" },
@@ -3717,51 +3995,111 @@ const STORAGE_KEY = "stitch_transactions";
     { pickId: "misc_health", label: "健康", parent: "服飾", defaultIcon: "fitness_center" },
     { pickId: "misc_school", label: "學習", parent: "住家", defaultIcon: "school" },
   ];
+  function slugPickId(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "custom_" + h.toString(36);
+  }
   const DEFAULT_SHORTCUT_PARENT_MAP = Object.fromEntries(
     EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent)])
   );
   function migrateToParentGroup(name) {
     const x = String(name || "").trim();
     if (EXPENSE_PARENT_GROUPS.includes(x)) return x;
-    const legacy = { 飲食: "飲食", 交通: "交通", 購物: "服飾", 其他: "住家" };
+    const legacy = { 飲食: "飲食", 交通: "交通", 餐飲: "飲食", 購物: "服飾", 其他: "住家" };
     return legacy[x] || "飲食";
   }
-  /** 自訂分類名稱不變；僅遷移舊版預設「購物／其他」字串 */
+  /** 自訂分類名稱不變；僅遷移舊版預設「購物／其他／餐飲」字串 */
   function migrateListedCategoryName(name) {
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
     if (x === "其他") return "住家";
+    if (x === "餐飲") return "飲食";
     return x;
   }
-  function buildFullShortcutParentMap(stored) {
+  function buildFullShortcutParentMap(stored, customCategoryNames) {
     const s = stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
     const out = {};
     for (const r of EXPENSE_CATEGORY_SHORTCUTS) {
       out[r.pickId] = migrateToParentGroup(s[r.pickId] != null ? s[r.pickId] : DEFAULT_SHORTCUT_PARENT_MAP[r.pickId]);
+    }
+    const customs = Array.isArray(customCategoryNames) ? customCategoryNames : [];
+    for (const nm of customs) {
+      const n = String(nm || "").trim();
+      if (!n) continue;
+      const pid = slugPickId(n);
+      const defParent = "飲食";
+      out[pid] = migrateToParentGroup(s[pid] != null ? s[pid] : defParent);
     }
     return out;
   }
   /** 圖示下拉選單顯示中文（value 仍為 Material Symbols 名稱） */
   const ICON_NAME_ZH = {
     restaurant_menu: "餐廳／菜單",
+    restaurant: "餐廳",
+    ramen_dining: "拉麵",
+    icecream: "冰淇淋",
+    egg_alt: "蛋料理",
+    liquor: "烈酒",
+    wine_bar: "紅酒／酒吧",
+    local_bar: "酒吧",
+    takeaway_dining: "外帶",
+    set_meal: "套餐",
+    rice_bowl: "飯碗",
+    brunch_dining: "早午餐",
+    outdoor_grill: "戶外烤肉",
+    soup_kitchen: "湯品",
     free_breakfast: "早餐",
     lunch_dining: "午餐",
     dinner_dining: "晚餐",
     local_cafe: "咖啡廳",
     bakery_dining: "烘焙",
     directions_bus: "公車",
+    directions_subway: "捷運",
     directions_car: "汽車",
     local_gas_station: "加油站",
     local_parking: "停車",
+    local_taxi: "計程車",
+    airport_shuttle: "機場接駁",
     train: "火車",
+    tram: "路面電車",
     two_wheeler: "機車／腳踏車",
+    electric_scooter: "電動滑板車",
+    electric_car: "電動車",
+    pedal_bike: "腳踏車",
+    motorcycle: "機車",
+    sailing: "帆船",
+    flight: "飛機",
+    flight_takeoff: "飛行／旅遊",
     shopping_bag: "購物袋",
     shopping_cart: "購物車",
+    store: "商店",
+    storefront: "店面",
+    checkroom: "服飾／試衣",
+    watch: "手錶",
+    styler: "造型",
+    diamond: "珠寶",
     payments: "付款",
     home: "居家",
+    chair: "椅子",
+    bed: "床鋪",
+    single_bed: "單人床",
+    shower: "淋浴",
+    kitchen: "廚房",
+    door_front: "門",
+    window: "窗戶",
+    thermostat_auto: "恆溫",
+    water_drop: "用水",
+    cleaning_services: "清潔",
+    handyman: "修繕",
+    build: "營建",
+    construction: "工程",
+    plumbing: "水電管線",
+    electrical_services: "電工",
+    carpenter: "木工",
     movie: "電影／娛樂",
     receipt_long: "帳單／收據",
-    flight_takeoff: "飛行／旅遊",
     fitness_center: "健身／健康",
     school: "學校／學習",
     category: "分類",
@@ -3777,15 +4115,84 @@ const STORAGE_KEY = "stitch_transactions";
     favorite: "最愛",
     syringe: "針筒／疫苗",
     fastfood: "速食",
+    pill: "藥丸／藥品",
+    science: "科學",
+    local_hospital: "醫院",
+    medical_services: "醫療",
+    monitor_heart: "心率",
+    spa: "SPA",
+    self_improvement: "進修",
+    psychology: "心理",
+    dentist: "牙醫",
+    elderly: "長照",
+    pregnant_woman: "孕婦",
+    sports_esports: "電競",
+    theater_comedy: "喜劇",
+    music_note: "音樂",
+    library_music: "樂譜",
+    live_tv: "電視",
+    podcasts: "播客",
+    celebration: "慶祝",
+    festival: "節慶",
+    menu_book: "菜單本",
+    calculate: "計算",
+    edit_note: "筆記",
+    account_balance: "帳戶",
+    credit_score: "信用",
+    point_of_sale: "收銀",
+    request_quote: "詢價",
+    currency_bitcoin: "加密貨幣",
+    real_estate_agent: "房仲",
+    atm: "ATM",
+    park: "公園",
+    forest: "森林",
+    wb_sunny: "晴天",
+    thunderstorm: "雷雨",
+    ac_unit: "冷氣",
+    recycling: "回收",
+    compost: "堆肥",
+    energy_savings_leaf: "節能",
+    groups: "群組",
+    diversity_3: "多元",
+    boy: "兒童",
+    support_agent: "客服",
+    face_retouching_natural: "人像",
+    phone_iphone: "手機",
+    laptop_mac: "筆電",
+    tablet_mac: "平板",
+    headphones: "耳機",
+    mic: "麥克風",
+    videocam: "攝影機",
+    photo_camera: "相機",
+    print: "列印",
+    router: "路由器",
+    key: "鑰匙",
+    lock: "鎖",
+    inbox: "收件匣",
+    mail: "郵件",
+    map: "地圖",
+    place: "地點",
+    explore: "探索",
+    flag: "旗標",
+    account_balance_wallet: "錢包",
+    redeem: "兌換",
+    currency_exchange: "匯率",
+    trending_up: "走勢向上",
+    attach_money: "金額",
   };
   function iconLabelZh(name) {
-    const n = String(name || "");
-    return ICON_NAME_ZH[n] || n.replace(/_/g, " ");
+    const n = String(name || "").trim();
+    if (!n) return "圖示";
+    return ICON_NAME_ZH[n] || "圖示";
   }
   /** 少數圖示在 Material Symbols 字體會錯誤顯示成英文字串，改為別名 */
   const MATERIAL_ICON_ALIASES = {
-    vaccine: "syringe",
+    vaccine: "medical_services",
     emoji_food_beverage: "fastfood",
+    biotech: "science",
+    medication: "pill",
+    vaccines: "medical_services",
+    syringe: "medical_services",
   };
   function normalizeMaterialIcon(name) {
     const raw = String(name || "").trim();
@@ -3832,7 +4239,7 @@ const STORAGE_KEY = "stitch_transactions";
     "local_offer",
     "star",
     "favorite",
-    "syringe",
+    "medical_services",
     "fastfood",
   ];
 
@@ -3912,13 +4319,12 @@ const STORAGE_KEY = "stitch_transactions";
     "electrical_services",
     "carpenter",
     "local_hospital",
-    "medication",
+    "pill",
     "medical_services",
     "monitor_heart",
     "spa",
     "self_improvement",
     "psychology",
-    "syringe",
     "dentist",
     "elderly",
     "pregnant_woman",
@@ -3932,7 +4338,6 @@ const STORAGE_KEY = "stitch_transactions";
     "festival",
     "menu_book",
     "science",
-    "biotech",
     "calculate",
     "edit_note",
     "school",
@@ -4010,6 +4415,23 @@ const STORAGE_KEY = "stitch_transactions";
     "label",
     "category",
   ];
+  const INCOME_EDITOR_ICON_PICKLIST = (() => {
+    const seen = new Set();
+    const out = [];
+    for (const name of ICON_PICKLIST) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        out.push(name);
+      }
+    }
+    for (const name of INCOME_CUSTOM_ICON_CHOICES) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        out.push(name);
+      }
+    }
+    return out;
+  })();
 
   let amountInput = "";
   /** 編輯分類：已隱藏之捷徑 pickId（存檔前僅存在記憶體） */
@@ -4123,7 +4545,7 @@ const STORAGE_KEY = "stitch_transactions";
       return pick(["服飾", "住家"]);
     }
     if (/超市|量販|全聯|家樂福|momo|網購|購物|百貨|服飾|鞋|化妝|3C/.test(t)) {
-      return pick(["餐飲", "服飾"]);
+      return pick(["飲食", "服飾"]);
     }
     return pick(["住家", "飲食"]);
   }
@@ -4427,6 +4849,19 @@ const STORAGE_KEY = "stitch_transactions";
     lastQrDecoded = "";
   }
 
+  function showInvoiceLotteryResult(msg) {
+    const el = document.getElementById("invoice-lottery-result");
+    if (!el) return;
+    const s = String(msg || "").trim();
+    if (!s) {
+      el.textContent = "";
+      el.classList.add("hidden");
+      return;
+    }
+    el.textContent = s;
+    el.classList.remove("hidden");
+  }
+
   function requestOpenInvoiceQrScanner() {
     if (txFlow !== "expense") setTxFlow("expense");
     openInvoiceQrScanner();
@@ -4585,7 +5020,10 @@ const STORAGE_KEY = "stitch_transactions";
   document.getElementById("nav-invoice-qr-btn")?.addEventListener("click", () => requestOpenInvoiceQrScanner());
   document.getElementById("add-qr-close-btn")?.addEventListener("click", () => closeInvoiceQrScanner());
   document.getElementById("invoice-clear-btn")?.addEventListener("click", () => {
-    if (confirm("清除發票掃描資料（含明細）？")) clearInvoiceScanData();
+    if (confirm("清除發票掃描資料（含明細）？")) {
+      clearInvoiceScanData();
+      showInvoiceLotteryResult("");
+    }
   });
 
   /** 與鍵盤輸入同步顯示（千分位、保留輸入中的小數點狀態） */
@@ -4927,18 +5365,45 @@ const STORAGE_KEY = "stitch_transactions";
     scrollToAmountEntryAfterCategory();
   });
 
-  function slugPickId(name) {
-    const s = String(name).trim();
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return "custom_" + h.toString(36);
-  }
-
   function incomeSlugPickId(name) {
     const s = String(name).trim();
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     return "inc_" + h.toString(36);
+  }
+
+  async function removeExpenseCategoryByName(name) {
+    const n = String(name || "").trim();
+    if (!n) return;
+    if (EXPENSE_PARENT_GROUPS.includes(n)) {
+      alert("預設主分類無法刪除；可在「編輯分類」隱藏捷徑細項。");
+      return;
+    }
+    if (!confirm("從「選擇類別」移除「" + n + "」？已記帳紀錄不會刪除。")) return;
+    const cats = await readCategories();
+    if (!cats.includes(n)) return;
+    const merged = cats.filter((c) => c !== n);
+    const ok = await setCategoriesAll(merged);
+    if (!ok) {
+      alert("無法更新分類，請重試。");
+      return;
+    }
+    const icons = { ...(await readCatIconsFull()) };
+    delete icons[n];
+    await writeCatIconsFull(icons);
+    const raw = await readShortcutParentMapRaw();
+    const pid = slugPickId(n);
+    if (raw[pid] != null || Object.prototype.hasOwnProperty.call(raw, pid)) {
+      const next = { ...raw };
+      delete next[pid];
+      await writeShortcutParentMap(next);
+    }
+    if (selectedCategory === n) {
+      selectedCategory = categorySelect.value || EXPENSE_PARENT_GROUPS[0] || "飲食";
+    }
+    await bootCategories();
+    syncPickIdFromSelect();
+    setTxFlow(txFlow);
   }
 
   async function renderDynamicCategoryCells() {
@@ -4952,9 +5417,21 @@ const STORAGE_KEY = "stitch_transactions";
       const pickId = slugPickId(name);
       const iconName = normalizeMaterialIcon(icons[name] || "label");
       const cell = document.createElement("div");
-      cell.className = "category-cell category-cell-custom flex flex-col items-center gap-2 group";
+      cell.className =
+        "category-cell category-cell-custom relative flex flex-col items-center gap-2 group pt-1";
       cell.setAttribute("data-category-value", name);
       cell.setAttribute("data-pick-id", pickId);
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className =
+        "absolute -top-0 right-0 z-10 min-w-[1.25rem] h-5 px-0.5 rounded-full bg-error-container/95 text-error text-[10px] font-extrabold leading-none border border-error/25 flex items-center justify-center";
+      del.setAttribute("aria-label", "刪除此自訂類別");
+      del.textContent = "×";
+      del.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void removeExpenseCategoryByName(name);
+      });
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className =
@@ -4969,6 +5446,7 @@ const STORAGE_KEY = "stitch_transactions";
       lab.className =
         "category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide";
       lab.textContent = name;
+      cell.appendChild(del);
       cell.appendChild(btn);
       cell.appendChild(lab);
       root.appendChild(cell);
@@ -4998,7 +5476,7 @@ const STORAGE_KEY = "stitch_transactions";
       b.className =
         "custom-icon-choice w-11 h-11 rounded-xl border-2 border-outline-variant/30 bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:bg-secondary-container/40 active:scale-95 transition-all shrink-0";
       b.setAttribute("data-icon-name", iconName);
-      b.setAttribute("aria-label", "圖示 " + iconName.replace(/_/g, " "));
+      b.setAttribute("aria-label", "圖示：" + iconLabelZh(iconName));
       const sp = document.createElement("span");
       sp.className = "material-symbols-outlined text-[1.35rem]";
       sp.setAttribute("aria-hidden", "true");
@@ -5111,7 +5589,9 @@ const STORAGE_KEY = "stitch_transactions";
 
   async function writeShortcutParentMap(map) {
     const o = map && typeof map === "object" && !Array.isArray(map) ? map : {};
-    const full = buildFullShortcutParentMap(o);
+    const cats = await readCategories();
+    const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
+    const full = buildFullShortcutParentMap(o, customs);
     if (isInIframe()) {
       await requestParent("stitch:cfg:shortcutParentMap:set", { map: full });
       return;
@@ -5121,7 +5601,9 @@ const STORAGE_KEY = "stitch_transactions";
 
   async function applyShortcutParentsToGrid() {
     if (!categoryGrid) return;
-    const full = buildFullShortcutParentMap(await readShortcutParentMapRaw());
+    const cats = await readCategories();
+    const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
+    const full = buildFullShortcutParentMap(await readShortcutParentMapRaw(), customs);
     categoryGrid.querySelectorAll(".category-cell:not(.category-cell-custom)").forEach((cell) => {
       const pid = cell.getAttribute("data-pick-id");
       if (pid && full[pid]) cell.setAttribute("data-category-value", full[pid]);
@@ -5351,21 +5833,57 @@ const STORAGE_KEY = "stitch_transactions";
     });
   }
 
-  function renderCategoryEditorParentRows(icons) {
+  function mergeEditorCustomNamesForGrid(savedCustoms) {
+    const a = Array.isArray(savedCustoms) ? [...savedCustoms] : [];
+    if (categoryEditorCustomRows) {
+      categoryEditorCustomRows.querySelectorAll(".custom-cat-name").forEach((inp) => {
+        const v = inp.value?.trim();
+        if (v) a.push(v);
+      });
+    }
+    return Array.from(new Set(a));
+  }
+
+  function gridLineRowsForEditor(customNames) {
+    const rows = EXPENSE_CATEGORY_SHORTCUTS.map((r) => ({ ...r, isCustom: false }));
+    const seen = new Set(rows.map((r) => r.pickId));
+    for (const name of Array.isArray(customNames) ? customNames : []) {
+      const n = String(name || "").trim();
+      if (!n) continue;
+      const pid = slugPickId(n);
+      if (seen.has(pid)) continue;
+      seen.add(pid);
+      rows.push({ pickId: pid, label: n, parent: "飲食", defaultIcon: "label", isCustom: true });
+    }
+    return rows;
+  }
+
+  async function refreshCategoryEditorParentRows() {
+    if (!categoryEditorOverlay || categoryEditorOverlay.classList.contains("hidden")) return;
+    const ic = await readCatIconsFull();
+    const cats = await readCategories();
+    const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
+    renderCategoryEditorParentRows(ic, mergeEditorCustomNamesForGrid(customs));
+  }
+
+  function renderCategoryEditorParentRows(icons, customNames) {
     const defaultRoot = document.getElementById("category-editor-default-rows");
     const hiddenRoot = document.getElementById("category-editor-hidden-rows");
     const hiddenWrap = document.getElementById("category-editor-hidden-wrap");
     if (!defaultRoot || !hiddenRoot || !hiddenWrap) return;
     const hiddenSet = new Set(editorHiddenShortcutIds);
     const ic = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
+    const lineRows = gridLineRowsForEditor(customNames);
     defaultRoot.innerHTML = "";
     hiddenRoot.innerHTML = "";
 
     EXPENSE_PARENT_GROUPS.forEach((parent) => {
       const iconName = resolveShortcutIcon(null, parent, ic);
-      const assigned = EXPENSE_CATEGORY_SHORTCUTS.filter(
-        (r) => !hiddenSet.has(r.pickId) && editorShortcutParentMap[r.pickId] === parent
-      );
+      const assigned = lineRows.filter((r) => {
+        if (editorShortcutParentMap[r.pickId] !== parent) return false;
+        if (!r.isCustom && hiddenSet.has(r.pickId)) return false;
+        return true;
+      });
       const safeParent = parent.replace(/"/g, "&quot;");
       const block = document.createElement("div");
       block.className = "rounded-xl border border-outline-variant/30 bg-white/80 p-3 space-y-2";
@@ -5385,8 +5903,8 @@ const STORAGE_KEY = "stitch_transactions";
       defaultRoot.appendChild(block);
       const addSel = block.querySelector(".editor-add-pick");
       const chipsEl = block.querySelector(".editor-parent-chips");
-      EXPENSE_CATEGORY_SHORTCUTS.forEach((r) => {
-        if (hiddenSet.has(r.pickId)) return;
+      lineRows.forEach((r) => {
+        if (!r.isCustom && hiddenSet.has(r.pickId)) return;
         const opt = document.createElement("option");
         opt.value = r.pickId;
         opt.textContent = r.label;
@@ -5401,8 +5919,9 @@ const STORAGE_KEY = "stitch_transactions";
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
         chip.setAttribute("aria-label", `將「${r.label}」還原為預設主分類`);
         chip.addEventListener("click", () => {
-          editorShortcutParentMap[r.pickId] = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId];
-          void readCatIconsFull().then((fresh) => renderCategoryEditorParentRows(fresh));
+          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食";
+          editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
+          void refreshCategoryEditorParentRows();
         });
         chipsEl.appendChild(chip);
       });
@@ -5411,7 +5930,7 @@ const STORAGE_KEY = "stitch_transactions";
         if (!pid) return;
         editorShortcutParentMap[pid] = parent;
         addSel.value = "";
-        void readCatIconsFull().then((fresh) => renderCategoryEditorParentRows(fresh));
+        void refreshCategoryEditorParentRows();
       });
     });
 
@@ -5435,7 +5954,7 @@ const STORAGE_KEY = "stitch_transactions";
       if (!pid) return;
       editorHiddenShortcutIds = normalizeHiddenShortcutIds([...editorHiddenShortcutIds, pid]);
       hideSel.value = "";
-      void readCatIconsFull().then((fresh) => renderCategoryEditorParentRows(fresh));
+      void refreshCategoryEditorParentRows();
     });
 
     EXPENSE_CATEGORY_SHORTCUTS.forEach((row) => {
@@ -5455,7 +5974,7 @@ const STORAGE_KEY = "stitch_transactions";
         const pid = btn.getAttribute("data-shortcut-pick");
         if (!pid) return;
         editorHiddenShortcutIds = editorHiddenShortcutIds.filter((id) => id !== pid);
-        void readCatIconsFull().then((fresh) => renderCategoryEditorParentRows(fresh));
+        void refreshCategoryEditorParentRows();
       });
     });
   }
@@ -5463,16 +5982,19 @@ const STORAGE_KEY = "stitch_transactions";
   function openCategoryEditor() {
     categoryEditorOverlay.classList.remove("hidden");
     categoryEditorOverlay.setAttribute("aria-hidden", "false");
-    void Promise.all([readCatIconsFull(), readHiddenShortcuts(), readShortcutParentMapRaw()]).then(([icons, hidden, rawMap]) => {
+    void Promise.all([
+      readCatIconsFull(),
+      readHiddenShortcuts(),
+      readShortcutParentMapRaw(),
+      readCategories(),
+    ]).then(([icons, hidden, rawMap, cats]) => {
       editorHiddenShortcutIds = [...hidden];
-      editorShortcutParentMap = buildFullShortcutParentMap(rawMap);
-      renderCategoryEditorParentRows(icons);
-      readCategories().then((cats) => {
-        const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
-        categoryEditorCustomRows.innerHTML = "";
-        customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "label"));
-        if (customs.length === 0) appendCustomEditorRow("", "label");
-      });
+      const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
+      editorShortcutParentMap = buildFullShortcutParentMap(rawMap, customs);
+      categoryEditorCustomRows.innerHTML = "";
+      customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "label"));
+      if (customs.length === 0) appendCustomEditorRow("", "label");
+      renderCategoryEditorParentRows(icons, mergeEditorCustomNamesForGrid(customs));
     });
   }
 
@@ -5502,6 +6024,14 @@ const STORAGE_KEY = "stitch_transactions";
       if (!categoryEditorCustomRows.querySelector(".category-editor-custom-row")) {
         appendCustomEditorRow("", "category");
       }
+      void refreshCategoryEditorParentRows();
+    });
+    const nameInput = row.querySelector(".custom-cat-name");
+    nameInput?.addEventListener("input", () => {
+      void refreshCategoryEditorParentRows();
+    });
+    nameInput?.addEventListener("blur", () => {
+      void refreshCategoryEditorParentRows();
     });
     categoryEditorCustomRows.appendChild(row);
   }
@@ -5556,7 +6086,7 @@ const STORAGE_KEY = "stitch_transactions";
         row.innerHTML = `
           <span class="w-20 shrink-0 text-sm font-bold text-on-surface">${name}</span>
           <select class="income-editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-income-name="${name.replace(/"/g, "&quot;")}">
-            ${iconOptionsHtml(iconName)}
+            ${iconOptionsHtml(iconName, INCOME_EDITOR_ICON_PICKLIST)}
           </select>
         `;
         incomeEditorDefaultRows.appendChild(row);
@@ -5586,7 +6116,7 @@ const STORAGE_KEY = "stitch_transactions";
     row.innerHTML = `
       <input type="text" class="income-custom-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="收入類型名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
       <select class="income-custom-icon px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface min-w-[140px]">
-        ${iconOptionsHtml(iconName)}
+        ${iconOptionsHtml(iconName, INCOME_EDITOR_ICON_PICKLIST)}
       </select>
       <button type="button" class="income-editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
         <span class="material-symbols-outlined text-lg">delete</span>
@@ -5649,7 +6179,10 @@ const STORAGE_KEY = "stitch_transactions";
   editCategoriesBtn?.addEventListener("click", () => openCategoryEditor());
   categoryEditorCloseBtn?.addEventListener("click", () => closeCategoryEditor());
   categoryEditorCancelBtn?.addEventListener("click", () => closeCategoryEditor());
-  categoryEditorAddRowBtn?.addEventListener("click", () => appendCustomEditorRow("", "category"));
+  categoryEditorAddRowBtn?.addEventListener("click", () => {
+    appendCustomEditorRow("", "category");
+    void refreshCategoryEditorParentRows();
+  });
   categoryEditorSaveBtn?.addEventListener("click", async () => {
     await saveCategoryEditor();
   });
@@ -5741,12 +6274,28 @@ const STORAGE_KEY = "stitch_transactions";
       for (const rec of nSave) {
         await addTransaction(rec);
       }
+      let lotteryLine = "";
+      if (typeof StitchLottery !== "undefined" && StitchLottery && invRaw) {
+        try {
+          lotteryLine = await StitchLottery.checkInvoice({
+            invoiceRaw: invRaw,
+            note: [baseNote, "發票 " + invRaw].filter(Boolean).join(" · "),
+            bookedDateYmd: transactionDateYmd,
+          });
+        } catch (e) {}
+      }
+      showInvoiceLotteryResult(lotteryLine);
       clearInvoiceScanData();
       noteInput.value = "";
       transactionDateYmd = ymdFromDate(new Date());
       syncTxDateUi();
       updateAmountDisplay();
-      alert("已依明細儲存 " + nSave.length + " 筆支出（圓餅圖將分類加總）。");
+      alert(
+        "已依明細儲存 " +
+          nSave.length +
+          " 筆支出（圓餅圖將分類加總）。" +
+          (lotteryLine ? "\n\n" + lotteryLine : "")
+      );
       return;
     }
 
@@ -5764,8 +6313,24 @@ const STORAGE_KEY = "stitch_transactions";
 
     const invNote = (document.getElementById("tx-invoice-number")?.value || "").trim();
     let note = (noteInput.value || "").trim();
+    let noteForLottery = note;
     if (flow === "expense" && invNote) {
-      note = [note, "發票 " + invNote.toUpperCase()].filter(Boolean).join(" · ");
+      noteForLottery = [note, "發票 " + invNote.toUpperCase()].filter(Boolean).join(" · ");
+      note = noteForLottery;
+    }
+
+    let lotteryLine = "";
+    if (flow === "expense" && typeof StitchLottery !== "undefined" && StitchLottery) {
+      try {
+        lotteryLine = await StitchLottery.checkInvoice({
+          invoiceRaw: invNote,
+          note: noteForLottery,
+          bookedDateYmd: transactionDateYmd,
+        });
+      } catch (e) {}
+      showInvoiceLotteryResult(lotteryLine);
+    } else {
+      showInvoiceLotteryResult("");
     }
 
     const record = {
@@ -5791,7 +6356,8 @@ const STORAGE_KEY = "stitch_transactions";
     transactionDateYmd = ymdFromDate(new Date());
     syncTxDateUi();
     updateAmountDisplay();
-    alert(flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。");
+    const baseMsg = flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。";
+    alert(baseMsg + (lotteryLine ? "\n\n" + lotteryLine : ""));
   }
 
   async function bootCategories() {
