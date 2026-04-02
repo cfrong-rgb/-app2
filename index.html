@@ -4002,13 +4002,17 @@ const STORAGE_KEY = "stitch_transactions";
     return "custom_" + h.toString(36);
   }
   const DEFAULT_SHORTCUT_PARENT_MAP = Object.fromEntries(
-    EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent)])
+    EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent, [])])
   );
-  function migrateToParentGroup(name) {
+  /** knownCategoryNames：含自訂類別時，細項主分類可為該名稱本身（如「育兒」） */
+  function migrateToParentGroup(name, knownCategoryNames) {
     const x = String(name || "").trim();
+    if (!x) return "飲食";
     if (EXPENSE_PARENT_GROUPS.includes(x)) return x;
-    const legacy = { 飲食: "飲食", 交通: "交通", 餐飲: "飲食", 購物: "服飾", 其他: "住家" };
-    return legacy[x] || "飲食";
+    const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "住家" };
+    if (legacy[x]) return legacy[x];
+    if (Array.isArray(knownCategoryNames) && knownCategoryNames.includes(x)) return x;
+    return "飲食";
   }
   /** 自訂分類名稱不變；僅遷移舊版預設「購物／其他／餐飲」字串 */
   function migrateListedCategoryName(name) {
@@ -4020,17 +4024,20 @@ const STORAGE_KEY = "stitch_transactions";
   }
   function buildFullShortcutParentMap(stored, customCategoryNames) {
     const s = stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
+    const customs = Array.isArray(customCategoryNames) ? customCategoryNames : [];
+    const known = [...EXPENSE_PARENT_GROUPS, ...customs];
     const out = {};
     for (const r of EXPENSE_CATEGORY_SHORTCUTS) {
-      out[r.pickId] = migrateToParentGroup(s[r.pickId] != null ? s[r.pickId] : DEFAULT_SHORTCUT_PARENT_MAP[r.pickId]);
+      const v = s[r.pickId] != null ? s[r.pickId] : DEFAULT_SHORTCUT_PARENT_MAP[r.pickId];
+      out[r.pickId] = migrateToParentGroup(v, known);
     }
-    const customs = Array.isArray(customCategoryNames) ? customCategoryNames : [];
     for (const nm of customs) {
       const n = String(nm || "").trim();
       if (!n) continue;
       const pid = slugPickId(n);
-      const defParent = "飲食";
-      out[pid] = migrateToParentGroup(s[pid] != null ? s[pid] : defParent);
+      let v = s[pid] != null ? s[pid] : n;
+      if (s[pid] === "飲食") v = n;
+      out[pid] = migrateToParentGroup(v, known);
     }
     return out;
   }
@@ -5549,6 +5556,38 @@ const STORAGE_KEY = "stitch_transactions";
     localStorage.setItem(CATEGORIES_KEY, JSON.stringify(normalizeCategories(list)));
   }
 
+  /** 清除舊版「餐飲」主分類遺留（與飲食重複），避免編輯畫面出現第五區或錯誤圖示鍵 */
+  function migrateLegacyExpenseStorageSync() {
+    if (isInIframe()) return;
+    try {
+      const rawIcons = localStorage.getItem(CAT_ICONS_KEY);
+      if (rawIcons) {
+        const ic = JSON.parse(rawIcons);
+        if (ic && typeof ic === "object" && ic["餐飲"] != null) {
+          if (!ic["飲食"]) ic["飲食"] = ic["餐飲"];
+          delete ic["餐飲"];
+          localStorage.setItem(CAT_ICONS_KEY, JSON.stringify(ic));
+        }
+      }
+      const rawMap = localStorage.getItem(SHORTCUT_PARENT_MAP_KEY);
+      if (rawMap) {
+        const m = JSON.parse(rawMap);
+        if (m && typeof m === "object") {
+          let ch = false;
+          for (const k of Object.keys(m)) {
+            if (m[k] === "餐飲") {
+              m[k] = "飲食";
+              ch = true;
+            }
+          }
+          if (ch) localStorage.setItem(SHORTCUT_PARENT_MAP_KEY, JSON.stringify(m));
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
   async function readCatIconsFull() {
     if (isInIframe()) {
       const res = await requestParent("stitch:cfg:caticons:get", {});
@@ -5804,12 +5843,15 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   function iconOptionsHtml(selected, picklist) {
-    const list = Array.isArray(picklist) && picklist.length ? picklist : ICON_PICKLIST;
+    const base = Array.isArray(picklist) && picklist.length ? picklist : ICON_PICKLIST;
     const sel = normalizeMaterialIcon(String(selected || "category"));
-    return list.map(
-      (name) =>
-        `<option value="${name}" ${name === sel ? "selected" : ""}>${iconLabelZh(name)}</option>`
-    ).join("");
+    const list = sel && !base.includes(sel) ? [sel, ...base] : [...base];
+    return list
+      .map(
+        (name) =>
+          `<option value="${name}" ${name === sel ? "selected" : ""}>${iconLabelZh(name)}</option>`
+      )
+      .join("");
   }
 
   function resolveShortcutIcon(pickId, parent, icons) {
@@ -5877,7 +5919,13 @@ const STORAGE_KEY = "stitch_transactions";
     defaultRoot.innerHTML = "";
     hiddenRoot.innerHTML = "";
 
-    EXPENSE_PARENT_GROUPS.forEach((parent) => {
+    const parentSections = Array.from(
+      new Set([...EXPENSE_PARENT_GROUPS, ...customNames].filter((p) => String(p || "").trim() && p !== "餐飲"))
+    );
+
+    const knownParents = Array.from(new Set([...EXPENSE_PARENT_GROUPS, ...customNames]));
+
+    parentSections.forEach((parent) => {
       const iconName = resolveShortcutIcon(null, parent, ic);
       const assigned = lineRows.filter((r) => {
         if (editorShortcutParentMap[r.pickId] !== parent) return false;
@@ -5919,8 +5967,8 @@ const STORAGE_KEY = "stitch_transactions";
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
         chip.setAttribute("aria-label", `將「${r.label}」還原為預設主分類`);
         chip.addEventListener("click", () => {
-          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食";
-          editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
+          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? (r.isCustom ? r.label : "飲食");
+          editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid, knownParents);
           void refreshCategoryEditorParentRows();
         });
         chipsEl.appendChild(chip);
@@ -5980,6 +6028,7 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   function openCategoryEditor() {
+    migrateLegacyExpenseStorageSync();
     categoryEditorOverlay.classList.remove("hidden");
     categoryEditorOverlay.setAttribute("aria-hidden", "false");
     void Promise.all([
@@ -6037,40 +6086,49 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   async function saveCategoryEditor() {
-    const icons = { ...(await readCatIconsFull()) };
-    categoryEditorDefaultRows.querySelectorAll(".editor-parent-icon").forEach((sel) => {
-      const parent = sel.getAttribute("data-parent");
-      if (parent) icons[parent] = normalizeMaterialIcon(sel.value);
-    });
+    try {
+      const icons = { ...(await readCatIconsFull()) };
+      categoryEditorDefaultRows.querySelectorAll(".editor-parent-icon").forEach((sel) => {
+        const parent = sel.getAttribute("data-parent");
+        if (parent) icons[parent] = normalizeMaterialIcon(sel.value);
+      });
 
-    const customNames = [];
-    const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
-    for (const row of customRowEls) {
-      const nm = row.querySelector(".custom-cat-name")?.value?.trim();
-      const ic = row.querySelector(".custom-cat-icon")?.value || "category";
-      if (!nm) continue;
-      if (customNames.includes(nm)) {
-        alert("自訂分類名稱不可重複：" + nm);
+      const customNames = [];
+      const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
+      for (const row of customRowEls) {
+        const nm = row.querySelector(".custom-cat-name")?.value?.trim();
+        const ic = row.querySelector(".custom-cat-icon")?.value || "category";
+        if (!nm) continue;
+        if (EXPENSE_PARENT_GROUPS.includes(nm)) {
+          alert("此名稱與預設主分類重複，請換個名稱：" + nm);
+          return;
+        }
+        if (customNames.includes(nm)) {
+          alert("自訂分類名稱不可重複：" + nm);
+          return;
+        }
+        customNames.push(nm);
+        icons[nm] = normalizeMaterialIcon(ic);
+      }
+
+      const fullList = normalizeCategories([...EXPENSE_PARENT_GROUPS, ...customNames]);
+      const ok = await setCategoriesAll(fullList);
+      if (!ok) {
+        alert("無法儲存分類清單（連線逾時或遭拒），請重試。");
         return;
       }
-      customNames.push(nm);
-      icons[nm] = normalizeMaterialIcon(ic);
+      await writeCatIconsFull(icons);
+      await writeShortcutParentMap(editorShortcutParentMap);
+      await writeHiddenShortcuts(editorHiddenShortcutIds);
+      await bootCategories();
+      selectedCategory = categorySelect.value || selectedCategory;
+      syncPickIdFromSelect();
+      setTxFlow(txFlow);
+      closeCategoryEditor();
+    } catch (e) {
+      console.error(e);
+      alert("儲存失敗：" + (e && e.message ? e.message : "請稍後再試。"));
     }
-
-    const fullList = normalizeCategories([...EXPENSE_PARENT_GROUPS, ...customNames]);
-    const ok = await setCategoriesAll(fullList);
-    if (!ok) {
-      alert("無法儲存分類清單，請重試。");
-      return;
-    }
-    await writeCatIconsFull(icons);
-    await writeShortcutParentMap(editorShortcutParentMap);
-    await writeHiddenShortcuts(editorHiddenShortcutIds);
-    await bootCategories();
-    selectedCategory = categorySelect.value || selectedCategory;
-    syncPickIdFromSelect();
-    setTxFlow(txFlow);
-    closeCategoryEditor();
   }
 
   function openIncomeCategoryEditor() {
@@ -6361,6 +6419,7 @@ const STORAGE_KEY = "stitch_transactions";
   }
 
   async function bootCategories() {
+    migrateLegacyExpenseStorageSync();
     const cats = await readCategories();
     // 初始化：確保本機也有 categories（非 iframe 情境）
     if (!isInIframe()) writeCategoriesLocal(cats);

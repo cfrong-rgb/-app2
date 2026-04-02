@@ -1,17 +1,21 @@
 /**
  * Service Worker — 快取單頁與靜態資源、CDN 腳本，離線可開啟 index.html
  */
-const CACHE = "stitch-pwa-v16";
+const CACHE = "stitch-pwa-v17";
 
 const APP_ASSETS = [
   "index.html",
   "manifest.json",
   "manifest.webmanifest",
   "sw.js",
+  "lottery.js",
   "icon.png",
   "assets/icon.png",
   "assets/stitch-themes.css",
 ];
+
+/** 發票對獎 JSON（GET 成功後快取，離線可沿用最後一次） */
+const LOTTERY_DATA_URL = "https://invoice.98goto.com/api/echo_json";
 
 const CDN_ASSETS = [
   "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
@@ -89,6 +93,26 @@ self.addEventListener("fetch", (event) => {
               (await caches.match(new URL("index.html", scope).href));
             if (fallback) return fallback;
           }
+          throw e;
+        }
+      })()
+    );
+    return;
+  }
+
+  if (url.href === LOTTERY_DATA_URL) {
+    event.respondWith(
+      (async () => {
+        const cached = await caches.match(event.request);
+        try {
+          const res = await fetch(event.request);
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(event.request, copy));
+          }
+          return res;
+        } catch (e) {
+          if (cached) return cached;
           throw e;
         }
       })()
