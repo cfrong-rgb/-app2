@@ -1188,6 +1188,12 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 <span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">咖啡</span>
 </div>
+<div class="category-cell flex flex-col items-center gap-2 group" data-category-value="飲食" data-pick-id="food_icecream">
+<button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="冰淇淋，飲食">
+<span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">icecream</span>
+</button>
+<span class="category-cell-label text-[10px] font-bold text-on-surface-variant text-center leading-tight tracking-wide">冰淇淋</span>
+</div>
 <div class="category-cell flex flex-col items-center gap-2 group" data-category-value="交通" data-pick-id="trans_bus">
 <button type="button" class="category-pick-btn w-[4.25rem] h-[4.25rem] rounded-2xl bg-surface-container-low text-on-surface-variant flex items-center justify-center shadow-sm border border-outline-variant/20 hover:bg-secondary-container/50 hover:border-secondary/25 transition-all active:scale-90" aria-label="交通">
 <span class="material-symbols-outlined text-[1.75rem]" aria-hidden="true">directions_bus</span>
@@ -1384,7 +1390,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
 <div>
-<p class="text-[11px] font-bold text-on-surface-variant mb-3">主分類 · 對應「選擇類別」細項</p>
 <div class="space-y-3" id="category-editor-default-rows"></div>
 <div id="category-editor-hidden-wrap" class="space-y-3 pt-4 mt-2 border-t border-outline-variant/15 hidden">
 <p class="text-[11px] font-bold text-on-surface-variant">已從選擇類別隱藏（可還原）</p>
@@ -2002,7 +2007,7 @@ function __stitchBuildBridge() {
     }
   }
   function writeShortcutParentMap(obj) {
-    const o = obj && typeof o === "object" && !Array.isArray(o) ? obj : {};
+    const o = obj && typeof obj === "object" && !Array.isArray(obj) ? obj : {};
     localStorage.setItem(SHORTCUT_PARENT_MAP_KEY, JSON.stringify(o));
   }
   function normalizeIncomeCategories(list) {
@@ -3983,6 +3988,7 @@ const STORAGE_KEY = "stitch_transactions";
     { pickId: "food_lunch", label: "午餐", parent: "飲食", defaultIcon: "lunch_dining" },
     { pickId: "food_dinner", label: "晚餐", parent: "飲食", defaultIcon: "dinner_dining" },
     { pickId: "food_cafe", label: "咖啡", parent: "飲食", defaultIcon: "local_cafe" },
+    { pickId: "food_icecream", label: "冰淇淋", parent: "飲食", defaultIcon: "icecream" },
     { pickId: "trans_bus", label: "交通", parent: "交通", defaultIcon: "directions_bus" },
     { pickId: "trans_gas", label: "加油", parent: "交通", defaultIcon: "local_gas_station" },
     { pickId: "trans_park", label: "停車", parent: "交通", defaultIcon: "local_parking" },
@@ -5902,19 +5908,17 @@ const STORAGE_KEY = "stitch_transactions";
 
   async function refreshCategoryEditorParentRows() {
     if (!categoryEditorOverlay || categoryEditorOverlay.classList.contains("hidden")) return;
-    const ic = await readCatIconsFull();
     const cats = await readCategories();
     const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
-    renderCategoryEditorParentRows(ic, mergeEditorCustomNamesForGrid(customs));
+    renderCategoryEditorParentRows(mergeEditorCustomNamesForGrid(customs));
   }
 
-  function renderCategoryEditorParentRows(icons, customNames) {
+  function renderCategoryEditorParentRows(customNames) {
     const defaultRoot = document.getElementById("category-editor-default-rows");
     const hiddenRoot = document.getElementById("category-editor-hidden-rows");
     const hiddenWrap = document.getElementById("category-editor-hidden-wrap");
     if (!defaultRoot || !hiddenRoot || !hiddenWrap) return;
     const hiddenSet = new Set(editorHiddenShortcutIds);
-    const ic = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
     const lineRows = gridLineRowsForEditor(customNames);
     defaultRoot.innerHTML = "";
     hiddenRoot.innerHTML = "";
@@ -5926,7 +5930,6 @@ const STORAGE_KEY = "stitch_transactions";
     const knownParents = Array.from(new Set([...EXPENSE_PARENT_GROUPS, ...customNames]));
 
     parentSections.forEach((parent) => {
-      const iconName = resolveShortcutIcon(null, parent, ic);
       const assigned = lineRows.filter((r) => {
         if (editorShortcutParentMap[r.pickId] !== parent) return false;
         if (!r.isCustom && hiddenSet.has(r.pickId)) return false;
@@ -5939,24 +5942,22 @@ const STORAGE_KEY = "stitch_transactions";
         <div class="flex flex-wrap items-start gap-2">
           <span class="w-11 shrink-0 text-sm font-extrabold text-primary pt-2">${parent}</span>
           <div class="flex-1 min-w-[140px] space-y-2">
-            <select class="editor-parent-icon w-full px-3 py-2 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-parent="${safeParent}" aria-label="${parent} 圖示">
-              ${iconOptionsHtml(iconName, EDITOR_EXPENSE_ICON_PICKLIST)}
+            <select class="editor-assign-pick w-full px-3 py-2 rounded-xl border border-dashed border-outline-variant/50 bg-surface-container-low/40 text-sm font-semibold text-on-surface" data-parent="${safeParent}" aria-label="從選擇類別加入細項至 ${parent}">
+              <option value="">選擇細項…</option>
             </select>
             <div class="editor-parent-chips flex flex-wrap gap-1.5 min-h-[1.75rem]" data-parent="${safeParent}"></div>
-            <select class="editor-add-pick w-full px-3 py-2 rounded-xl border border-dashed border-outline-variant/50 bg-surface-container-low/40 text-sm font-semibold text-on-surface" data-parent="${safeParent}" aria-label="新增細項至 ${parent}">
-              <option value="">新增細項…</option>
-            </select>
           </div>
         </div>`;
       defaultRoot.appendChild(block);
-      const addSel = block.querySelector(".editor-add-pick");
+      const assignSel = block.querySelector(".editor-assign-pick");
       const chipsEl = block.querySelector(".editor-parent-chips");
       lineRows.forEach((r) => {
         if (!r.isCustom && hiddenSet.has(r.pickId)) return;
+        if (editorShortcutParentMap[r.pickId] === parent) return;
         const opt = document.createElement("option");
         opt.value = r.pickId;
         opt.textContent = r.label;
-        addSel.appendChild(opt);
+        assignSel.appendChild(opt);
       });
       assigned.forEach((r) => {
         const chip = document.createElement("button");
@@ -5973,11 +5974,11 @@ const STORAGE_KEY = "stitch_transactions";
         });
         chipsEl.appendChild(chip);
       });
-      addSel.addEventListener("change", () => {
-        const pid = addSel.value;
+      assignSel.addEventListener("change", () => {
+        const pid = assignSel.value;
         if (!pid) return;
         editorShortcutParentMap[pid] = parent;
-        addSel.value = "";
+        assignSel.value = "";
         void refreshCategoryEditorParentRows();
       });
     });
@@ -6043,7 +6044,7 @@ const STORAGE_KEY = "stitch_transactions";
       categoryEditorCustomRows.innerHTML = "";
       customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "label"));
       if (customs.length === 0) appendCustomEditorRow("", "label");
-      renderCategoryEditorParentRows(icons, mergeEditorCustomNamesForGrid(customs));
+      renderCategoryEditorParentRows(mergeEditorCustomNamesForGrid(customs));
     });
   }
 
@@ -6088,10 +6089,6 @@ const STORAGE_KEY = "stitch_transactions";
   async function saveCategoryEditor() {
     try {
       const icons = { ...(await readCatIconsFull()) };
-      categoryEditorDefaultRows.querySelectorAll(".editor-parent-icon").forEach((sel) => {
-        const parent = sel.getAttribute("data-parent");
-        if (parent) icons[parent] = normalizeMaterialIcon(sel.value);
-      });
 
       const customNames = [];
       const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
