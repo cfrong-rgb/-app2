@@ -746,21 +746,19 @@ html.stitch-single-app main.wrap {
 html.stitch-single-app #stitch-stage {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  overflow-x: clip;
   max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
-/* 明細／發票：避免內容超出豎屏寬度 */
-html.stitch-single-app [data-stitch-view="history"],
-html.stitch-single-app [data-stitch-view="invoice"] {
+/* 各頁視圖：豎屏不橫向溢出（片段內 <main> 已改為 .stitch-page-main） */
+html.stitch-single-app .stitch-view {
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }
-html.stitch-single-app [data-stitch-view="history"] > header,
-html.stitch-single-app [data-stitch-view="invoice"] > header,
-html.stitch-single-app [data-stitch-view="history"] > main,
-html.stitch-single-app [data-stitch-view="invoice"] > main {
+html.stitch-single-app .stitch-view > header,
+html.stitch-single-app .stitch-view > .stitch-page-main {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -800,7 +798,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 <button type="button" class="mt-5 w-full py-3 rounded-xl font-bold text-on-primary bg-primary" id="home-notifications-goto-profile">前往個人檔案</button>
 </div>
 </div>
-<main class="max-w-screen-xl mx-auto px-6 pt-4 pb-10 space-y-10">
+<div role="main" class="stitch-page-main max-w-screen-xl mx-auto px-6 pt-4 pb-10 space-y-10">
 <!-- 個人問候與大頭貼（置頂） -->
 <section class="mt-2">
 <div class="flex flex-col items-center text-center">
@@ -902,7 +900,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 </div>
 </div>
 </section>
-</main>
+</div>
 <!-- BottomNavBar（嵌入 index 時由父頁底部列負責導覽，此列會隱藏） -->
 
 
@@ -927,7 +925,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 </div>
 </div>
 </header>
-<main class="pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
+<div role="main" class="stitch-page-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
 <!-- Editorial Filter Section -->
 <section class="mb-10 mt-4">
 <div class="flex overflow-x-auto gap-3 hide-scrollbar py-2" id="category-filter-chips" role="tablist" aria-label="分類篩選">
@@ -981,7 +979,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 </div>
 <div class="space-y-4" id="local-transactions-list"></div>
 </section>
-</main>
+</div>
 <!-- 編輯交易（高於側邊選單 z-100） -->
 <div class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-[#0e0e0c]/40 backdrop-blur-sm hidden" id="tx-edit-overlay" role="dialog" aria-modal="true" aria-labelledby="tx-edit-title">
 <div id="tx-edit-sheet" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-black/5 flex flex-col max-h-[min(34rem,85dvh)] min-h-0 overflow-hidden">
@@ -1065,7 +1063,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 </div>
 </div>
 </nav>
-<main class="pt-24 w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
+<div role="main" class="stitch-page-main pt-24 w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
 <div class="max-w-lg mx-auto mb-8" id="flow-toggle-wrap">
 <div class="flex rounded-full p-1 bg-surface-container-low border border-outline-variant/35 shadow-sm" role="tablist" aria-label="支出或收入">
 <button type="button" id="flow-expense-btn" role="tab" aria-selected="true" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all bg-primary text-on-primary shadow-sm">支出</button>
@@ -1271,7 +1269,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 </div>
 </div>
 </div>
-</main>
+</div>
 <!-- Floating Action Bar（嵌入父 App 時由 CSS 上移，避免被底部導覽遮住） -->
 <div id="add-floating-save" class="fixed bottom-0 left-0 right-0 w-full p-4 sm:p-6 flex flex-col items-center gap-1.5 z-[55] box-border pointer-events-none">
 <div id="add-floating-save-bar" class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
@@ -1405,7 +1403,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
   </div>
 </header>
 
-<main class="max-w-lg w-full min-w-0 mx-auto px-3 sm:px-4 pt-4 space-y-4 box-border overflow-x-hidden">
+<div role="main" class="stitch-page-main max-w-lg w-full min-w-0 mx-auto px-3 sm:px-4 pt-4 space-y-4 box-border overflow-x-hidden">
   <!-- 載具條碼（每人自行輸入財政部核發的手機條碼，僅本機儲存） -->
   <section class="bg-surface-card rounded-2xl shadow-lg shadow-amber-900/5 border border-amber-100 p-5" id="carrier-card">
     <div class="flex items-start justify-between gap-2 mb-3">
@@ -1477,7 +1475,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
     <span class="material-symbols-outlined">add_circle</span>
     手動新增發票
   </button>
-</main>
+</div>
 
 
 
@@ -1589,7 +1587,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
 <button type="button" class="material-symbols-outlined text-[#5c5c58] hover:bg-[#f2f1eb] p-2 rounded-full transition-colors active:scale-95" id="profile-header-notifications-btn" aria-label="通知說明">notifications</button>
 </div>
 </header>
-<main class="pt-28 pb-32 px-6 max-w-5xl mx-auto space-y-12">
+<div role="main" class="stitch-page-main pt-28 pb-32 px-6 max-w-5xl mx-auto space-y-12">
 <!-- Hero Profile Section: Editorial Asymmetry -->
 <section class="relative flex flex-col md:flex-row items-start md:items-end gap-8 mb-16">
 <div class="relative w-32 h-32 md:w-48 md:h-48">
@@ -1813,7 +1811,7 @@ html.stitch-single-app [data-stitch-view="invoice"] > main {
                 </button>
 </div>
 </div>
-</main>
+</div>
 <!-- BottomNavBar（嵌入 index 時隱藏） -->
 
 <div id="profile-help-overlay" class="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-[#0e0e0c]/45 backdrop-blur-sm hidden" aria-hidden="true">
@@ -2161,21 +2159,18 @@ html.stitch-single-app main.wrap {
 html.stitch-single-app #stitch-stage {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  overflow-x: clip;
   max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
-/* 明細／發票：避免內容超出豎屏寬度 */
-html.stitch-single-app [data-stitch-view="history"],
-html.stitch-single-app [data-stitch-view="invoice"] {
+html.stitch-single-app .stitch-view {
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }
-html.stitch-single-app [data-stitch-view="history"] > header,
-html.stitch-single-app [data-stitch-view="invoice"] > header,
-html.stitch-single-app [data-stitch-view="history"] > main,
-html.stitch-single-app [data-stitch-view="invoice"] > main {
+html.stitch-single-app .stitch-view > header,
+html.stitch-single-app .stitch-view > .stitch-page-main {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
