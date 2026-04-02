@@ -1,5 +1,17 @@
-/* Stitch 私人帳本 — PWA Service Worker（離線殼層 + 執行時快取 CDN） */
-const CACHE = "stitch-pwa-v9";
+/**
+ * Service Worker — 快取單頁與靜態資源、CDN 腳本，離線可開啟 index.html
+ */
+const CACHE = "stitch-pwa-v10";
+
+const APP_ASSETS = [
+  "index.html",
+  "manifest.json",
+  "manifest.webmanifest",
+  "sw.js",
+  "icon.png",
+  "assets/icon.png",
+  "assets/stitch-themes.css",
+];
 
 const CDN_ASSETS = [
   "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
@@ -10,23 +22,18 @@ const CDN_ASSETS = [
   "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap",
 ];
 
-function scopeUrls() {
-  const scope = self.registration.scope;
-  return [
-    scope,
-    new URL("index.html", scope).href,
-    new URL("manifest.webmanifest", scope).href,
-    new URL("icon.png", scope).href,
-    new URL("assets/icon.png", scope).href,
-    new URL("sw.js", scope).href,
-  ];
+function scoped(url) {
+  return new URL(url, self.registration.scope).href;
+}
+
+function precacheUrls() {
+  return [...APP_ASSETS.map((p) => scoped(p)), ...CDN_ASSETS];
 }
 
 async function precache() {
   const cache = await caches.open(CACHE);
-  const urls = [...scopeUrls(), ...CDN_ASSETS];
   await Promise.all(
-    urls.map((url) =>
+    precacheUrls().map((url) =>
       cache.add(url).catch(() => {
         /* 單一資源失敗不阻擋安裝 */
       })
@@ -74,12 +81,12 @@ self.addEventListener("fetch", (event) => {
           return res;
         } catch (e) {
           if (isNavigateRequest(event.request)) {
+            const indexUrl = scoped("index.html");
             const scope = self.registration.scope;
-            const indexUrl = new URL("index.html", scope).href;
             const fallback =
               (await caches.match(indexUrl)) ||
               (await caches.match(scope)) ||
-              (await caches.match("/index.html"));
+              (await caches.match(new URL("index.html", scope).href));
             if (fallback) return fallback;
           }
           throw e;

@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>私人帳本</title>
+<meta name="theme-color" content="#725638" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.png" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -533,7 +538,7 @@ body {
     }
 
 body {
-      min-height: max(884px, 100dvh);
+      min-height: 100dvh;
     }
     html.stitch-app-embed #embedded-app-bottom-nav {
       display: none !important;
@@ -719,6 +724,29 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8f6f1; 
 body {
       min-height: max(884px, 100dvh);
     }
+
+
+/* --- stitch shell：手機豎屏鎖定視窗，捲動只在 #stitch-stage --- */
+html.stitch-single-app {
+  height: 100%;
+  height: 100dvh;
+}
+html.stitch-single-app body {
+  min-height: 100dvh !important;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+html.stitch-single-app main.wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+html.stitch-single-app #stitch-stage {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
 
 </style>
 </head>
@@ -2139,6 +2167,12 @@ function applyEmbedShellTheme() {
   applyEmbedShellTheme();
   showRoute();
 })();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
 
 (function stitchPage_home() {
 "use strict";
