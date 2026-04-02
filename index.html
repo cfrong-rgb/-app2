@@ -1391,10 +1391,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
 <div>
 <div class="space-y-3" id="category-editor-default-rows"></div>
-<div id="category-editor-hidden-wrap" class="space-y-3 pt-4 mt-2 border-t border-outline-variant/15 hidden">
-<p class="text-[11px] font-bold text-on-surface-variant">已從選擇類別隱藏（可還原）</p>
-<div class="space-y-3" id="category-editor-hidden-rows"></div>
-</div>
 </div>
 <div>
 <div class="flex items-center justify-between mb-3">
@@ -4008,16 +4004,15 @@ const STORAGE_KEY = "stitch_transactions";
     return "custom_" + h.toString(36);
   }
   const DEFAULT_SHORTCUT_PARENT_MAP = Object.fromEntries(
-    EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent, [])])
+    EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent)])
   );
-  /** knownCategoryNames：含自訂類別時，細項主分類可為該名稱本身（如「育兒」） */
-  function migrateToParentGroup(name, knownCategoryNames) {
+  /** 細項所屬主分類僅能為四個預設之一；舊版誤存自訂名稱為主分類者併入「飲食」 */
+  function migrateToParentGroup(name) {
     const x = String(name || "").trim();
     if (!x) return "飲食";
     if (EXPENSE_PARENT_GROUPS.includes(x)) return x;
     const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "住家" };
     if (legacy[x]) return legacy[x];
-    if (Array.isArray(knownCategoryNames) && knownCategoryNames.includes(x)) return x;
     return "飲食";
   }
   /** 自訂分類名稱不變；僅遷移舊版預設「購物／其他／餐飲」字串 */
@@ -4031,19 +4026,17 @@ const STORAGE_KEY = "stitch_transactions";
   function buildFullShortcutParentMap(stored, customCategoryNames) {
     const s = stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
     const customs = Array.isArray(customCategoryNames) ? customCategoryNames : [];
-    const known = [...EXPENSE_PARENT_GROUPS, ...customs];
     const out = {};
     for (const r of EXPENSE_CATEGORY_SHORTCUTS) {
       const v = s[r.pickId] != null ? s[r.pickId] : DEFAULT_SHORTCUT_PARENT_MAP[r.pickId];
-      out[r.pickId] = migrateToParentGroup(v, known);
+      out[r.pickId] = migrateToParentGroup(v);
     }
     for (const nm of customs) {
       const n = String(nm || "").trim();
       if (!n) continue;
       const pid = slugPickId(n);
-      let v = s[pid] != null ? s[pid] : n;
-      if (s[pid] === "飲食") v = n;
-      out[pid] = migrateToParentGroup(v, known);
+      const v = s[pid] != null ? s[pid] : "飲食";
+      out[pid] = migrateToParentGroup(v);
     }
     return out;
   }
@@ -5915,19 +5908,12 @@ const STORAGE_KEY = "stitch_transactions";
 
   function renderCategoryEditorParentRows(customNames) {
     const defaultRoot = document.getElementById("category-editor-default-rows");
-    const hiddenRoot = document.getElementById("category-editor-hidden-rows");
-    const hiddenWrap = document.getElementById("category-editor-hidden-wrap");
-    if (!defaultRoot || !hiddenRoot || !hiddenWrap) return;
+    if (!defaultRoot) return;
     const hiddenSet = new Set(editorHiddenShortcutIds);
     const lineRows = gridLineRowsForEditor(customNames);
     defaultRoot.innerHTML = "";
-    hiddenRoot.innerHTML = "";
 
-    const parentSections = Array.from(
-      new Set([...EXPENSE_PARENT_GROUPS, ...customNames].filter((p) => String(p || "").trim() && p !== "餐飲"))
-    );
-
-    const knownParents = Array.from(new Set([...EXPENSE_PARENT_GROUPS, ...customNames]));
+    const parentSections = EXPENSE_PARENT_GROUPS.filter((p) => String(p || "").trim() && p !== "餐飲");
 
     parentSections.forEach((parent) => {
       const assigned = lineRows.filter((r) => {
@@ -5968,8 +5954,8 @@ const STORAGE_KEY = "stitch_transactions";
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
         chip.setAttribute("aria-label", `將「${r.label}」還原為預設主分類`);
         chip.addEventListener("click", () => {
-          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? (r.isCustom ? r.label : "飲食");
-          editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid, knownParents);
+          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食";
+          editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
           void refreshCategoryEditorParentRows();
         });
         chipsEl.appendChild(chip);
@@ -5979,50 +5965,6 @@ const STORAGE_KEY = "stitch_transactions";
         if (!pid) return;
         editorShortcutParentMap[pid] = parent;
         assignSel.value = "";
-        void refreshCategoryEditorParentRows();
-      });
-    });
-
-    const hideRow = document.createElement("div");
-    hideRow.className = "pt-2 mt-1 border-t border-outline-variant/15";
-    hideRow.innerHTML = `<p class="text-[11px] font-bold text-on-surface-variant mb-2">從選擇類別隱藏細項</p>
-      <select class="editor-pick-hide w-full px-3 py-2 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" aria-label="隱藏細項">
-        <option value="">選擇要隱藏的細項…</option>
-      </select>`;
-    defaultRoot.appendChild(hideRow);
-    const hideSel = hideRow.querySelector(".editor-pick-hide");
-    EXPENSE_CATEGORY_SHORTCUTS.forEach((r) => {
-      if (hiddenSet.has(r.pickId)) return;
-      const opt = document.createElement("option");
-      opt.value = r.pickId;
-      opt.textContent = r.label;
-      hideSel.appendChild(opt);
-    });
-    hideSel.addEventListener("change", () => {
-      const pid = hideSel.value;
-      if (!pid) return;
-      editorHiddenShortcutIds = normalizeHiddenShortcutIds([...editorHiddenShortcutIds, pid]);
-      hideSel.value = "";
-      void refreshCategoryEditorParentRows();
-    });
-
-    EXPENSE_CATEGORY_SHORTCUTS.forEach((row) => {
-      if (!hiddenSet.has(row.pickId)) return;
-      const el = document.createElement("div");
-      el.className = "flex items-center gap-2 flex-wrap opacity-90";
-      el.innerHTML = `
-          <span class="w-[4.5rem] shrink-0 text-sm font-bold text-on-surface-variant">${row.label}</span>
-          <span class="text-xs text-on-surface-variant flex-1">已隱藏</span>
-          <button type="button" class="editor-restore-shortcut px-3 py-2 rounded-xl bg-secondary-container/60 text-on-secondary-container text-xs font-bold shrink-0" data-shortcut-pick="${row.pickId.replace(/"/g, "&quot;")}">還原</button>
-        `;
-      hiddenRoot.appendChild(el);
-    });
-    hiddenWrap.classList.toggle("hidden", hiddenRoot.children.length === 0);
-    hiddenRoot.querySelectorAll(".editor-restore-shortcut").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const pid = btn.getAttribute("data-shortcut-pick");
-        if (!pid) return;
-        editorHiddenShortcutIds = editorHiddenShortcutIds.filter((id) => id !== pid);
         void refreshCategoryEditorParentRows();
       });
     });
@@ -6042,8 +5984,8 @@ const STORAGE_KEY = "stitch_transactions";
       const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
       editorShortcutParentMap = buildFullShortcutParentMap(rawMap, customs);
       categoryEditorCustomRows.innerHTML = "";
-      customs.forEach((name) => appendCustomEditorRow(name, icons[name] || "label"));
-      if (customs.length === 0) appendCustomEditorRow("", "label");
+      customs.forEach((name) => appendCustomEditorRow(name));
+      if (customs.length === 0) appendCustomEditorRow("");
       renderCategoryEditorParentRows(mergeEditorCustomNamesForGrid(customs));
     });
   }
@@ -6057,14 +5999,11 @@ const STORAGE_KEY = "stitch_transactions";
     if (e.target === categoryEditorOverlay) closeCategoryEditor();
   });
 
-  function appendCustomEditorRow(name, iconName) {
+  function appendCustomEditorRow(name) {
     const row = document.createElement("div");
     row.className = "flex items-center gap-2 flex-wrap category-editor-custom-row";
     row.innerHTML = `
       <input type="text" class="custom-cat-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="分類名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
-      <select class="custom-cat-icon px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface min-w-[140px]">
-        ${iconOptionsHtml(iconName, EDITOR_EXPENSE_ICON_PICKLIST)}
-      </select>
       <button type="button" class="editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
         <span class="material-symbols-outlined text-lg">delete</span>
       </button>
@@ -6072,7 +6011,7 @@ const STORAGE_KEY = "stitch_transactions";
     row.querySelector(".editor-remove-custom").addEventListener("click", () => {
       row.remove();
       if (!categoryEditorCustomRows.querySelector(".category-editor-custom-row")) {
-        appendCustomEditorRow("", "category");
+        appendCustomEditorRow("");
       }
       void refreshCategoryEditorParentRows();
     });
@@ -6094,7 +6033,6 @@ const STORAGE_KEY = "stitch_transactions";
       const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
       for (const row of customRowEls) {
         const nm = row.querySelector(".custom-cat-name")?.value?.trim();
-        const ic = row.querySelector(".custom-cat-icon")?.value || "category";
         if (!nm) continue;
         if (EXPENSE_PARENT_GROUPS.includes(nm)) {
           alert("此名稱與預設主分類重複，請換個名稱：" + nm);
@@ -6105,7 +6043,8 @@ const STORAGE_KEY = "stitch_transactions";
           return;
         }
         customNames.push(nm);
-        icons[nm] = normalizeMaterialIcon(ic);
+        const prevIcon = icons[nm];
+        icons[nm] = normalizeMaterialIcon(prevIcon || "label");
       }
 
       const fullList = normalizeCategories([...EXPENSE_PARENT_GROUPS, ...customNames]);
@@ -6235,7 +6174,7 @@ const STORAGE_KEY = "stitch_transactions";
   categoryEditorCloseBtn?.addEventListener("click", () => closeCategoryEditor());
   categoryEditorCancelBtn?.addEventListener("click", () => closeCategoryEditor());
   categoryEditorAddRowBtn?.addEventListener("click", () => {
-    appendCustomEditorRow("", "category");
+    appendCustomEditorRow("");
     void refreshCategoryEditorParentRows();
   });
   categoryEditorSaveBtn?.addEventListener("click", async () => {
