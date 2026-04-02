@@ -1377,7 +1377,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <p id="add-qr-hint" class="text-xs text-primary-fixed/85 text-center mt-5 max-w-sm leading-relaxed px-2">請將 QR 對準框線；建議先掃發票<strong class="text-primary-fixed">左側</strong>，再點右上角圖示掃<strong class="text-primary-fixed">右側</strong>明細。</p>
 </div>
 </div>
-<!-- 編輯分類（名稱 + Material 圖示） -->
+<!-- 編輯分類：四主分類細項（Tag）+ 新增細項；自訂名稱列僅輸入名稱 -->
 <div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center hidden p-4 sm:p-6" id="category-editor-overlay" aria-hidden="true">
 <div id="category-editor-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(36rem,82dvh)] min-h-0 overflow-hidden">
 <div class="shrink-0 flex justify-between items-start gap-3 px-6 sm:px-8 pt-6 pb-3 border-b border-outline-variant/15">
@@ -5382,7 +5382,7 @@ const STORAGE_KEY = "stitch_transactions";
     const n = String(name || "").trim();
     if (!n) return;
     if (EXPENSE_PARENT_GROUPS.includes(n)) {
-      alert("預設主分類無法刪除；可在「編輯分類」隱藏捷徑細項。");
+      alert("預設主分類無法刪除；請在「編輯分類」將細項改回其他主分類。");
       return;
     }
     if (!confirm("從「選擇類別」移除「" + n + "」？已記帳紀錄不會刪除。")) return;
@@ -5926,12 +5926,12 @@ const STORAGE_KEY = "stitch_transactions";
       block.className = "rounded-xl border border-outline-variant/30 bg-white/80 p-3 space-y-2";
       block.innerHTML = `
         <div class="flex flex-wrap items-start gap-2">
-          <span class="w-11 shrink-0 text-sm font-extrabold text-primary pt-2">${parent}</span>
+          <span class="w-11 shrink-0 text-sm font-extrabold text-primary pt-1">${parent}</span>
           <div class="flex-1 min-w-[140px] space-y-2">
-            <select class="editor-assign-pick w-full px-3 py-2 rounded-xl border border-dashed border-outline-variant/50 bg-surface-container-low/40 text-sm font-semibold text-on-surface" data-parent="${safeParent}" aria-label="從選擇類別加入細項至 ${parent}">
-              <option value="">選擇細項…</option>
+            <div class="editor-parent-chips flex flex-wrap gap-1.5 min-h-[1.5rem]" data-parent="${safeParent}"></div>
+            <select class="editor-assign-pick w-full px-3 py-2 rounded-xl border border-dashed border-outline-variant/50 bg-surface-container-low/40 text-sm font-semibold text-on-surface" data-parent="${safeParent}" aria-label="新增細項至「${parent}」主分類（來自選擇類別）">
+              <option value="">新增細項…</option>
             </select>
-            <div class="editor-parent-chips flex flex-wrap gap-1.5 min-h-[1.75rem]" data-parent="${safeParent}"></div>
           </div>
         </div>`;
       defaultRoot.appendChild(block);
@@ -5952,7 +5952,7 @@ const STORAGE_KEY = "stitch_transactions";
           "inline-flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded-lg bg-primary-container/40 text-xs font-bold text-on-surface border border-primary/15";
         chip.setAttribute("data-pick-id", r.pickId);
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
-        chip.setAttribute("aria-label", `將「${r.label}」還原為預設主分類`);
+        chip.setAttribute("aria-label", `移除「${r.label}」細項並還原預設所屬主分類`);
         chip.addEventListener("click", () => {
           const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食";
           editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
