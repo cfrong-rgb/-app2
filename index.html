@@ -3963,6 +3963,8 @@ const STORAGE_KEY = "stitch_transactions";
   const INCOME_ICONS_KEY = "stitch_income_icons";
   /** 支出主分類（寫入交易／圓餅圖） */
   const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾", "其它"];
+  /** 自訂細項尚未指定主分類：僅在「新增細項…」各下拉池中，不顯示於任一主分類標籤列 */
+  const EXPENSE_CUSTOM_POOL_PARENT = "__pool__";
   const DEFAULT_CAT_ICONS = {
     飲食: "restaurant_menu",
     交通: "directions_bus",
@@ -4001,6 +4003,7 @@ const STORAGE_KEY = "stitch_transactions";
   /** 細項所屬主分類僅能為五個預設之一；舊版誤存自訂名稱為主分類者併入「飲食」 */
   function migrateToParentGroup(name) {
     const x = String(name || "").trim();
+    if (x === EXPENSE_CUSTOM_POOL_PARENT) return EXPENSE_CUSTOM_POOL_PARENT;
     if (!x) return "飲食";
     if (EXPENSE_PARENT_GROUPS.includes(x)) return x;
     const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "其它" };
@@ -4021,13 +4024,17 @@ const STORAGE_KEY = "stitch_transactions";
     const out = {};
     for (const r of EXPENSE_CATEGORY_SHORTCUTS) {
       const v = s[r.pickId] != null ? s[r.pickId] : DEFAULT_SHORTCUT_PARENT_MAP[r.pickId];
-      out[r.pickId] = migrateToParentGroup(v);
+      let m = migrateToParentGroup(v);
+      if (m === EXPENSE_CUSTOM_POOL_PARENT) {
+        m = migrateToParentGroup(DEFAULT_SHORTCUT_PARENT_MAP[r.pickId]);
+      }
+      out[r.pickId] = m;
     }
     for (const nm of customs) {
       const n = String(nm || "").trim();
       if (!n) continue;
       const pid = slugPickId(n);
-      const v = s[pid] != null ? s[pid] : "其它";
+      const v = s[pid] != null && s[pid] !== "" ? s[pid] : EXPENSE_CUSTOM_POOL_PARENT;
       out[pid] = migrateToParentGroup(v);
     }
     return out;
@@ -5871,7 +5878,13 @@ const STORAGE_KEY = "stitch_transactions";
       const pid = slugPickId(n);
       if (seen.has(pid)) continue;
       seen.add(pid);
-      rows.push({ pickId: pid, label: n, parent: "其它", defaultIcon: "label", isCustom: true });
+      rows.push({
+        pickId: pid,
+        label: n,
+        parent: EXPENSE_CUSTOM_POOL_PARENT,
+        defaultIcon: "label",
+        isCustom: true,
+      });
     }
     return rows;
   }
@@ -5916,7 +5929,8 @@ const STORAGE_KEY = "stitch_transactions";
       const chipsEl = block.querySelector(".editor-parent-chips");
       lineRows.forEach((r) => {
         if (!r.isCustom && hiddenSet.has(r.pickId)) return;
-        if (editorShortcutParentMap[r.pickId] === parent) return;
+        const cur = editorShortcutParentMap[r.pickId];
+        if (cur === parent) return;
         const opt = document.createElement("option");
         opt.value = r.pickId;
         opt.textContent = r.label;
@@ -5929,10 +5943,13 @@ const STORAGE_KEY = "stitch_transactions";
           "inline-flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded-lg bg-primary-container/40 text-xs font-bold text-on-surface border border-primary/15";
         chip.setAttribute("data-pick-id", r.pickId);
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
-        chip.setAttribute("aria-label", `移除「${r.label}」細項並還原預設所屬主分類`);
+        chip.setAttribute(
+          "aria-label",
+          r.isCustom ? `將「${r.label}」移回細項池（不歸屬任一主分類）` : `移除「${r.label}」並還原預設主分類`
+        );
         chip.addEventListener("click", () => {
           const defPid = r.isCustom
-            ? "其它"
+            ? EXPENSE_CUSTOM_POOL_PARENT
             : migrateToParentGroup(DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食");
           editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
           void refreshCategoryEditorParentRows();
