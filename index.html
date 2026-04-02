@@ -1157,9 +1157,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div class="flex items-center justify-between mb-5 ml-1 gap-3 flex-wrap">
 <h2 class="text-xl font-bold text-on-surface tracking-tight">選擇類別</h2>
 <div class="flex items-center gap-2">
-<button class="w-10 h-10 rounded-full bg-white/70 backdrop-blur-xl border border-outline-variant/40 flex items-center justify-center hover:bg-white transition active:scale-95" id="add-category-btn" type="button" aria-label="新增自訂類別">
-<span class="material-symbols-outlined text-primary">add</span>
-</button>
 <button type="button" class="shrink-0 text-xs font-bold text-primary uppercase tracking-widest px-4 py-2.5 rounded-full bg-primary-container/50 border border-primary/15 hover:bg-primary-container active:scale-95 transition" id="edit-categories-btn">編輯分類</button>
 </div>
 </div>
@@ -1377,7 +1374,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <p id="add-qr-hint" class="text-xs text-primary-fixed/85 text-center mt-5 max-w-sm leading-relaxed px-2">請將 QR 對準框線；建議先掃發票<strong class="text-primary-fixed">左側</strong>，再點右上角圖示掃<strong class="text-primary-fixed">右側</strong>明細。</p>
 </div>
 </div>
-<!-- 編輯分類：四主分類細項（Tag）+ 新增細項；自訂名稱列僅輸入名稱 -->
+<!-- 編輯分類：主分類細項（Tag）+ 新增細項；自訂名稱請由主畫面「其它」新增 -->
 <div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center hidden p-4 sm:p-6" id="category-editor-overlay" aria-hidden="true">
 <div id="category-editor-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(36rem,82dvh)] min-h-0 overflow-hidden">
 <div class="shrink-0 flex justify-between items-start gap-3 px-6 sm:px-8 pt-6 pb-3 border-b border-outline-variant/15">
@@ -1389,16 +1386,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 </div>
 <div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
-<div>
 <div class="space-y-3" id="category-editor-default-rows"></div>
-</div>
-<div>
-<div class="flex items-center justify-between mb-3">
-<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">自訂分類</p>
-<button type="button" class="text-xs font-bold text-secondary hover:underline" id="category-editor-add-row-btn">＋ 新增一列</button>
-</div>
-<div class="space-y-3" id="category-editor-custom-rows"></div>
-</div>
 </div>
 <div class="shrink-0 grid grid-cols-2 gap-3 px-6 sm:px-8 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
 <button type="button" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-[0.99] transition" id="category-editor-cancel-btn">取消</button>
@@ -1936,7 +1924,7 @@ function __stitchBuildBridge() {
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
   const USER_AVATAR_KEY = "userAvatar";
-  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾"];
+  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾", "其它"];
   const DEFAULT_INCOME_CATEGORIES = ["薪水", "獎金", "回饋", "交易"];
 
   function safeParseJson(raw) {
@@ -1952,7 +1940,7 @@ function __stitchBuildBridge() {
   function migrateListedCategoryName(name) {
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
-    if (x === "其他") return "住家";
+    if (x === "其他") return "其它";
     if (x === "餐飲") return "飲食";
     return x;
   }
@@ -2928,7 +2916,8 @@ const STORAGE_KEY = "stitch_transactions";
       "住家": { dot: "#64748b", fill: "#f8fafc", label: "住家" },
       "服飾": { dot: "#a855f7", fill: "#faf5ff", label: "服飾" },
       "購物": { dot: "#8b5cf6", fill: "#f5f3ff", label: "購物" },
-      "其他": { dot: "#9ca3af", fill: "#f9fafb", label: "其他" },
+      "其它": { dot: "#9ca3af", fill: "#f9fafb", label: "其它" },
+      "其他": { dot: "#9ca3af", fill: "#f9fafb", label: "其它" },
     };
     if (palette[c]) return palette[c];
     const hue = hashHue(c);
@@ -3162,13 +3151,14 @@ const STORAGE_KEY = "stitch_transactions";
   const CATEGORIES_KEY = "stitch_categories";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
-  const DEFAULT_CATEGORIES = ["飲食", "交通", "住家", "服飾"];
+  const DEFAULT_CATEGORIES = ["飲食", "交通", "住家", "服飾", "其它"];
   const DEFAULT_CAT_ICONS = {
     飲食: "restaurant_menu",
     交通: "directions_bus",
     住家: "home",
     服飾: "checkroom",
     購物: "shopping_bag",
+    其它: "more_horiz",
     其他: "category",
   };
   const DEFAULT_INCOME_CATEGORIES = ["薪水", "獎金", "回饋", "交易"];
@@ -3209,7 +3199,7 @@ const STORAGE_KEY = "stitch_transactions";
   function migrateListedCategoryName(name) {
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
-    if (x === "其他") return "住家";
+    if (x === "其他") return "其它";
     if (x === "餐飲") return "飲食";
     return x;
   }
@@ -3560,7 +3550,8 @@ const STORAGE_KEY = "stitch_transactions";
       住家: { label: "住家", dot: "#64748b", pillBg: "#f8fafc", pillText: "#334155" },
       服飾: { label: "服飾", dot: "#a855f7", pillBg: "#faf5ff", pillText: "#6b21a8" },
       購物: { label: "購物", dot: "#8b5cf6", pillBg: "#f5f3ff", pillText: "#6d28d9" },
-      其他: { label: "其他", dot: "#9ca3af", pillBg: "#f9fafb", pillText: "#374151" },
+      其它: { label: "其它", dot: "#9ca3af", pillBg: "#f9fafb", pillText: "#374151" },
+      其他: { label: "其它", dot: "#9ca3af", pillBg: "#f9fafb", pillText: "#374151" },
       薪水: { label: "薪水", dot: "#22c55e", pillBg: "#ecfdf5", pillText: "#166534" },
       獎金: { label: "獎金", dot: "#10b981", pillBg: "#d1fae5", pillText: "#065f46" },
       回饋: { label: "回饋", dot: "#14b8a6", pillBg: "#ccfbf1", pillText: "#0f766e" },
@@ -3971,12 +3962,13 @@ const STORAGE_KEY = "stitch_transactions";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
   /** 支出主分類（寫入交易／圓餅圖） */
-  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾"];
+  const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾", "其它"];
   const DEFAULT_CAT_ICONS = {
     飲食: "restaurant_menu",
     交通: "directions_bus",
     住家: "home",
     服飾: "checkroom",
+    其它: "more_horiz",
   };
   /** 與「選擇類別」網格一致：捷徑 pickId、顯示標籤、預設主分類、預設圖示 */
   const EXPENSE_CATEGORY_SHORTCUTS = [
@@ -4006,12 +3998,12 @@ const STORAGE_KEY = "stitch_transactions";
   const DEFAULT_SHORTCUT_PARENT_MAP = Object.fromEntries(
     EXPENSE_CATEGORY_SHORTCUTS.map((r) => [r.pickId, migrateToParentGroup(r.parent)])
   );
-  /** 細項所屬主分類僅能為四個預設之一；舊版誤存自訂名稱為主分類者併入「飲食」 */
+  /** 細項所屬主分類僅能為五個預設之一；舊版誤存自訂名稱為主分類者併入「飲食」 */
   function migrateToParentGroup(name) {
     const x = String(name || "").trim();
     if (!x) return "飲食";
     if (EXPENSE_PARENT_GROUPS.includes(x)) return x;
-    const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "住家" };
+    const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "其它" };
     if (legacy[x]) return legacy[x];
     return "飲食";
   }
@@ -4019,7 +4011,7 @@ const STORAGE_KEY = "stitch_transactions";
   function migrateListedCategoryName(name) {
     const x = String(name || "").trim();
     if (x === "購物") return "服飾";
-    if (x === "其他") return "住家";
+    if (x === "其他") return "其它";
     if (x === "餐飲") return "飲食";
     return x;
   }
@@ -4035,7 +4027,7 @@ const STORAGE_KEY = "stitch_transactions";
       const n = String(nm || "").trim();
       if (!n) continue;
       const pid = slugPickId(n);
-      const v = s[pid] != null ? s[pid] : "飲食";
+      const v = s[pid] != null ? s[pid] : "其它";
       out[pid] = migrateToParentGroup(v);
     }
     return out;
@@ -4461,15 +4453,12 @@ const STORAGE_KEY = "stitch_transactions";
   const categoryGrid = document.getElementById("category-grid");
   const saveButton = document.getElementById("save-transaction-btn");
   const categorySelect = document.getElementById("category-select");
-  const addCategoryBtn = document.getElementById("add-category-btn");
   const editCategoriesBtn = document.getElementById("edit-categories-btn");
   const categoryEditorOverlay = document.getElementById("category-editor-overlay");
   const categoryEditorDefaultRows = document.getElementById("category-editor-default-rows");
-  const categoryEditorCustomRows = document.getElementById("category-editor-custom-rows");
   const categoryEditorCloseBtn = document.getElementById("category-editor-close-btn");
   const categoryEditorCancelBtn = document.getElementById("category-editor-cancel-btn");
   const categoryEditorSaveBtn = document.getElementById("category-editor-save-btn");
-  const categoryEditorAddRowBtn = document.getElementById("category-editor-add-row-btn");
   const incomeCategoryEditorOverlay = document.getElementById("income-category-editor-overlay");
   const incomeEditorDefaultRows = document.getElementById("income-editor-default-rows");
   const incomeEditorCustomRows = document.getElementById("income-editor-custom-rows");
@@ -5264,7 +5253,6 @@ const STORAGE_KEY = "stitch_transactions";
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
     editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("edit-income-categories-btn")?.classList.toggle("hidden", txFlow === "expense");
-    addCategoryBtn?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("invoice-scan-wrap")?.classList.toggle("hidden", txFlow !== "expense");
     document.getElementById("invoice-fields-wrap")?.classList.toggle("hidden", txFlow !== "expense");
     document.getElementById("nav-invoice-qr-btn")?.classList.toggle("hidden", txFlow !== "expense");
@@ -5874,17 +5862,6 @@ const STORAGE_KEY = "stitch_transactions";
     });
   }
 
-  function mergeEditorCustomNamesForGrid(savedCustoms) {
-    const a = Array.isArray(savedCustoms) ? [...savedCustoms] : [];
-    if (categoryEditorCustomRows) {
-      categoryEditorCustomRows.querySelectorAll(".custom-cat-name").forEach((inp) => {
-        const v = inp.value?.trim();
-        if (v) a.push(v);
-      });
-    }
-    return Array.from(new Set(a));
-  }
-
   function gridLineRowsForEditor(customNames) {
     const rows = EXPENSE_CATEGORY_SHORTCUTS.map((r) => ({ ...r, isCustom: false }));
     const seen = new Set(rows.map((r) => r.pickId));
@@ -5894,7 +5871,7 @@ const STORAGE_KEY = "stitch_transactions";
       const pid = slugPickId(n);
       if (seen.has(pid)) continue;
       seen.add(pid);
-      rows.push({ pickId: pid, label: n, parent: "飲食", defaultIcon: "label", isCustom: true });
+      rows.push({ pickId: pid, label: n, parent: "其它", defaultIcon: "label", isCustom: true });
     }
     return rows;
   }
@@ -5903,7 +5880,7 @@ const STORAGE_KEY = "stitch_transactions";
     if (!categoryEditorOverlay || categoryEditorOverlay.classList.contains("hidden")) return;
     const cats = await readCategories();
     const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
-    renderCategoryEditorParentRows(mergeEditorCustomNamesForGrid(customs));
+    renderCategoryEditorParentRows(customs);
   }
 
   function renderCategoryEditorParentRows(customNames) {
@@ -5954,7 +5931,9 @@ const STORAGE_KEY = "stitch_transactions";
         chip.innerHTML = `<span>${r.label}</span><span class="material-symbols-outlined text-[14px] opacity-70" aria-hidden="true">close</span>`;
         chip.setAttribute("aria-label", `移除「${r.label}」細項並還原預設所屬主分類`);
         chip.addEventListener("click", () => {
-          const defPid = DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食";
+          const defPid = r.isCustom
+            ? "其它"
+            : migrateToParentGroup(DEFAULT_SHORTCUT_PARENT_MAP[r.pickId] ?? "飲食");
           editorShortcutParentMap[r.pickId] = migrateToParentGroup(defPid);
           void refreshCategoryEditorParentRows();
         });
@@ -5983,10 +5962,7 @@ const STORAGE_KEY = "stitch_transactions";
       editorHiddenShortcutIds = [...hidden];
       const customs = cats.filter((c) => !EXPENSE_PARENT_GROUPS.includes(c));
       editorShortcutParentMap = buildFullShortcutParentMap(rawMap, customs);
-      categoryEditorCustomRows.innerHTML = "";
-      customs.forEach((name) => appendCustomEditorRow(name));
-      if (customs.length === 0) appendCustomEditorRow("");
-      renderCategoryEditorParentRows(mergeEditorCustomNamesForGrid(customs));
+      renderCategoryEditorParentRows(customs);
     });
   }
 
@@ -5999,61 +5975,14 @@ const STORAGE_KEY = "stitch_transactions";
     if (e.target === categoryEditorOverlay) closeCategoryEditor();
   });
 
-  function appendCustomEditorRow(name) {
-    const row = document.createElement("div");
-    row.className = "flex items-center gap-2 flex-wrap category-editor-custom-row";
-    row.innerHTML = `
-      <input type="text" class="custom-cat-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="分類名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
-      <button type="button" class="editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
-        <span class="material-symbols-outlined text-lg">delete</span>
-      </button>
-    `;
-    row.querySelector(".editor-remove-custom").addEventListener("click", () => {
-      row.remove();
-      if (!categoryEditorCustomRows.querySelector(".category-editor-custom-row")) {
-        appendCustomEditorRow("");
-      }
-      void refreshCategoryEditorParentRows();
-    });
-    const nameInput = row.querySelector(".custom-cat-name");
-    nameInput?.addEventListener("input", () => {
-      void refreshCategoryEditorParentRows();
-    });
-    nameInput?.addEventListener("blur", () => {
-      void refreshCategoryEditorParentRows();
-    });
-    categoryEditorCustomRows.appendChild(row);
-  }
-
   async function saveCategoryEditor() {
     try {
-      const icons = { ...(await readCatIconsFull()) };
-
-      const customNames = [];
-      const customRowEls = categoryEditorCustomRows.querySelectorAll(".category-editor-custom-row");
-      for (const row of customRowEls) {
-        const nm = row.querySelector(".custom-cat-name")?.value?.trim();
-        if (!nm) continue;
-        if (EXPENSE_PARENT_GROUPS.includes(nm)) {
-          alert("此名稱與預設主分類重複，請換個名稱：" + nm);
-          return;
-        }
-        if (customNames.includes(nm)) {
-          alert("自訂分類名稱不可重複：" + nm);
-          return;
-        }
-        customNames.push(nm);
-        const prevIcon = icons[nm];
-        icons[nm] = normalizeMaterialIcon(prevIcon || "label");
-      }
-
-      const fullList = normalizeCategories([...EXPENSE_PARENT_GROUPS, ...customNames]);
+      const fullList = normalizeCategories(await readCategories());
       const ok = await setCategoriesAll(fullList);
       if (!ok) {
         alert("無法儲存分類清單（連線逾時或遭拒），請重試。");
         return;
       }
-      await writeCatIconsFull(icons);
       await writeShortcutParentMap(editorShortcutParentMap);
       await writeHiddenShortcuts(editorHiddenShortcutIds);
       await bootCategories();
@@ -6173,10 +6102,6 @@ const STORAGE_KEY = "stitch_transactions";
   editCategoriesBtn?.addEventListener("click", () => openCategoryEditor());
   categoryEditorCloseBtn?.addEventListener("click", () => closeCategoryEditor());
   categoryEditorCancelBtn?.addEventListener("click", () => closeCategoryEditor());
-  categoryEditorAddRowBtn?.addEventListener("click", () => {
-    appendCustomEditorRow("");
-    void refreshCategoryEditorParentRows();
-  });
   categoryEditorSaveBtn?.addEventListener("click", async () => {
     await saveCategoryEditor();
   });
@@ -6373,8 +6298,6 @@ const STORAGE_KEY = "stitch_transactions";
     if (txFlow === "expense") syncPickIdFromSelect();
     scrollToAmountEntryAfterCategory();
   });
-
-  addCategoryBtn.addEventListener("click", () => openCustomCategoryModal("expense"));
 
   saveCustomCategoryBtn.addEventListener("click", async () => {
     const name = customCategoryInput.value;
