@@ -6176,6 +6176,101 @@ const STORAGE_KEY = "stitch_transactions";
     } catch (e) {}
   }
 
+  let invoiceGoogleSyncInFlightStandalone = false;
+
+  /** 與發票頁共用：儲存明細後觸發 Google 試算表同步（延遲與 debounce 在 invoice 端） */
+  function triggerGoogleSheetSyncAfterTxSave() {
+    try {
+      if (window.__stitchGoogleSheetSync && typeof window.__stitchGoogleSheetSync.schedule === "function") {
+        window.__stitchGoogleSheetSync.schedule(true);
+        return;
+      }
+    } catch (e) {}
+    void stitchGoogleSheetSyncStandalone_(true);
+  }
+
+  let __stitchGsyncTimerStandalone = null;
+  function stitchGoogleSheetSyncStandalone_(userInitiated) {
+    if (__stitchGsyncTimerStandalone) clearTimeout(__stitchGsyncTimerStandalone);
+    __stitchGsyncTimerStandalone = setTimeout(() => {
+      void __stitchRunGoogleSheetSyncStandalone({ userInitiated: !!userInitiated });
+    }, 900);
+  }
+
+  async function __stitchRunGoogleSheetSyncStandalone(opts) {
+    const userInitiated = !!(opts && opts.userInitiated);
+    let sheetId = "";
+    let webAppUrl = "";
+    try {
+      const d = JSON.parse(localStorage.getItem("stitch_prefs") || "{}");
+      sheetId = String(d.googleSheetId || "").trim();
+      webAppUrl = String(d.googleAppsScriptUrl || "").trim();
+    } catch (e) {
+      return;
+    }
+    if (!sheetId || !webAppUrl) return;
+    const txs = readTransactionsLocal();
+    const rows = (Array.isArray(txs) ? txs : []).map((t) => {
+      const amountNum = Math.round(Number(t.amount));
+      const safeAmount = Number.isFinite(amountNum) ? amountNum : 0;
+      const ymd = String(t.bookedDate || "").trim();
+      let dateStr = "";
+      const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      dateStr = m ? m[1] + "/" + m[2] + "/" + m[3] : ymd.replace(/-/g, "/");
+      let timeStr = "";
+      if (t.createdAt) {
+        try {
+          const d = new Date(t.createdAt);
+          if (!Number.isNaN(d.getTime())) {
+            timeStr =
+              String(d.getHours()).padStart(2, "0") +
+              ":" +
+              String(d.getMinutes()).padStart(2, "0") +
+              ":" +
+              String(d.getSeconds()).padStart(2, "0");
+          }
+        } catch (e) {}
+      }
+      return {
+        date: dateStr,
+        time: timeStr,
+        type: t.flow === "income" ? "收入" : "支出",
+        category: String(t.category || "—").trim(),
+        note: String(t.note || "").trim(),
+        amount: safeAmount,
+        id: String(t.id != null ? t.id : ""),
+      };
+    });
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      if (userInitiated) alert("同步失敗，錯誤代碼：offline");
+      return;
+    }
+    if (invoiceGoogleSyncInFlightStandalone) return;
+    invoiceGoogleSyncInFlightStandalone = true;
+    if (userInitiated) alert("正在嘗試連線至 Google...");
+    const data = {
+      source: "stitch-sync",
+      sheetId,
+      spreadsheetId: sheetId,
+      syncedAt: new Date().toISOString(),
+      rows,
+    };
+    try {
+      await fetch(webAppUrl, {
+        method: "POST",
+        mode: "no-cors",
+        cache: "no-cache",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+      });
+      if (userInitiated) alert("同步成功！");
+    } catch (e) {
+      if (userInitiated) alert("同步失敗，錯誤代碼：" + (e && e.message ? e.message : String(e)));
+    } finally {
+      invoiceGoogleSyncInFlightStandalone = false;
+    }
+  }
+
   function readTransactionsLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -6279,6 +6374,7 @@ const STORAGE_KEY = "stitch_transactions";
       transactionDateYmd = ymdFromDate(new Date());
       syncTxDateUi();
       updateAmountDisplay();
+      triggerGoogleSheetSyncAfterTxSave();
       alert(
         "已依明細儲存 " +
           nSave.length +
@@ -6357,6 +6453,7 @@ const STORAGE_KEY = "stitch_transactions";
     transactionDateYmd = ymdFromDate(new Date());
     syncTxDateUi();
     updateAmountDisplay();
+    triggerGoogleSheetSyncAfterTxSave();
     const baseMsg = flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。";
     alert(baseMsg + (lotteryLine ? "\n\n" + lotteryLine : ""));
   }
@@ -6740,28 +6837,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     }
   }
 
-  /** 發票列對應之明細交易（txinv: 列） */
-  function getTransactionForInvoiceRow(invRec) {
-    const rid = String(invRec?.id || "");
-    if (!rid.startsWith("txinv:")) return null;
-    const txId = rid.slice(6);
-    const txs = readTransactionsLocal();
-    return txs.find((t) => String(t?.id) === txId) || null;
-  }
-
-  function syncTimeForInvoiceRecord(r) {
-    const tx = getTransactionForInvoiceRow(r);
-    if (tx && tx.createdAt) return formatSyncTimeFromIso(tx.createdAt);
-    if (r.createdAt) return formatSyncTimeFromIso(r.createdAt);
-    return "";
-  }
-
-  function syncTypeForInvoiceRecord(r) {
-    const tx = getTransactionForInvoiceRow(r);
-    if (tx && tx.flow === "income") return "收入";
-    return "支出";
-  }
-
   /** 僅來自 stitch_invoice_records 的持久化列（不含明細合併的 txinv: 列） */
   let persistedInvoiceRecords = [];
 
@@ -6969,25 +7044,31 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     }, 900);
   }
 
-  function buildInvoiceSyncPayload() {
+  /**
+   * 與明細資料庫一致：以 stitch_transactions 全量同步至試算表（鍵名：date, time, type, category, note, amount, id）。
+   * amount 必須為數字，避免試算表收到字串 "0"。
+   */
+  function transactionToGoogleSheetRow(t) {
+    if (!t || typeof t !== "object") return null;
+    const amountNum = Math.round(Number(t.amount));
+    const safeAmount = Number.isFinite(amountNum) ? amountNum : 0;
+    return {
+      date: formatYmdSlashes(t.bookedDate) || trimInvoiceField(t.bookedDate) || "",
+      time: formatSyncTimeFromIso(t.createdAt),
+      type: t.flow === "income" ? "收入" : "支出",
+      category: String(t.category || "—").trim(),
+      note: String(t.note || "").trim(),
+      amount: safeAmount,
+      id: String(t.id != null ? t.id : ""),
+    };
+  }
+
+  function buildGoogleSheetSyncPayload() {
     const { sheetId, webAppUrl } = readGoogleSyncPrefs();
-    const rows = (store.records || []).map((r) => {
-      const link = findDetailForInvoiceRecord(r);
-      const amountNum = Math.round(Number(r.amount) || 0);
-      const dateStr = formatYmdSlashes(r.dateYmd) || trimInvoiceField(r.dateYmd) || "";
-      const noteStr =
-        String(link.note || "").trim() || trimInvoiceField(r.storeName) || "";
-      const row = {
-        date: dateStr,
-        time: syncTimeForInvoiceRecord(r),
-        type: syncTypeForInvoiceRecord(r),
-        category: String(link.category || "—").trim(),
-        note: noteStr,
-        amount: amountNum,
-        id: r.id,
-      };
-      return row;
-    });
+    const txs = readTransactionsLocal();
+    const rows = (Array.isArray(txs) ? txs : [])
+      .map(transactionToGoogleSheetRow)
+      .filter((r) => r && r.id);
     return { sheetId, webAppUrl, rows };
   }
 
@@ -6998,7 +7079,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   async function syncToGoogleSheets(opts) {
     const userInitiated = !!(opts && opts.userInitiated);
     const silent = !!(opts && opts.silent);
-    const { sheetId, webAppUrl, rows } = buildInvoiceSyncPayload();
+    const { sheetId, webAppUrl, rows } = buildGoogleSheetSyncPayload();
     console.log("[syncToGoogleSheets]", { userInitiated, silent, sheetId: !!sheetId, webAppUrl: !!webAppUrl, rowCount: rows.length });
 
     if (!sheetId || !webAppUrl) {
@@ -7026,7 +7107,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     }
 
     const data = {
-      source: "stitch-invoice",
+      source: "stitch-sync",
       sheetId,
       spreadsheetId: sheetId,
       syncedAt: new Date().toISOString(),
@@ -7652,6 +7733,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
     else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
   }
+
+  window.__stitchGoogleSheetSync = {
+    schedule: scheduleGoogleSync,
+    syncToGoogleSheets,
+  };
 
   init();
 })();
