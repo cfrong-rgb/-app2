@@ -6178,6 +6178,25 @@ const STORAGE_KEY = "stitch_transactions";
 
   let invoiceGoogleSyncInFlightStandalone = false;
 
+  function sanitizeGoogleSyncRowLocal(r) {
+    const fn = window.__stitchSanitizeGoogleSyncRow;
+    if (typeof fn === "function") return fn(r);
+    const o = r && typeof r === "object" ? r : {};
+    const rawAmt = o.amount;
+    let numAmt =
+      typeof rawAmt === "number" && Number.isFinite(rawAmt) ? Math.round(rawAmt) : Math.round(Number(rawAmt) || 0);
+    if (!Number.isFinite(numAmt)) numAmt = 0;
+    return {
+      date: String(o.date != null ? o.date : ""),
+      time: String(o.time != null ? o.time : ""),
+      type: String(o.type != null ? o.type : ""),
+      category: String(o.category != null ? o.category : ""),
+      note: String(o.note != null ? o.note : ""),
+      amount: numAmt,
+      id: String(o.id != null ? o.id : ""),
+    };
+  }
+
   /** 與發票頁共用：儲存明細後觸發 Google 試算表同步（延遲與 debounce 在 invoice 端） */
   function triggerGoogleSheetSyncAfterTxSave() {
     try {
@@ -6210,37 +6229,39 @@ const STORAGE_KEY = "stitch_transactions";
     }
     if (!sheetId || !webAppUrl) return;
     const txs = readTransactionsLocal();
-    const rows = (Array.isArray(txs) ? txs : []).map((t) => {
-      const amountNum = Math.round(Number(t.amount));
-      const safeAmount = Number.isFinite(amountNum) ? amountNum : 0;
-      const ymd = String(t.bookedDate || "").trim();
-      let dateStr = "";
-      const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      dateStr = m ? m[1] + "/" + m[2] + "/" + m[3] : ymd.replace(/-/g, "/");
-      let timeStr = "";
-      if (t.createdAt) {
-        try {
-          const d = new Date(t.createdAt);
-          if (!Number.isNaN(d.getTime())) {
-            timeStr =
-              String(d.getHours()).padStart(2, "0") +
-              ":" +
-              String(d.getMinutes()).padStart(2, "0") +
-              ":" +
-              String(d.getSeconds()).padStart(2, "0");
-          }
-        } catch (e) {}
-      }
-      return {
-        date: dateStr,
-        time: timeStr,
-        type: t.flow === "income" ? "收入" : "支出",
-        category: String(t.category || "—").trim(),
-        note: String(t.note || "").trim(),
-        amount: safeAmount,
-        id: String(t.id != null ? t.id : ""),
-      };
-    });
+    const rows = (Array.isArray(txs) ? txs : [])
+      .map((t) => {
+        const amountNum = Math.round(Number(t.amount));
+        const safeAmount = Number.isFinite(amountNum) ? amountNum : 0;
+        const ymd = String(t.bookedDate || "").trim();
+        let dateStr = "";
+        const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        dateStr = m ? m[1] + "/" + m[2] + "/" + m[3] : ymd.replace(/-/g, "/");
+        let timeStr = "";
+        if (t.createdAt) {
+          try {
+            const d = new Date(t.createdAt);
+            if (!Number.isNaN(d.getTime())) {
+              timeStr =
+                String(d.getHours()).padStart(2, "0") +
+                ":" +
+                String(d.getMinutes()).padStart(2, "0") +
+                ":" +
+                String(d.getSeconds()).padStart(2, "0");
+            }
+          } catch (e) {}
+        }
+        return {
+          date: dateStr,
+          time: timeStr,
+          type: t.flow === "income" ? "收入" : "支出",
+          category: String(t.category || "—").trim(),
+          note: String(t.note || "").trim(),
+          amount: safeAmount,
+          id: String(t.id != null ? t.id : ""),
+        };
+      })
+      .map(sanitizeGoogleSyncRowLocal);
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
       if (userInitiated) alert("同步失敗，錯誤代碼：offline");
       return;
@@ -6317,6 +6338,20 @@ const STORAGE_KEY = "stitch_transactions";
     } catch (e) {}
   }
 
+  function navigateToStitchHistory() {
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage({ type: "stitch:embed:navigate", route: "history" }, "*");
+      } catch (e) {
+        try {
+          location.hash = "#history";
+        } catch (e2) {}
+      }
+      return;
+    }
+    window.location.href = "../history/code.html";
+  }
+
   async function saveTransaction() {
     const flow = txFlow === "income" ? "income" : "expense";
 
@@ -6381,6 +6416,7 @@ const STORAGE_KEY = "stitch_transactions";
           " 筆支出（圓餅圖將分類加總）。" +
           (lotteryLine ? "\n\n" + lotteryLine : "")
       );
+      navigateToStitchHistory();
       return;
     }
 
@@ -6456,6 +6492,7 @@ const STORAGE_KEY = "stitch_transactions";
     triggerGoogleSheetSyncAfterTxSave();
     const baseMsg = flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。";
     alert(baseMsg + (lotteryLine ? "\n\n" + lotteryLine : ""));
+    navigateToStitchHistory();
   }
 
   async function bootCategories() {
@@ -7045,8 +7082,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   }
 
   /**
-   * 與明細資料庫一致：以 stitch_transactions 全量同步至試算表（鍵名：date, time, type, category, note, amount, id）。
-   * amount 必須為數字，避免試算表收到字串 "0"。
+   * 與明細資料庫一致：以 stitch_transactions 全量同步至試算表。
+   * 送出的 JSON 每列僅允許英文鍵名：date, time, type, category, note, amount, id（試算表標題可為中文）。
    */
   function transactionToGoogleSheetRow(t) {
     if (!t || typeof t !== "object") return null;
@@ -7063,12 +7100,31 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     };
   }
 
+  /** 強制每列僅含七個英文鍵，避免多餘欄位被序列化 */
+  function sanitizeGoogleSyncRow(r) {
+    const o = r && typeof r === "object" ? r : {};
+    const rawAmt = o.amount;
+    let numAmt =
+      typeof rawAmt === "number" && Number.isFinite(rawAmt) ? Math.round(rawAmt) : Math.round(Number(rawAmt) || 0);
+    if (!Number.isFinite(numAmt)) numAmt = 0;
+    return {
+      date: String(o.date != null ? o.date : ""),
+      time: String(o.time != null ? o.time : ""),
+      type: String(o.type != null ? o.type : ""),
+      category: String(o.category != null ? o.category : ""),
+      note: String(o.note != null ? o.note : ""),
+      amount: numAmt,
+      id: String(o.id != null ? o.id : ""),
+    };
+  }
+
   function buildGoogleSheetSyncPayload() {
     const { sheetId, webAppUrl } = readGoogleSyncPrefs();
     const txs = readTransactionsLocal();
     const rows = (Array.isArray(txs) ? txs : [])
       .map(transactionToGoogleSheetRow)
-      .filter((r) => r && r.id);
+      .filter((r) => r && r.id)
+      .map(sanitizeGoogleSyncRow);
     return { sheetId, webAppUrl, rows };
   }
 
@@ -7108,8 +7164,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     const data = {
       source: "stitch-sync",
-      sheetId,
-      spreadsheetId: sheetId,
+      sheetId: String(sheetId),
+      spreadsheetId: String(sheetId),
       syncedAt: new Date().toISOString(),
       rows,
     };
@@ -7502,6 +7558,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       periodAnchor = periodContainingDate(new Date(dateYmd + "T12:00:00"));
       renderList();
       closeAdd();
+      navigate("history");
     });
 
     document.getElementById("inv-list-root").addEventListener("click", async (e) => {
@@ -7737,7 +7794,9 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   window.__stitchGoogleSheetSync = {
     schedule: scheduleGoogleSync,
     syncToGoogleSheets,
+    sanitizeGoogleSyncRow,
   };
+  window.__stitchSanitizeGoogleSyncRow = sanitizeGoogleSyncRow;
 
   init();
 })();
