@@ -6724,6 +6724,44 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return { category: "", note: "" };
   }
 
+  /** 同步至試算表用：由 createdAt 取本機時間 HH:mm:ss */
+  function formatSyncTimeFromIso(iso) {
+    const s = String(iso || "").trim();
+    if (!s) return "";
+    try {
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return "";
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      const ss = String(d.getSeconds()).padStart(2, "0");
+      return hh + ":" + mm + ":" + ss;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  /** 發票列對應之明細交易（txinv: 列） */
+  function getTransactionForInvoiceRow(invRec) {
+    const rid = String(invRec?.id || "");
+    if (!rid.startsWith("txinv:")) return null;
+    const txId = rid.slice(6);
+    const txs = readTransactionsLocal();
+    return txs.find((t) => String(t?.id) === txId) || null;
+  }
+
+  function syncTimeForInvoiceRecord(r) {
+    const tx = getTransactionForInvoiceRow(r);
+    if (tx && tx.createdAt) return formatSyncTimeFromIso(tx.createdAt);
+    if (r.createdAt) return formatSyncTimeFromIso(r.createdAt);
+    return "";
+  }
+
+  function syncTypeForInvoiceRecord(r) {
+    const tx = getTransactionForInvoiceRow(r);
+    if (tx && tx.flow === "income") return "收入";
+    return "支出";
+  }
+
   /** 僅來自 stitch_invoice_records 的持久化列（不含明細合併的 txinv: 列） */
   let persistedInvoiceRecords = [];
 
@@ -6936,17 +6974,19 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const rows = (store.records || []).map((r) => {
       const link = findDetailForInvoiceRecord(r);
       const amountNum = Math.round(Number(r.amount) || 0);
-      return {
-        date: formatYmdSlashes(r.dateYmd) || trimInvoiceField(r.dateYmd) || "",
-        name: trimInvoiceField(r.storeName) || "未命名",
-        amount: amountNum,
+      const dateStr = formatYmdSlashes(r.dateYmd) || trimInvoiceField(r.dateYmd) || "";
+      const noteStr =
+        String(link.note || "").trim() || trimInvoiceField(r.storeName) || "";
+      const row = {
+        date: dateStr,
+        time: syncTimeForInvoiceRecord(r),
+        type: syncTypeForInvoiceRecord(r),
         category: String(link.category || "—").trim(),
-        invoiceNumber: trimInvoiceField(r.invoiceNumber),
-        note: String(link.note || "").trim(),
-        details: trimInvoiceField(r.carrierTag) || "",
-        tax: 0,
+        note: noteStr,
+        amount: amountNum,
         id: r.id,
       };
+      return row;
     });
     return { sheetId, webAppUrl, rows };
   }
