@@ -1144,7 +1144,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 </div>
 </nav>
-<div role="main" class="stitch-page-main pt-24 w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
+<div role="main" class="stitch-page-main pt-24 pb-[max(11rem,env(safe-area-inset-bottom,0px)+6.5rem)] w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
 <div class="max-w-lg mx-auto mb-8" id="flow-toggle-wrap">
 <div class="flex rounded-full p-1 bg-surface-container-low border border-outline-variant/35 shadow-sm" role="tablist" aria-label="支出或收入">
 <button type="button" id="flow-expense-btn" role="tab" aria-selected="true" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all bg-primary text-on-primary shadow-sm">支出</button>
@@ -1270,7 +1270,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div class="mb-10 hidden" id="income-category-section">
 <div class="flex items-center justify-between gap-3 mb-5 ml-1">
 <h2 class="text-xl font-bold text-on-surface tracking-tight">收入類型</h2>
-<button type="button" class="shrink-0 text-xs font-bold text-secondary uppercase tracking-widest px-4 py-2.5 rounded-full bg-secondary-container/60 border border-secondary/20 hover:bg-secondary-container active:scale-95 transition hidden" id="edit-income-categories-btn">編輯類型</button>
 </div>
 <div class="flex flex-wrap justify-center gap-6 sm:gap-8" id="income-category-row"></div>
 </div>
@@ -1391,38 +1390,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div class="shrink-0 grid grid-cols-2 gap-3 px-6 sm:px-8 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
 <button type="button" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-[0.99] transition" id="category-editor-cancel-btn">取消</button>
 <button type="button" class="py-3.5 rounded-2xl font-bold text-on-secondary bg-secondary active:scale-[0.99] transition" id="category-editor-save-btn">儲存</button>
-</div>
-</div>
-</div>
-<!-- 編輯收入類型（名稱 + Material 圖示） -->
-<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center hidden p-4 sm:p-6" id="income-category-editor-overlay" aria-hidden="true">
-<div id="income-category-editor-sheet" class="bg-surface w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[min(36rem,82dvh)] min-h-0 overflow-hidden">
-<div class="shrink-0 flex justify-between items-start gap-3 px-6 sm:px-8 pt-6 pb-3 border-b border-outline-variant/15">
-<div>
-<h3 class="text-xl font-bold text-primary tracking-tight">編輯收入類型</h3>
-<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">可調整預設收入圖示、新增自訂收入類型；與支出分類分開儲存。</p>
-</div>
-<button type="button" class="p-2 hover:bg-surface-container-highest rounded-full shrink-0" id="income-category-editor-close-btn" aria-label="關閉">
-<span class="material-symbols-outlined text-on-surface-variant">close</span>
-</button>
-</div>
-<div class="flex-1 overflow-y-auto overscroll-y-contain px-6 sm:px-8 py-4 min-h-0 space-y-6">
-<div>
-<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-3">預設類型 · 圖示</p>
-<div class="space-y-3" id="income-editor-default-rows"></div>
-</div>
-<div>
-<div class="flex items-center justify-between mb-3">
-<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">自訂收入類型</p>
-<button type="button" class="text-xs font-bold text-secondary hover:underline" id="income-editor-add-row-btn">＋ 新增一列</button>
-</div>
-<div class="space-y-3" id="income-editor-custom-rows"></div>
-</div>
-<p class="text-[10px] text-on-surface-variant leading-relaxed">⌘Enter／Ctrl+Enter 可儲存。</p>
-</div>
-<div class="shrink-0 grid grid-cols-2 gap-3 px-6 sm:px-8 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] border-t border-outline-variant/20 bg-surface">
-<button type="button" class="py-3.5 rounded-2xl font-bold text-on-surface-variant bg-surface-container-high active:scale-[0.99] transition" id="income-category-editor-cancel-btn">取消</button>
-<button type="button" class="py-3.5 rounded-2xl font-bold text-on-secondary bg-secondary active:scale-[0.99] transition" id="income-category-editor-save-btn">儲存</button>
 </div>
 </div>
 </div>
@@ -2529,6 +2496,27 @@ if ("serviceWorker" in navigator) {
 (function stitchPage_home() {
 "use strict";
 const STORAGE_KEY = "stitch_transactions";
+  const SHORTCUT_PARENT_MAP_KEY = "stitch_shortcut_parent_map";
+  const EXPENSE_PARENT_GROUPS_HOME = ["飲食", "交通", "住家", "服飾", "其它"];
+  const EXPENSE_CUSTOM_POOL_PARENT = "__pool__";
+  const EXPENSE_CATEGORY_SHORTCUTS_HOME = [
+    { pickId: "food_breakfast", label: "早餐", parent: "飲食" },
+    { pickId: "food_lunch", label: "午餐", parent: "飲食" },
+    { pickId: "food_dinner", label: "晚餐", parent: "飲食" },
+    { pickId: "food_cafe", label: "咖啡", parent: "飲食" },
+    { pickId: "food_icecream", label: "冰淇淋", parent: "飲食" },
+    { pickId: "trans_bus", label: "交通", parent: "交通" },
+    { pickId: "trans_gas", label: "加油", parent: "交通" },
+    { pickId: "trans_park", label: "停車", parent: "交通" },
+    { pickId: "shop_bag", label: "購物", parent: "服飾" },
+    { pickId: "shop_mart", label: "超市", parent: "飲食" },
+    { pickId: "misc_movie", label: "娛樂", parent: "服飾" },
+    { pickId: "misc_bill", label: "帳單", parent: "住家" },
+    { pickId: "misc_home", label: "居家", parent: "住家" },
+    { pickId: "misc_travel", label: "旅遊", parent: "服飾" },
+    { pickId: "misc_health", label: "健康", parent: "服飾" },
+    { pickId: "misc_school", label: "學習", parent: "住家" },
+  ];
   const DISPLAY_NAME_KEY = "stitch_display_name";
   const USER_AVATAR_KEY = "userAvatar";
   const DEFAULT_HEADER_AVATAR =
@@ -2598,7 +2586,7 @@ const STORAGE_KEY = "stitch_transactions";
 
   function updateChartSectionTitle() {
     const el = document.getElementById("home-chart-section-title");
-    if (el) el.textContent = `${viewMonthYear}年${viewMonthIndex + 1}月 支出分佈`;
+    if (el) el.textContent = `${viewMonthYear}年${viewMonthIndex + 1}月 支出分佈（主分類）`;
   }
 
   function openMonthPicker() {
@@ -2907,6 +2895,59 @@ const STORAGE_KEY = "stitch_transactions";
     return h % 360;
   }
 
+  function slugPickIdHome(name) {
+    const s = String(name).trim();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "custom_" + h.toString(36);
+  }
+  function migrateListedCategoryNameHome(name) {
+    const x = String(name || "").trim();
+    if (x === "購物") return "服飾";
+    if (x === "其他") return "其它";
+    if (x === "餐飲") return "飲食";
+    return x;
+  }
+  function migrateToParentGroupHome(name) {
+    const x = String(name || "").trim();
+    if (x === EXPENSE_CUSTOM_POOL_PARENT) return EXPENSE_CUSTOM_POOL_PARENT;
+    if (!x) return "飲食";
+    if (EXPENSE_PARENT_GROUPS_HOME.includes(x)) return x;
+    const legacy = { 餐飲: "飲食", 購物: "服飾", 其他: "其它" };
+    if (legacy[x]) return legacy[x];
+    return "飲食";
+  }
+  async function readShortcutParentMapForChart() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cfg:shortcutParentMap:get", {});
+      const m = res.map && typeof res.map === "object" && !Array.isArray(res.map) ? res.map : {};
+      return m;
+    }
+    try {
+      const raw = localStorage.getItem(SHORTCUT_PARENT_MAP_KEY);
+      const p = raw ? JSON.parse(raw) : {};
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+  function resolveExpenseMainCategory(categoryLabel, map) {
+    const name = migrateListedCategoryNameHome(String(categoryLabel || "").trim() || "住家");
+    if (EXPENSE_PARENT_GROUPS_HOME.includes(name)) return name;
+    const row = EXPENSE_CATEGORY_SHORTCUTS_HOME.find((r) => r.label === name);
+    if (row) {
+      const v = map[row.pickId];
+      let m = migrateToParentGroupHome(v != null ? v : row.parent);
+      if (m === EXPENSE_CUSTOM_POOL_PARENT) m = "其它";
+      return m;
+    }
+    const pid = slugPickIdHome(name);
+    const v = map[pid];
+    let m = migrateToParentGroupHome(v != null ? v : EXPENSE_CUSTOM_POOL_PARENT);
+    if (m === EXPENSE_CUSTOM_POOL_PARENT) m = "其它";
+    return m;
+  }
+
   function categoryPalette(category) {
     let c = String(category || "住家").trim() || "住家";
     if (c === "餐飲") c = "飲食";
@@ -2930,6 +2971,7 @@ const STORAGE_KEY = "stitch_transactions";
 
   async function renderMonthlyCategoryChart() {
     const anchor = viewMonthAnchor();
+    const shortcutMap = await readShortcutParentMapForChart();
     const items = await readTransactions();
     const monthItems = items.filter((item) => {
       if (!isExpenseTransaction(item)) return false;
@@ -2941,7 +2983,7 @@ const STORAGE_KEY = "stitch_transactions";
     });
 
     const totals = monthItems.reduce((acc, item) => {
-      const key = String(item.category || "住家");
+      const key = resolveExpenseMainCategory(item.category, shortcutMap);
       acc[key] = (acc[key] || 0) + Number(item.amount || 0);
       return acc;
     }, {});
@@ -3961,6 +4003,7 @@ const STORAGE_KEY = "stitch_transactions";
   const SHORTCUT_PARENT_MAP_KEY = "stitch_shortcut_parent_map";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
+  const INVOICE_RECORDS_KEY = "stitch_invoice_records";
   /** 支出主分類（寫入交易／圓餅圖） */
   const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾", "其它"];
   /** 自訂細項尚未指定主分類：僅在「新增細項…」各下拉池中，不顯示於任一主分類標籤列 */
@@ -4420,24 +4463,6 @@ const STORAGE_KEY = "stitch_transactions";
     "label",
     "category",
   ];
-  const INCOME_EDITOR_ICON_PICKLIST = (() => {
-    const seen = new Set();
-    const out = [];
-    for (const name of ICON_PICKLIST) {
-      if (!seen.has(name)) {
-        seen.add(name);
-        out.push(name);
-      }
-    }
-    for (const name of INCOME_CUSTOM_ICON_CHOICES) {
-      if (!seen.has(name)) {
-        seen.add(name);
-        out.push(name);
-      }
-    }
-    return out;
-  })();
-
   let amountInput = "";
   /** 編輯分類：已隱藏之捷徑 pickId（存檔前僅存在記憶體） */
   let editorHiddenShortcutIds = [];
@@ -4466,13 +4491,6 @@ const STORAGE_KEY = "stitch_transactions";
   const categoryEditorCloseBtn = document.getElementById("category-editor-close-btn");
   const categoryEditorCancelBtn = document.getElementById("category-editor-cancel-btn");
   const categoryEditorSaveBtn = document.getElementById("category-editor-save-btn");
-  const incomeCategoryEditorOverlay = document.getElementById("income-category-editor-overlay");
-  const incomeEditorDefaultRows = document.getElementById("income-editor-default-rows");
-  const incomeEditorCustomRows = document.getElementById("income-editor-custom-rows");
-  const incomeCategoryEditorCloseBtn = document.getElementById("income-category-editor-close-btn");
-  const incomeCategoryEditorCancelBtn = document.getElementById("income-category-editor-cancel-btn");
-  const incomeCategoryEditorSaveBtn = document.getElementById("income-category-editor-save-btn");
-  const incomeEditorAddRowBtn = document.getElementById("income-editor-add-row-btn");
   const customCategoryOverlay = document.getElementById("custom-category-overlay");
   const customCategoryInput = document.getElementById("custom-category-input");
   const saveCustomCategoryBtn = document.getElementById("save-custom-category-btn");
@@ -5070,6 +5088,17 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
+  function stripTrailingOperators(s) {
+    let t = String(s || "").trim();
+    while (/[+\-*/]$/.test(t)) t = t.slice(0, -1).trim();
+    return t;
+  }
+
+  /** 未完成算式時（如尾端為運算符）仍試算已輸入部分，供暫存顯示與直接儲存 */
+  function tryEvalExprLoose(s) {
+    return tryEvalExpr(stripTrailingOperators(s));
+  }
+
   function formatCalcResult(n) {
     if (!Number.isFinite(n)) return "";
     const r = Math.round(n * 100) / 100;
@@ -5100,10 +5129,71 @@ const STORAGE_KEY = "stitch_transactions";
     }
     calcTapeShowsEqualsResult = false;
     hidePostEqualsPromo();
-    el.textContent = w.replace(/\*/g, "×").replace(/\//g, "÷");
+    const disp = w.replace(/\*/g, "×").replace(/\//g, "÷");
+    const pv = tryEvalExprLoose(w);
+    const hasOp = /[+\-*/]/.test(w);
+    el.textContent =
+      hasOp && Number.isFinite(pv) ? disp + "\n→ " + formatAmountLive(formatCalcResult(pv)) : disp;
     requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
     });
+  }
+
+  /** 按＝後再以結果接續運算：運算鍵接續、數字則開始新算式 */
+  function consumeEqualsResultForNextCalc(k) {
+    if (!calcTapeShowsEqualsResult || !amountInput) return false;
+    if (k === "clear") {
+      resetCalcWorkingAndTape();
+      amountInput = "";
+      updateAmountDisplay();
+      return true;
+    }
+    if (k === "back") return false;
+    calcTapeShowsEqualsResult = false;
+    hidePostEqualsPromo();
+    if (k === "=") return false;
+    if (k === "/" || k === "*" || k === "+" || k === "-") {
+      calcWorking = amountInput + k;
+      amountInput = "";
+      updateCalcTape();
+      updateAmountDisplay();
+      return true;
+    }
+    if (k === ".") {
+      calcWorking = "0.";
+      amountInput = "";
+      updateCalcTape();
+      updateAmountDisplay();
+      return true;
+    }
+    if (/^\d$/.test(k)) {
+      calcWorking = k;
+      amountInput = "";
+      updateCalcTape();
+      updateAmountDisplay();
+      return true;
+    }
+    return false;
+  }
+
+  /** 未按＝直接儲存時，將目前算式自動結算為金額 */
+  function finalizeCalcInputForSave() {
+    const w = calcWorking.trim();
+    if (!w) return true;
+    const v = tryEvalExprLoose(w);
+    if (!Number.isFinite(v)) {
+      alert("金額算式未完成或無法計算，請按＝確認或修正算式。");
+      return false;
+    }
+    amountInput = formatCalcResult(v);
+    calcWorking = "";
+    calcTapeShowsEqualsResult = true;
+    const el = document.getElementById("calc-process-display");
+    if (el) {
+      const left = stripTrailingOperators(w).replace(/\*/g, "×").replace(/\//g, "÷");
+      el.textContent = left + " = " + formatAmountLive(amountInput);
+    }
+    return true;
   }
 
   function updateAmountDisplay() {
@@ -5157,6 +5247,7 @@ const STORAGE_KEY = "stitch_transactions";
       const btn = event.target.closest("button[data-calc]");
       if (!btn) return;
       const k = btn.getAttribute("data-calc");
+      if (consumeEqualsResultForNextCalc(k)) return;
       if (k === "clear") {
         resetCalcWorkingAndTape();
         amountInput = "";
@@ -5170,12 +5261,12 @@ const STORAGE_KEY = "stitch_transactions";
         return;
       }
       if (k === "=") {
-        const v = tryEvalExpr(calcWorking);
+        const v = tryEvalExprLoose(calcWorking);
         if (!Number.isFinite(v)) {
           alert("算式不正確或無法計算，請檢查數字與運算符號。");
           return;
         }
-        const disp = calcWorking.replace(/\*/g, "×").replace(/\//g, "÷");
+        const disp = stripTrailingOperators(calcWorking).replace(/\*/g, "×").replace(/\//g, "÷");
         const line = disp + " = " + formatCalcResult(v);
         amountInput = formatCalcResult(v);
         calcWorking = "";
@@ -5259,7 +5350,6 @@ const STORAGE_KEY = "stitch_transactions";
     document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
     editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
-    document.getElementById("edit-income-categories-btn")?.classList.toggle("hidden", txFlow === "expense");
     document.getElementById("invoice-scan-wrap")?.classList.toggle("hidden", txFlow !== "expense");
     document.getElementById("invoice-fields-wrap")?.classList.toggle("hidden", txFlow !== "expense");
     document.getElementById("nav-invoice-qr-btn")?.classList.toggle("hidden", txFlow !== "expense");
@@ -5836,18 +5926,6 @@ const STORAGE_KEY = "stitch_transactions";
     return true;
   }
 
-  function iconOptionsHtml(selected, picklist) {
-    const base = Array.isArray(picklist) && picklist.length ? picklist : ICON_PICKLIST;
-    const sel = normalizeMaterialIcon(String(selected || "category"));
-    const list = sel && !base.includes(sel) ? [sel, ...base] : [...base];
-    return list
-      .map(
-        (name) =>
-          `<option value="${name}" ${name === sel ? "selected" : ""}>${iconLabelZh(name)}</option>`
-      )
-      .join("");
-  }
-
   function resolveShortcutIcon(pickId, parent, icons) {
     const o = icons && typeof icons === "object" && !Array.isArray(icons) ? icons : {};
     if (pickId && o[pickId]) return normalizeMaterialIcon(o[pickId]);
@@ -6013,109 +6091,6 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
-  function openIncomeCategoryEditor() {
-    incomeCategoryEditorOverlay?.classList.remove("hidden");
-    incomeCategoryEditorOverlay?.setAttribute("aria-hidden", "false");
-    void readIncomeIconsFull().then((icons) => {
-      if (!incomeEditorDefaultRows) return;
-      incomeEditorDefaultRows.innerHTML = "";
-      DEFAULT_INCOME_CATEGORIES.forEach((name) => {
-        const iconName = icons[name] || DEFAULT_INCOME_ICONS[name] || "payments";
-        const row = document.createElement("div");
-        row.className = "flex items-center gap-2 flex-wrap";
-        row.innerHTML = `
-          <span class="w-20 shrink-0 text-sm font-bold text-on-surface">${name}</span>
-          <select class="income-editor-def-icon flex-1 min-w-[140px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface" data-income-name="${name.replace(/"/g, "&quot;")}">
-            ${iconOptionsHtml(iconName, INCOME_EDITOR_ICON_PICKLIST)}
-          </select>
-        `;
-        incomeEditorDefaultRows.appendChild(row);
-      });
-
-      readIncomeCategories().then((cats) => {
-        const customs = cats.filter((c) => !DEFAULT_INCOME_CATEGORIES.includes(c));
-        incomeEditorCustomRows.innerHTML = "";
-        customs.forEach((name) => appendIncomeCustomEditorRow(name, icons[name] || "payments"));
-        if (customs.length === 0) appendIncomeCustomEditorRow("", "payments");
-      });
-    });
-  }
-
-  function closeIncomeCategoryEditor() {
-    incomeCategoryEditorOverlay?.classList.add("hidden");
-    incomeCategoryEditorOverlay?.setAttribute("aria-hidden", "true");
-  }
-
-  incomeCategoryEditorOverlay?.addEventListener("click", (e) => {
-    if (e.target === incomeCategoryEditorOverlay) closeIncomeCategoryEditor();
-  });
-
-  function appendIncomeCustomEditorRow(name, iconName) {
-    const row = document.createElement("div");
-    row.className = "flex items-center gap-2 flex-wrap income-editor-custom-row";
-    row.innerHTML = `
-      <input type="text" class="income-custom-name flex-1 min-w-[100px] px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" placeholder="收入類型名稱" maxlength="16" value="${String(name).replace(/"/g, "&quot;")}"/>
-      <select class="income-custom-icon px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-semibold text-on-surface min-w-[140px]">
-        ${iconOptionsHtml(iconName, INCOME_EDITOR_ICON_PICKLIST)}
-      </select>
-      <button type="button" class="income-editor-remove-custom p-2 rounded-xl bg-error-container/15 text-error hover:bg-error-container/25 shrink-0" aria-label="移除此列">
-        <span class="material-symbols-outlined text-lg">delete</span>
-      </button>
-    `;
-    row.querySelector(".income-editor-remove-custom").addEventListener("click", () => {
-      row.remove();
-      if (!incomeEditorCustomRows.querySelector(".income-editor-custom-row")) {
-        appendIncomeCustomEditorRow("", "payments");
-      }
-    });
-    incomeEditorCustomRows.appendChild(row);
-  }
-
-  async function saveIncomeCategoryEditor() {
-    const icons = { ...(await readIncomeIconsFull()) };
-    incomeEditorDefaultRows.querySelectorAll(".income-editor-def-icon").forEach((sel) => {
-      const n = sel.getAttribute("data-income-name");
-      if (n) icons[n] = normalizeMaterialIcon(sel.value);
-    });
-
-    const customNames = [];
-    const customRowEls = incomeEditorCustomRows.querySelectorAll(".income-editor-custom-row");
-    for (const row of customRowEls) {
-      const nm = row.querySelector(".income-custom-name")?.value?.trim();
-      const ic = row.querySelector(".income-custom-icon")?.value || "payments";
-      if (!nm) continue;
-      if (DEFAULT_INCOME_CATEGORIES.includes(nm)) {
-        alert("此名稱與預設收入類型重複：" + nm);
-        return;
-      }
-      if (customNames.includes(nm)) {
-        alert("自訂收入類型名稱不可重複：" + nm);
-        return;
-      }
-      customNames.push(nm);
-      icons[nm] = normalizeMaterialIcon(ic);
-    }
-
-    const fullList = normalizeIncomeCategories([...DEFAULT_INCOME_CATEGORIES, ...customNames]);
-    const ok = await setIncomeCategoriesAll(fullList);
-    if (!ok) {
-      alert("無法儲存收入類型，請重試。");
-      return;
-    }
-    await writeIncomeIconsFull(icons);
-    await bootIncomeCategories();
-    setTxFlow(txFlow);
-    closeIncomeCategoryEditor();
-  }
-
-  document.getElementById("edit-income-categories-btn")?.addEventListener("click", () => openIncomeCategoryEditor());
-  incomeCategoryEditorCloseBtn?.addEventListener("click", () => closeIncomeCategoryEditor());
-  incomeCategoryEditorCancelBtn?.addEventListener("click", () => closeIncomeCategoryEditor());
-  incomeEditorAddRowBtn?.addEventListener("click", () => appendIncomeCustomEditorRow("", "payments"));
-  incomeCategoryEditorSaveBtn?.addEventListener("click", async () => {
-    await saveIncomeCategoryEditor();
-  });
-
   editCategoriesBtn?.addEventListener("click", () => openCategoryEditor());
   categoryEditorCloseBtn?.addEventListener("click", () => closeCategoryEditor());
   categoryEditorCancelBtn?.addEventListener("click", () => closeCategoryEditor());
@@ -6177,6 +6152,42 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
+  async function appendInvoiceScanRecord(payload) {
+    const amt = Math.round(Number(payload.amount) || 0);
+    const dateYmd = String(payload.dateYmd || "").trim();
+    if (!dateYmd || amt <= 0) return;
+    const rec = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      storeName: String(payload.storeName || "掃描／記帳").trim() || "掃描／記帳",
+      dateYmd,
+      amount: amt,
+      invoiceNumber: String(payload.invoiceNumber || "").trim(),
+      carrierTag: String(payload.carrierTag || "掃描／記帳").trim(),
+      createdAt: new Date().toISOString(),
+    };
+    if (isInIframe()) {
+      const load = await requestParent("stitch:invoice:load", {});
+      const records = Array.isArray(load.records) ? [...load.records] : [];
+      records.unshift(rec);
+      await requestParent("stitch:invoice:save", {
+        carrier: load.carrier != null ? String(load.carrier) : "",
+        records,
+        settings:
+          load.settings && typeof load.settings === "object" && !Array.isArray(load.settings)
+            ? load.settings
+            : { highBrightness: false },
+      });
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(INVOICE_RECORDS_KEY);
+      const p = raw ? JSON.parse(raw) : [];
+      const records = Array.isArray(p) ? p : [];
+      records.unshift(rec);
+      localStorage.setItem(INVOICE_RECORDS_KEY, JSON.stringify(records));
+    } catch (e) {}
+  }
+
   async function saveTransaction() {
     const flow = txFlow === "income" ? "income" : "expense";
 
@@ -6210,6 +6221,14 @@ const STORAGE_KEY = "stitch_transactions";
       for (const rec of nSave) {
         await addTransaction(rec);
       }
+      const totalInv = nSave.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      await appendInvoiceScanRecord({
+        storeName: (invoiceStoreName || baseNote || "").trim() || "掃描／記帳",
+        dateYmd: transactionDateYmd,
+        amount: totalInv,
+        invoiceNumber: String(invRaw || "").replace(/[^0-9A-Z\-]/gi, ""),
+        carrierTag: "掃描／記帳",
+      });
       let lotteryLine = "";
       if (typeof StitchLottery !== "undefined" && StitchLottery && invRaw) {
         try {
@@ -6234,6 +6253,8 @@ const STORAGE_KEY = "stitch_transactions";
       );
       return;
     }
+
+    if (!finalizeCalcInputForSave()) return;
 
     const amount = Number(amountInput || "0");
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -6284,6 +6305,16 @@ const STORAGE_KEY = "stitch_transactions";
     }
 
     await addTransaction(record);
+
+    if (flow === "expense" && invNote) {
+      await appendInvoiceScanRecord({
+        storeName: (note || "").split("·")[0].trim() || invoiceStoreName || "掃描／記帳",
+        dateYmd: transactionDateYmd,
+        amount: Number(amount.toFixed(2)),
+        invoiceNumber: invNote.toUpperCase().replace(/[^0-9A-Z\-]/gi, ""),
+        carrierTag: "掃描／記帳",
+      });
+    }
 
     resetCalcWorkingAndTape();
     amountInput = "";
@@ -6373,7 +6404,6 @@ const STORAGE_KEY = "stitch_transactions";
     const qrOv = document.getElementById("add-qr-scanner-overlay");
     if (qrOv && !qrOv.classList.contains("hidden")) return;
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) return;
-    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) return;
     if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) return;
     e.preventDefault();
     saveTransaction();
@@ -6389,11 +6419,6 @@ const STORAGE_KEY = "stitch_transactions";
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
       e.preventDefault();
       saveCustomCategoryBtn?.click();
-      return;
-    }
-    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) {
-      e.preventDefault();
-      incomeCategoryEditorSaveBtn?.click();
       return;
     }
     if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) {
@@ -6423,11 +6448,6 @@ const STORAGE_KEY = "stitch_transactions";
     }
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
       closeCustomCategoryModal();
-      e.preventDefault();
-      return;
-    }
-    if (incomeCategoryEditorOverlay && !incomeCategoryEditorOverlay.classList.contains("hidden")) {
-      closeIncomeCategoryEditor();
       e.preventDefault();
       return;
     }
