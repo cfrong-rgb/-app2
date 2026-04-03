@@ -6935,15 +6935,16 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const { sheetId, webAppUrl } = readGoogleSyncPrefs();
     const rows = (store.records || []).map((r) => {
       const link = findDetailForInvoiceRecord(r);
+      const amountNum = Math.round(Number(r.amount) || 0);
       return {
-        dateYmd: r.dateYmd || "",
-        dateDisplay: formatYmdSlashes(r.dateYmd),
-        title: trimInvoiceField(r.storeName) || "未命名",
-        amount: Math.round(Number(r.amount) || 0),
+        date: formatYmdSlashes(r.dateYmd) || trimInvoiceField(r.dateYmd) || "",
+        name: trimInvoiceField(r.storeName) || "未命名",
+        amount: amountNum,
+        category: String(link.category || "—").trim(),
         invoiceNumber: trimInvoiceField(r.invoiceNumber),
-        category: link.category || "—",
-        note: link.note || "",
-        carrierTag: trimInvoiceField(r.carrierTag),
+        note: String(link.note || "").trim(),
+        details: trimInvoiceField(r.carrierTag) || "",
+        tax: 0,
         id: r.id,
       };
     });
@@ -6984,8 +6985,9 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       alert("正在嘗試連線至 Google...");
     }
 
-    const payload = {
+    const data = {
       source: "stitch-invoice",
+      sheetId,
       spreadsheetId: sheetId,
       syncedAt: new Date().toISOString(),
       rows,
@@ -6995,7 +6997,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         method: "POST",
         mode: "no-cors",
         cache: "no-cache",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
         headers: { "Content-Type": "text/plain;charset=utf-8" },
       });
       console.log("[syncToGoogleSheets] fetch completed");
