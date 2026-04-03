@@ -1055,7 +1055,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <button type="button" class="w-full py-3.5 rounded-xl bg-primary text-on-primary text-sm font-bold shadow-[0_6px_20px_rgba(114,86,56,0.22)] border border-primary-dim/20 active:scale-[0.99] transition flex items-center justify-center gap-2" id="export-csv-btn">
 <span class="material-symbols-outlined text-lg" aria-hidden="true">download</span>
-匯出 Excel（.xls）
+匯出 Excel
 </button>
 </div>
 <div class="space-y-4" id="local-transactions-list"></div>
@@ -1063,7 +1063,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <!-- 編輯交易（高於側邊選單 z-100） -->
 <div class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-[#0e0e0c]/40 backdrop-blur-sm hidden" id="tx-edit-overlay" role="dialog" aria-modal="true" aria-labelledby="tx-edit-title">
-<div id="tx-edit-sheet" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-black/5 flex flex-col max-h-[min(34rem,85dvh)] min-h-0 overflow-hidden">
+<div id="tx-edit-sheet" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-black/5 flex flex-col max-h-[min(42rem,92dvh)] min-h-0 overflow-hidden">
 <div class="shrink-0 flex justify-between items-center px-6 pt-5 pb-3 border-b border-black/5">
 <h2 id="tx-edit-title" class="text-lg font-bold text-primary">修改這筆帳目</h2>
 <button type="button" class="p-2 rounded-full hover:bg-surface-container-low text-on-surface-variant" id="tx-edit-close-btn" aria-label="關閉">
@@ -1825,6 +1825,30 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 </div>
 </div>
+</div>
+</div>
+<!-- Google 試算表同步 -->
+<div class="md:col-span-12 bg-surface-container-low rounded-xl p-8 border border-outline-variant/20">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-primary">Google 試算表同步</h3>
+<p class="text-sm text-on-surface-variant mt-1">發票列表會先存本機；若已填寫下方設定且連上網路，將在背景嘗試同步至試算表。</p>
+</div>
+</div>
+<div class="space-y-4 max-w-xl">
+<div>
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-2" for="google-sheet-id-input">Google 試算表 ID</label>
+<input id="google-sheet-id-input" class="w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-white text-sm font-mono text-on-surface" type="text" placeholder="試算表網址中 /d/ 與 /edit 之間的字串" autocomplete="off"/>
+</div>
+<div>
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-2" for="google-gas-url-input">Apps Script Web App 網址</label>
+<input id="google-gas-url-input" class="w-full px-4 py-3 rounded-xl border border-outline-variant/40 bg-white text-sm text-on-surface" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"/>
+<p class="text-[10px] text-on-surface-variant mt-1.5 leading-relaxed">請將專案內附的 GAS 範例部署為「網路應用程式」（存取權：任何人），再把部署後的網址貼上。未設定時不影響記帳與發票本機功能。</p>
+</div>
+<button type="button" id="save-google-sync-btn" class="px-6 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-sm active:scale-[0.99] transition">儲存同步設定</button>
 </div>
 </div>
 <!-- Danger Zone / Logout -->
@@ -6521,9 +6545,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         records: data.records,
         settings: data.settings,
       });
-      return;
+    } else {
+      writeLocalFull(data);
     }
-    writeLocalFull(data);
+    scheduleGoogleSync();
   }
 
   let store = { carrier: "", records: [], settings: { highBrightness: false } };
@@ -6581,11 +6606,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return rm === startMonth || rm === endMonth;
   }
 
-  function monthZh(m) {
-    const names = ["一","二","三","四","五","六","七","八","九","十","十一","十二"];
-    return names[m - 1] || String(m);
-  }
-
   /** 財政部手機條碼：共 8 碼，/ + 7 碼英數字或 +-. */
   function normalizeCarrier(raw) {
     let s = String(raw || "")
@@ -6610,6 +6630,221 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     setOv.classList.remove("hidden");
     setOv.classList.add("flex");
     setTimeout(() => document.getElementById("inv-carrier-input").focus(), 100);
+  }
+
+  const TX_STORAGE_KEY = "stitch_transactions";
+
+  function readTransactionsLocal() {
+    try {
+      const raw = localStorage.getItem(TX_STORAGE_KEY);
+      const p = raw ? JSON.parse(raw) : [];
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function normalizeInvoiceNumberKey(s) {
+    return String(s || "")
+      .trim()
+      .replace(/\s/g, "")
+      .replace(/[-–—]/g, "")
+      .toUpperCase();
+  }
+
+  function extractInvoiceNumberFromTx(t) {
+    if (!t || typeof t !== "object") return "";
+    if (t.invoiceNumber && String(t.invoiceNumber).trim()) {
+      return String(t.invoiceNumber).trim();
+    }
+    const note = String(t.note || "");
+    const m = note.match(/([A-Z]{2}[-\s]?[0-9]{8})/i);
+    return m ? m[1].replace(/\s/g, "") : "";
+  }
+
+  /** 自明細資料庫依發票號碼對應類別與備註（取第一筆命中） */
+  function findDetailForInvoiceRecord(invRec) {
+    const want = normalizeInvoiceNumberKey(invRec.invoiceNumber);
+    if (!want) return { category: "", note: "" };
+    const txs = readTransactionsLocal();
+    for (const t of txs) {
+      const ex = extractInvoiceNumberFromTx(t);
+      if (!ex) continue;
+      if (normalizeInvoiceNumberKey(ex) === want) {
+        return {
+          category: String(t.category || "").trim(),
+          note: String(t.note || "").trim(),
+        };
+      }
+    }
+    return { category: "", note: "" };
+  }
+
+  function formatYmdSlashes(dateYmd) {
+    const s = String(dateYmd || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return s || "—";
+    return m[1] + "/" + m[2] + "/" + m[3];
+  }
+
+  function escAttr(s) {
+    return String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;");
+  }
+
+  function readGoogleSyncPrefs() {
+    try {
+      const d = JSON.parse(localStorage.getItem("stitch_prefs") || "{}");
+      return {
+        sheetId: String(d.googleSheetId || "").trim(),
+        webAppUrl: String(d.googleAppsScriptUrl || "").trim(),
+      };
+    } catch {
+      return { sheetId: "", webAppUrl: "" };
+    }
+  }
+
+  const INVOICE_GSYNC_STATE_KEY = "stitch_google_invoice_sync_v1";
+
+  function readInvoiceSyncState() {
+    try {
+      const o = JSON.parse(localStorage.getItem(INVOICE_GSYNC_STATE_KEY) || "null");
+      if (o && typeof o === "object") {
+        return {
+          pending: !!o.pending,
+          attempts: Math.max(0, Number(o.attempts) || 0),
+          nextRetryAt: Math.max(0, Number(o.nextRetryAt) || 0),
+        };
+      }
+    } catch (e) {}
+    return { pending: false, attempts: 0, nextRetryAt: 0 };
+  }
+
+  function writeInvoiceSyncState(s) {
+    try {
+      localStorage.setItem(INVOICE_GSYNC_STATE_KEY, JSON.stringify(s));
+    } catch (e) {}
+  }
+
+  function clearInvoiceSyncState() {
+    writeInvoiceSyncState({ pending: false, attempts: 0, nextRetryAt: 0 });
+  }
+
+  /** 離線或網路錯誤時標記待同步；恢復連線後由 online / 定時器 / 可見性補傳。 */
+  function markInvoiceSyncPending() {
+    const st = readInvoiceSyncState();
+    st.pending = true;
+    st.nextRetryAt = 0;
+    writeInvoiceSyncState(st);
+  }
+
+  function markInvoiceSyncFailedWithBackoff() {
+    const st = readInvoiceSyncState();
+    st.pending = true;
+    st.attempts = (st.attempts || 0) + 1;
+    const backoff = Math.min(120000, 2000 * Math.pow(2, Math.min(st.attempts, 6)));
+    st.nextRetryAt = Date.now() + backoff;
+    writeInvoiceSyncState(st);
+  }
+
+  /** 連線恢復時立即允許重試（仍受 in-flight 與 prefs 限制）。 */
+  function bumpInvoiceSyncRetryImmediate() {
+    const st = readInvoiceSyncState();
+    if (!st.pending) return;
+    st.nextRetryAt = 0;
+    writeInvoiceSyncState(st);
+  }
+
+  let googleSyncTimer = null;
+  let invoiceGoogleSyncInFlight = false;
+
+  function scheduleGoogleSync() {
+    if (googleSyncTimer) clearTimeout(googleSyncTimer);
+    googleSyncTimer = setTimeout(() => {
+      const st = readInvoiceSyncState();
+      if (st.pending) {
+        st.nextRetryAt = 0;
+        writeInvoiceSyncState(st);
+      }
+      void runInvoiceGoogleSync();
+    }, 900);
+  }
+
+  function buildInvoiceSyncPayload() {
+    const { sheetId, webAppUrl } = readGoogleSyncPrefs();
+    const rows = (store.records || []).map((r) => {
+      const link = findDetailForInvoiceRecord(r);
+      return {
+        dateYmd: r.dateYmd || "",
+        dateDisplay: formatYmdSlashes(r.dateYmd),
+        title: String(r.storeName || "").trim() || "未命名",
+        amount: Math.round(Number(r.amount) || 0),
+        invoiceNumber: String(r.invoiceNumber || "").trim(),
+        category: link.category || "—",
+        note: link.note || "",
+        carrierTag: String(r.carrierTag || "").trim(),
+        id: r.id,
+      };
+    });
+    return { sheetId, webAppUrl, rows };
+  }
+
+  /**
+   * 背景同步：本機資料已在 saveStore 寫入。此處僅補傳雲端。
+   * 使用 no-cors 時無法讀回狀態，故以「離線」與 fetch 拋錯作為失敗條件並進入可重試佇列。
+   */
+  async function runInvoiceGoogleSync() {
+    const { sheetId, webAppUrl, rows } = buildInvoiceSyncPayload();
+    if (!sheetId || !webAppUrl) {
+      clearInvoiceSyncState();
+      return;
+    }
+    const st = readInvoiceSyncState();
+    if (st.pending && st.nextRetryAt > Date.now()) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      markInvoiceSyncPending();
+      return;
+    }
+    if (invoiceGoogleSyncInFlight) return;
+    invoiceGoogleSyncInFlight = true;
+    const payload = {
+      source: "stitch-invoice",
+      spreadsheetId: sheetId,
+      syncedAt: new Date().toISOString(),
+      rows,
+    };
+    try {
+      await fetch(webAppUrl, {
+        method: "POST",
+        mode: "no-cors",
+        cache: "no-cache",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+      });
+      clearInvoiceSyncState();
+    } catch (e) {
+      markInvoiceSyncFailedWithBackoff();
+    } finally {
+      invoiceGoogleSyncInFlight = false;
+    }
+  }
+
+  function installInvoiceGoogleSyncRetryListeners() {
+    window.addEventListener("online", () => {
+      bumpInvoiceSyncRetryImmediate();
+      void runInvoiceGoogleSync();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) return;
+      bumpInvoiceSyncRetryImmediate();
+      void runInvoiceGoogleSync();
+    });
+    setInterval(() => {
+      const st = readInvoiceSyncState();
+      if (st.pending && st.nextRetryAt <= Date.now()) void runInvoiceGoogleSync();
+    }, 20000);
   }
 
   function renderBarcode() {
@@ -6672,20 +6907,32 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     list.sort((a, b) => new Date(b.dateYmd) - new Date(a.dateYmd));
     root.innerHTML = list
       .map((r) => {
-        const d = new Date(r.dateYmd + "T12:00:00");
-        const day = Number.isNaN(d.getTime()) ? "—" : String(d.getDate());
-        const mzh = monthZh(d.getMonth() + 1);
-        const num = r.invoiceNumber ? `${mzh} ${escapeHtml(r.invoiceNumber)}` : mzh + " · 無號碼";
+        const dateFull = formatYmdSlashes(r.dateYmd);
+        const numLine = r.invoiceNumber
+          ? escapeHtml(r.invoiceNumber)
+          : '<span class="text-on-surface-variant/80">無號碼</span>';
+        const link = findDetailForInvoiceRecord(r);
+        const catLine = link.category
+          ? `<span class="text-on-surface font-semibold">${escapeHtml(link.category)}</span>`
+          : '<span class="text-on-surface-variant/70">類別：—</span>';
+        const noteLine =
+          link.note && link.note.length > 0
+            ? `<p class="text-[11px] text-on-surface-variant mt-1 line-clamp-2 break-words" title="${escAttr(link.note)}">備註：${escapeHtml(link.note)}</p>`
+            : '<p class="text-[11px] text-on-surface-variant/60 mt-1">備註：—</p>';
         return `
-          <div class="flex gap-2 sm:gap-3 px-3 sm:px-4 py-3 items-start min-w-0 w-full max-w-full overflow-hidden" data-id="${escapeHtml(r.id)}">
-            <div class="text-xl sm:text-2xl font-extrabold text-on-surface-variant w-7 sm:w-8 shrink-0 text-center">${day}</div>
+          <div class="flex gap-2 sm:gap-3 px-3 sm:px-4 py-3 items-start min-w-0 w-full max-w-full overflow-hidden border-b border-amber-100/80 last:border-0" data-id="${escapeHtml(r.id)}">
+            <div class="shrink-0 w-[5.5rem] sm:w-24 text-left">
+              <p class="text-xs font-extrabold text-on-surface leading-tight tracking-tight">${escapeHtml(dateFull)}</p>
+            </div>
             <div class="flex-1 min-w-0 overflow-hidden">
-              <p class="font-bold text-secondary truncate">${escapeHtml(r.storeName || "未命名店家")}</p>
-              <p class="text-xs text-on-surface-variant mt-0.5 break-all line-clamp-2">${num}</p>
+              <input type="text" class="inv-store-input w-full text-sm font-bold text-secondary bg-white/90 border border-amber-200/80 rounded-lg px-2 py-1.5 mb-1 focus:outline-none focus:ring-2 focus:ring-primary/25" data-id="${escapeHtml(r.id)}" value="${escAttr(r.storeName || "未命名店家")}" maxlength="40" aria-label="發票名稱"/>
+              <p class="text-xs text-on-surface-variant font-mono break-all">${numLine}</p>
+              <p class="text-[11px] mt-1">${catLine}</p>
+              ${noteLine}
               <span class="inline-block mt-1 max-w-full truncate text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-invoice-blue border border-blue-100">${escapeHtml(r.carrierTag || "手機條碼")}</span>
             </div>
-            <div class="font-extrabold text-on-surface shrink-0 text-sm sm:text-base tabular-nums text-right whitespace-nowrap">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
-            <button type="button" class="inv-del-btn p-1 text-on-surface-variant hover:text-red-600 shrink-0" data-id="${escapeHtml(r.id)}" aria-label="刪除">
+            <div class="font-extrabold text-on-surface shrink-0 text-sm sm:text-base tabular-nums text-right whitespace-nowrap pt-0.5">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
+            <button type="button" class="inv-del-btn p-1 text-on-surface-variant hover:text-red-600 shrink-0 self-start" data-id="${escapeHtml(r.id)}" aria-label="刪除">
               <span class="material-symbols-outlined text-xl">delete</span>
             </button>
           </div>`;
@@ -6802,6 +7049,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       }
     } catch (e) {}
 
+    installInvoiceGoogleSyncRetryListeners();
+    try {
+      if (readInvoiceSyncState().pending) void runInvoiceGoogleSync();
+    } catch (e) {}
+
     document.getElementById("inv-back-btn").addEventListener("click", () => navigate("home"));
     document.getElementById("inv-open-carrier-btn").addEventListener("click", () => openCarrierSettings());
     document.querySelectorAll(".inv-prompt-open-settings").forEach((el) => {
@@ -6838,6 +7090,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       store = await loadStore();
       renderBarcode();
       renderList();
+      bumpInvoiceSyncRetryImmediate();
+      void runInvoiceGoogleSync();
     });
 
     const setOv = document.getElementById("inv-settings-overlay");
@@ -6939,6 +7193,23 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       await saveStore(store);
       renderList();
     });
+
+    document.getElementById("inv-list-root").addEventListener(
+      "focusout",
+      async (e) => {
+        const inp = e.target.closest(".inv-store-input");
+        if (!inp) return;
+        const id = inp.getAttribute("data-id");
+        const rec = store.records.find((x) => x.id === id);
+        if (!rec) return;
+        const v = String(inp.value || "").trim();
+        const prev = String(rec.storeName || "").trim();
+        if (v === prev) return;
+        rec.storeName = v || "未命名店家";
+        await saveStore(store);
+      },
+      true
+    );
 
     const fileInput = document.getElementById("inv-scan-file");
     document.getElementById("inv-scan-btn").addEventListener("click", () => openInvQrCamera());
@@ -7185,9 +7456,18 @@ const BUDGET_KEY = "stitch_monthly_budget";
         notifyDaily: d.notifyDaily !== false,
         notifyWeekly: d.notifyWeekly === true,
         accessibleFont: d.accessibleFont === true,
+        googleSheetId: String(d.googleSheetId || "").trim(),
+        googleAppsScriptUrl: String(d.googleAppsScriptUrl || "").trim(),
       };
     } catch (e) {
-      return { notifyBudget: true, notifyDaily: true, notifyWeekly: false, accessibleFont: false };
+      return {
+        notifyBudget: true,
+        notifyDaily: true,
+        notifyWeekly: false,
+        accessibleFont: false,
+        googleSheetId: "",
+        googleAppsScriptUrl: "",
+      };
     }
   }
 
@@ -7260,6 +7540,10 @@ const BUDGET_KEY = "stitch_monthly_budget";
       else if (key === "accessibleFont") setPrefToggleUi(btn, p.accessibleFont);
     });
     document.documentElement.classList.toggle("accessible-font", p.accessibleFont);
+    const gsId = document.getElementById("google-sheet-id-input");
+    const gsUrl = document.getElementById("google-gas-url-input");
+    if (gsId) gsId.value = p.googleSheetId || "";
+    if (gsUrl) gsUrl.value = p.googleAppsScriptUrl || "";
   }
 
   function openProfileHelp(key) {
@@ -7319,6 +7603,14 @@ const BUDGET_KEY = "stitch_monthly_budget";
       applyStitchTheme(t, true);
       syncThemeUi();
     });
+  });
+
+  document.getElementById("save-google-sync-btn")?.addEventListener("click", () => {
+    const p = readPrefs();
+    p.googleSheetId = String(document.getElementById("google-sheet-id-input")?.value || "").trim();
+    p.googleAppsScriptUrl = String(document.getElementById("google-gas-url-input")?.value || "").trim();
+    writePrefs(p);
+    alert("已儲存 Google 試算表同步設定。");
   });
 
   document.getElementById("profile-chip-data")?.addEventListener("click", () => {
