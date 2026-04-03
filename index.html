@@ -2100,6 +2100,11 @@ function __stitchBuildBridge() {
         cur.bookedDate = patch.bookedDate ? String(patch.bookedDate).trim() : undefined;
       }
       if (patch.flow === "income" || patch.flow === "expense") cur.flow = patch.flow;
+      if (patch.invoiceNumber !== undefined) {
+        const inv = String(patch.invoiceNumber || "").trim();
+        if (inv) cur.invoiceNumber = inv;
+        else delete cur.invoiceNumber;
+      }
       items[idx] = cur;
       writeAll(items);
       notifyTransactionsChanged();
@@ -3399,6 +3404,11 @@ const STORAGE_KEY = "stitch_transactions";
       }
       if (patch.flow === "income" || patch.flow === "expense") {
         cur.flow = patch.flow;
+      }
+      if (patch.invoiceNumber !== undefined) {
+        const inv = String(patch.invoiceNumber || "").trim();
+        if (inv) cur.invoiceNumber = inv;
+        else delete cur.invoiceNumber;
       }
       items[idx] = cur;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -6525,30 +6535,53 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   }
 
   async function loadStore() {
+    let raw;
     if (isInIframe()) {
       const res = await requestParent("stitch:invoice:load", {});
       if (!res.timeout && res.carrier != null) {
-        return {
+        raw = {
           carrier: String(res.carrier ?? "").trim(),
           records: Array.isArray(res.records) ? res.records : [],
           settings: res.settings && typeof res.settings === "object" ? res.settings : { highBrightness: false },
         };
+      } else {
+        raw = readLocalFull();
       }
+    } else {
+      raw = readLocalFull();
     }
-    return readLocalFull();
+    persistedInvoiceRecords = normalizePersistedInvoiceRecords(raw.records);
+    const txs = await readTransactionsForInvoiceMerge();
+    const merged = buildMergedInvoiceRecords(persistedInvoiceRecords, txs);
+    return {
+      carrier: raw.carrier,
+      records: merged,
+      settings: raw.settings,
+    };
   }
 
-  async function saveStore(data) {
+  /**
+   * @param {{ carrier: string, records: Array, settings: object }} data
+   * @param {{ userSync?: boolean }} [opts] userSync=true 時觸發同步提示（與 Google 設定搭配）
+   */
+  async function saveStore(data, opts) {
+    const userSync = !!(opts && opts.userSync);
+    const toPersist = normalizePersistedInvoiceRecords(
+      (data.records || []).filter((r) => !String(r.id || "").startsWith("txinv:"))
+    );
+    persistedInvoiceRecords = toPersist;
+    const payload = {
+      carrier: data.carrier,
+      records: toPersist,
+      settings: data.settings,
+    };
     if (isInIframe()) {
-      await requestParent("stitch:invoice:save", {
-        carrier: data.carrier,
-        records: data.records,
-        settings: data.settings,
-      });
+      await requestParent("stitch:invoice:save", payload);
     } else {
-      writeLocalFull(data);
+      writeLocalFull(payload);
     }
-    scheduleGoogleSync();
+    await rebuildStoreRecordsFromSources();
+    scheduleGoogleSync(userSync);
   }
 
   let store = { carrier: "", records: [], settings: { highBrightness: false } };
@@ -6644,6 +6677,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     }
   }
 
+  /** 發票號碼等欄位統一 trim 後再存／比對 */
+  function trimInvoiceField(s) {
+    return String(s ?? "").trim();
+  }
+
   function normalizeInvoiceNumberKey(s) {
     return String(s || "")
       .trim()
@@ -6654,12 +6692,18 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
   function extractInvoiceNumberFromTx(t) {
     if (!t || typeof t !== "object") return "";
-    if (t.invoiceNumber && String(t.invoiceNumber).trim()) {
-      return String(t.invoiceNumber).trim();
+    if (t.invoiceNumber != null && String(t.invoiceNumber).trim()) {
+      return trimInvoiceField(t.invoiceNumber);
     }
     const note = String(t.note || "");
     const m = note.match(/([A-Z]{2}[-\s]?[0-9]{8})/i);
-    return m ? m[1].replace(/\s/g, "") : "";
+    return m ? trimInvoiceField(m[1].replace(/\s/g, "")) : "";
+  }
+
+  /** 發票頁與明細「合併清單」僅認欄位 invoiceNumber，避免備註內文與已刪除欄位重複判斷 */
+  function invoiceNumberFromTxForMerge(t) {
+    if (!t || typeof t !== "object") return "";
+    return t.invoiceNumber != null && String(t.invoiceNumber).trim() ? trimInvoiceField(t.invoiceNumber) : "";
   }
 
   /** 自明細資料庫依發票號碼對應類別與備註（取第一筆命中） */
@@ -6678,6 +6722,121 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       }
     }
     return { category: "", note: "" };
+  }
+
+  /** 僅來自 stitch_invoice_records 的持久化列（不含明細合併的 txinv: 列） */
+  let persistedInvoiceRecords = [];
+
+  function normalizeInvoiceRecordFields(r) {
+    if (!r || typeof r !== "object") return r;
+    const o = { ...r };
+    if (o.invoiceNumber != null) o.invoiceNumber = trimInvoiceField(o.invoiceNumber);
+    if (o.storeName != null) o.storeName = trimInvoiceField(o.storeName);
+    if (o.dateYmd != null) o.dateYmd = trimInvoiceField(o.dateYmd);
+    return o;
+  }
+
+  function normalizePersistedInvoiceRecords(arr) {
+    const a = Array.isArray(arr) ? arr : [];
+    return a.map((r) => normalizeInvoiceRecordFields({ ...r }));
+  }
+
+  async function readTransactionsForInvoiceMerge() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:tx:list", {});
+      return Array.isArray(res.items) ? res.items : [];
+    }
+    return readTransactionsLocal();
+  }
+
+  function transactionToInvoiceRecord(t, invDisplay) {
+    const inv = trimInvoiceField(invDisplay);
+    const ymd = trimInvoiceField(t.bookedDate || "");
+    let storeName = trimInvoiceField(t.note) || trimInvoiceField(t.category) || "明細帳目";
+    if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
+    return normalizeInvoiceRecordFields({
+      id: "txinv:" + String(t.id),
+      dateYmd: ymd,
+      amount: Math.round(Number(t.amount) || 0),
+      invoiceNumber: inv,
+      storeName: storeName || "明細帳目",
+      carrierTag: "明細帳目",
+    });
+  }
+
+  function buildMergedInvoiceRecords(persisted, txs) {
+    const out = [];
+    const seenInv = new Set();
+    for (const r of persisted) {
+      const nr = normalizeInvoiceRecordFields({ ...r });
+      out.push(nr);
+      const k = normalizeInvoiceNumberKey(nr.invoiceNumber);
+      if (k) seenInv.add(k);
+    }
+    const list = Array.isArray(txs) ? txs : [];
+    for (const t of list) {
+      const ex = invoiceNumberFromTxForMerge(t);
+      const k = normalizeInvoiceNumberKey(ex);
+      if (!k || seenInv.has(k)) continue;
+      seenInv.add(k);
+      out.push(transactionToInvoiceRecord(t, ex));
+    }
+    return out;
+  }
+
+  async function rebuildStoreRecordsFromSources() {
+    const txs = await readTransactionsForInvoiceMerge();
+    store.records = buildMergedInvoiceRecords(persistedInvoiceRecords, txs);
+  }
+
+  async function patchTransactionInvoiceClear(txId) {
+    const patch = { invoiceNumber: "" };
+    if (isInIframe()) {
+      const res = await requestParent("stitch:tx:update", { id: String(txId), patch });
+      return !!(res && res.ok !== false && !res.timeout);
+    }
+    try {
+      const raw = localStorage.getItem(TX_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      const items = Array.isArray(parsed) ? parsed : [];
+      const idx = items.findIndex((x) => String(x?.id) === String(txId));
+      if (idx < 0) return false;
+      const cur = { ...items[idx] };
+      delete cur.invoiceNumber;
+      items[idx] = cur;
+      localStorage.setItem(TX_STORAGE_KEY, JSON.stringify(items));
+      try {
+        window.dispatchEvent(new CustomEvent("stitch:transactions:changed"));
+      } catch (e) {}
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function patchTransactionNote(txId, note) {
+    const patch = { note: String(note || "").trim() };
+    if (isInIframe()) {
+      const res = await requestParent("stitch:tx:update", { id: String(txId), patch });
+      return !!(res && res.ok !== false && !res.timeout);
+    }
+    try {
+      const raw = localStorage.getItem(TX_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      const items = Array.isArray(parsed) ? parsed : [];
+      const idx = items.findIndex((x) => String(x?.id) === String(txId));
+      if (idx < 0) return false;
+      const cur = { ...items[idx] };
+      cur.note = patch.note;
+      items[idx] = cur;
+      localStorage.setItem(TX_STORAGE_KEY, JSON.stringify(items));
+      try {
+        window.dispatchEvent(new CustomEvent("stitch:transactions:changed"));
+      } catch (e) {}
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function formatYmdSlashes(dateYmd) {
@@ -6760,7 +6919,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   let googleSyncTimer = null;
   let invoiceGoogleSyncInFlight = false;
 
-  function scheduleGoogleSync() {
+  function scheduleGoogleSync(userInitiated) {
     if (googleSyncTimer) clearTimeout(googleSyncTimer);
     googleSyncTimer = setTimeout(() => {
       const st = readInvoiceSyncState();
@@ -6768,7 +6927,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         st.nextRetryAt = 0;
         writeInvoiceSyncState(st);
       }
-      void runInvoiceGoogleSync();
+      void syncToGoogleSheets({ userInitiated: !!userInitiated, silent: !userInitiated });
     }, 900);
   }
 
@@ -6779,12 +6938,12 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       return {
         dateYmd: r.dateYmd || "",
         dateDisplay: formatYmdSlashes(r.dateYmd),
-        title: String(r.storeName || "").trim() || "未命名",
+        title: trimInvoiceField(r.storeName) || "未命名",
         amount: Math.round(Number(r.amount) || 0),
-        invoiceNumber: String(r.invoiceNumber || "").trim(),
+        invoiceNumber: trimInvoiceField(r.invoiceNumber),
         category: link.category || "—",
         note: link.note || "",
-        carrierTag: String(r.carrierTag || "").trim(),
+        carrierTag: trimInvoiceField(r.carrierTag),
         id: r.id,
       };
     });
@@ -6792,23 +6951,39 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   }
 
   /**
-   * 背景同步：本機資料已在 saveStore 寫入。此處僅補傳雲端。
-   * 使用 no-cors 時無法讀回狀態，故以「離線」與 fetch 拋錯作為失敗條件並進入可重試佇列。
+   * Google 試算表同步。本機資料應已寫入。
+   * opts.userInitiated：使用者儲存／重新整理觸發時為 true；僅在已填寫試算表 ID 與 Web App 網址時才顯示嘗試／成功／失敗 alert。未設定時靜默略過同步。
    */
-  async function runInvoiceGoogleSync() {
+  async function syncToGoogleSheets(opts) {
+    const userInitiated = !!(opts && opts.userInitiated);
+    const silent = !!(opts && opts.silent);
     const { sheetId, webAppUrl, rows } = buildInvoiceSyncPayload();
+    console.log("[syncToGoogleSheets]", { userInitiated, silent, sheetId: !!sheetId, webAppUrl: !!webAppUrl, rowCount: rows.length });
+
     if (!sheetId || !webAppUrl) {
       clearInvoiceSyncState();
       return;
     }
+
     const st = readInvoiceSyncState();
-    if (st.pending && st.nextRetryAt > Date.now()) return;
+    if (st.pending && st.nextRetryAt > Date.now() && !userInitiated) return;
+
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
       markInvoiceSyncPending();
+      if (userInitiated && !silent) {
+        alert("同步失敗，錯誤代碼：offline");
+      }
+      console.warn("[syncToGoogleSheets] offline, queued");
       return;
     }
+
     if (invoiceGoogleSyncInFlight) return;
     invoiceGoogleSyncInFlight = true;
+
+    if (userInitiated && !silent) {
+      alert("正在嘗試連線至 Google...");
+    }
+
     const payload = {
       source: "stitch-invoice",
       spreadsheetId: sheetId,
@@ -6823,9 +6998,18 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         body: JSON.stringify(payload),
         headers: { "Content-Type": "text/plain;charset=utf-8" },
       });
+      console.log("[syncToGoogleSheets] fetch completed");
       clearInvoiceSyncState();
+      if (userInitiated && !silent) {
+        alert("同步成功！");
+      }
     } catch (e) {
+      const code = e && e.message ? String(e.message) : String(e);
+      console.error("[syncToGoogleSheets]", e);
       markInvoiceSyncFailedWithBackoff();
+      if (userInitiated && !silent) {
+        alert("同步失敗，錯誤代碼：" + code);
+      }
     } finally {
       invoiceGoogleSyncInFlight = false;
     }
@@ -6834,16 +7018,16 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   function installInvoiceGoogleSyncRetryListeners() {
     window.addEventListener("online", () => {
       bumpInvoiceSyncRetryImmediate();
-      void runInvoiceGoogleSync();
+      void syncToGoogleSheets({ userInitiated: false, silent: true });
     });
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) return;
       bumpInvoiceSyncRetryImmediate();
-      void runInvoiceGoogleSync();
+      void syncToGoogleSheets({ userInitiated: false, silent: true });
     });
     setInterval(() => {
       const st = readInvoiceSyncState();
-      if (st.pending && st.nextRetryAt <= Date.now()) void runInvoiceGoogleSync();
+      if (st.pending && st.nextRetryAt <= Date.now()) void syncToGoogleSheets({ userInitiated: false, silent: true });
     }, 20000);
   }
 
@@ -7051,7 +7235,20 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     installInvoiceGoogleSyncRetryListeners();
     try {
-      if (readInvoiceSyncState().pending) void runInvoiceGoogleSync();
+      if (readInvoiceSyncState().pending) void syncToGoogleSheets({ userInitiated: false, silent: true });
+    } catch (e) {}
+
+    function onTransactionsChangedForInvoice() {
+      void (async () => {
+        await rebuildStoreRecordsFromSources();
+        renderList();
+      })();
+    }
+    window.addEventListener("stitch:transactions:changed", onTransactionsChangedForInvoice);
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.addEventListener("stitch:transactions:changed", onTransactionsChangedForInvoice);
+      }
     } catch (e) {}
 
     document.getElementById("inv-back-btn").addEventListener("click", () => navigate("home"));
@@ -7091,7 +7288,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       renderBarcode();
       renderList();
       bumpInvoiceSyncRetryImmediate();
-      void runInvoiceGoogleSync();
+      void syncToGoogleSheets({ userInitiated: true });
     });
 
     const setOv = document.getElementById("inv-settings-overlay");
@@ -7173,12 +7370,12 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         storeName,
         dateYmd,
         amount,
-        invoiceNumber,
+        invoiceNumber: trimInvoiceField(invoiceNumber),
         carrierTag,
         createdAt: new Date().toISOString(),
       };
       store.records.unshift(rec);
-      await saveStore(store);
+      await saveStore(store, { userSync: true });
       periodAnchor = periodContainingDate(new Date(dateYmd + "T12:00:00"));
       renderList();
       closeAdd();
@@ -7189,8 +7386,15 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       if (!btn) return;
       const id = btn.getAttribute("data-id");
       if (!confirm("刪除此筆發票紀錄？")) return;
-      store.records = store.records.filter((r) => r.id !== id);
-      await saveStore(store);
+      if (id && String(id).startsWith("txinv:")) {
+        const txId = String(id).slice(6);
+        await patchTransactionInvoiceClear(txId);
+        await rebuildStoreRecordsFromSources();
+        scheduleGoogleSync(true);
+      } else {
+        store.records = store.records.filter((r) => r.id !== id);
+        await saveStore(store, { userSync: true });
+      }
       renderList();
     });
 
@@ -7205,8 +7409,15 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const v = String(inp.value || "").trim();
         const prev = String(rec.storeName || "").trim();
         if (v === prev) return;
-        rec.storeName = v || "未命名店家";
-        await saveStore(store);
+        if (id && String(id).startsWith("txinv:")) {
+          const txId = String(id).slice(6);
+          await patchTransactionNote(txId, v || "未命名店家");
+          await rebuildStoreRecordsFromSources();
+          scheduleGoogleSync(true);
+        } else {
+          rec.storeName = v || "未命名店家";
+          await saveStore(store, { userSync: true });
+        }
       },
       true
     );
@@ -7472,7 +7683,14 @@ const BUDGET_KEY = "stitch_monthly_budget";
   }
 
   function writePrefs(p) {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+    try {
+      const cur = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
+      const merged =
+        p && typeof p === "object" && !Array.isArray(p) ? { ...cur, ...p } : { ...cur };
+      localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+    } catch (e) {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+    }
   }
 
   function applyStitchTheme(theme, persist) {
