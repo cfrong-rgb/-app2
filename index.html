@@ -743,6 +743,12 @@ body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color
   html.stitch-app-embed #embedded-app-bottom-nav { display: none !important; }
   html.stitch-app-embed body { padding-bottom: 6rem !important; }
 
+/* --- search --- */
+body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color: transparent; }
+  .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
+  html.stitch-app-embed #embedded-app-bottom-nav { display: none !important; }
+  html.stitch-app-embed body { padding-bottom: 6rem !important; }
+
 
 /* --- stitch shell：手機豎屏鎖定視窗，捲動只在 #stitch-stage --- */
 html.stitch-single-app {
@@ -793,7 +799,8 @@ html.stitch-single-app .stitch-view > .stitch-page-main {
 }
 /* 明細／發票：避免條碼 SVG、卡片列在窄屏撐出右側 */
 html.stitch-single-app [data-stitch-view="history"] .stitch-page-main,
-html.stitch-single-app [data-stitch-view="invoice"] .stitch-page-main {
+html.stitch-single-app [data-stitch-view="invoice"] .stitch-page-main,
+html.stitch-single-app [data-stitch-view="search"] .stitch-page-main {
   width: 100%;
   max-width: 100%;
 }
@@ -997,10 +1004,10 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <span class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Local</span>
 </div>
 <div class="mb-4">
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註..." type="search" autocomplete="off"/>
-</div>
+<form id="tx-search-form" class="relative" action="#" method="get" autocomplete="off">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註…（Enter 開啟統計）" type="search" enterkeyhint="search" autocomplete="off"/>
+</form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
 <div class="mb-6 p-5 rounded-2xl bg-surface-container-low border border-primary/12 shadow-[0_8px_28px_rgba(114,86,56,0.07)]">
@@ -1820,6 +1827,26 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 
 </div>
 
+<div class="stitch-view" data-stitch-view="search" hidden>
+<header class="sticky top-0 z-40 bg-white border-b border-black/10 w-full">
+  <div class="max-w-lg mx-auto px-3 py-3 flex items-center gap-2">
+    <button type="button" id="search-back-btn" class="p-2 rounded-full hover:bg-black/5 text-on-surface shrink-0" aria-label="返回明細">
+      <span class="material-symbols-outlined text-2xl">arrow_back</span>
+    </button>
+    <h1 class="text-lg font-bold text-on-surface truncate flex-1 text-center pr-10" id="search-title">—</h1>
+  </div>
+</header>
+<div role="main" class="stitch-page-main max-w-lg mx-auto px-0">
+  <div class="flex items-center justify-between px-4 py-4 border-b border-black">
+    <span class="text-base font-bold text-on-surface">總金額</span>
+    <span class="text-2xl font-extrabold tabular-nums" id="search-total-amount">$0</span>
+  </div>
+  <div id="search-result-list" class="divide-y divide-black/10"></div>
+</div>
+
+
+</div>
+
 
   </div>
 </main>
@@ -2202,13 +2229,15 @@ function applyEmbedShellTheme() {
   function routeFromHash() {
     const raw = (location.hash || "#home").slice(1).trim();
     if (raw.startsWith("category:")) return "category";
+    if (raw.startsWith("search:")) return "search";
     const allowed = ["home", "history", "add", "invoice", "profile"];
     return allowed.includes(raw) ? raw : "home";
   }
 
   function setActive(route) {
+    const noNavHighlight = route === "category" || route === "search";
     for (const btn of buttons) {
-      const isActive = route !== "category" && btn.dataset.route === route;
+      const isActive = !noNavHighlight && btn.dataset.route === route;
       btn.setAttribute("aria-current", isActive ? "page" : "false");
     }
   }
@@ -3178,6 +3207,7 @@ try {
 const STORAGE_KEY = "stitch_transactions";
   const listRoot = document.getElementById("local-transactions-list");
   const searchInput = document.getElementById("tx-search-input");
+  const txSearchForm = document.getElementById("tx-search-form");
   const headerMenuBtn = document.getElementById("header-menu-btn");
   const headerSearchBtn = document.getElementById("header-search-btn");
   const drawerRoot = document.getElementById("drawer-root");
@@ -3537,6 +3567,30 @@ const STORAGE_KEY = "stitch_transactions";
     searchInput?.select();
   });
 
+  function navigateToSearch(q) {
+    const trimmed = String(q || "").trim();
+    if (!trimmed) {
+      searchInput?.focus();
+      return;
+    }
+    if (document.documentElement.classList.contains("stitch-single-app")) {
+      location.hash = "#search:" + encodeURIComponent(trimmed);
+      return;
+    }
+    try {
+      const u = new URL("../search/code.html", location.href);
+      u.hash = "search:" + encodeURIComponent(trimmed);
+      location.href = u.href;
+    } catch (e) {
+      location.hash = "#search:" + encodeURIComponent(trimmed);
+    }
+  }
+
+  txSearchForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    navigateToSearch(searchInput?.value);
+  });
+
   function isIncomeTransaction(item) {
     return item && item.flow === "income";
   }
@@ -3722,25 +3776,10 @@ const STORAGE_KEY = "stitch_transactions";
     if (!listRoot) return;
 
     const items = await readTransactions();
-    let filtered = items;
-
-    const q = String(searchInput?.value || "").trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter((item) => {
-        const category = String(item.category || "住家").toLowerCase();
-        const note = String(item.note || "").toLowerCase();
-        return category.includes(q) || note.includes(q);
-      });
-    }
 
     if (items.length === 0) {
       listRoot.innerHTML =
         '<div class="glass-card p-6 rounded-2xl text-on-surface-variant text-sm text-center">開始您的第一筆記帳吧！</div>';
-      return;
-    }
-    if (filtered.length === 0) {
-      listRoot.innerHTML =
-        '<div class="glass-card p-6 rounded-2xl text-on-surface-variant text-sm text-center">找不到符合的結果，試試看換個搜尋關鍵字。</div>';
       return;
     }
 
@@ -3748,7 +3787,7 @@ const STORAGE_KEY = "stitch_transactions";
     const incIcons = await readIncomeIconsMap();
     const mergedIcons = { ...DEFAULT_INCOME_ICONS, ...incIcons, ...catIcons };
 
-    listRoot.innerHTML = filtered
+    listRoot.innerHTML = items
       .map((item) => {
         const note = item.note ? String(item.note) : "（無備註）";
         const category = item.category ? String(item.category) : "住家";
@@ -3963,10 +4002,6 @@ const STORAGE_KEY = "stitch_transactions";
     closeEditTransaction();
     await renderTransactions();
     if (lotteryLine) alert(lotteryLine);
-  });
-
-  searchInput?.addEventListener("input", () => {
-    renderTransactions();
   });
 
   window.addEventListener("stitch:route", (e) => {
@@ -8122,6 +8157,286 @@ try {
   void refreshCategoryView();
 })();
 } catch (_stitchErr) { console.error("[stitch:category]", _stitchErr); }
+})();
+
+
+(function stitchPage_search() {
+"use strict";
+try {
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "stitch_transactions";
+  const CAT_ICONS_KEY = "stitch_category_icons";
+  const INCOME_ICONS_KEY = "stitch_income_icons";
+  const DEFAULT_CAT_ICONS = {
+    飲食: "restaurant_menu",
+    交通: "directions_bus",
+    住家: "home",
+    服飾: "checkroom",
+    其它: "more_horiz",
+    其他: "category",
+  };
+  const DEFAULT_INCOME_ICONS = {
+    薪水: "account_balance_wallet",
+    獎金: "redeem",
+    回饋: "currency_exchange",
+    交易: "trending_up",
+  };
+
+  const listEl = document.getElementById("search-result-list");
+  const titleEl = document.getElementById("search-title");
+  const totalEl = document.getElementById("search-total-amount");
+
+  function isInIframe() {
+    return true;
+  }
+
+  function requestParent(type, payload) {
+    return Promise.resolve(window.__STITCH_BRIDGE__(type, payload || {}));
+  }
+
+  async function readTransactions() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:tx:list", {});
+      return Array.isArray(res.items) ? res.items : [];
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const p = raw ? JSON.parse(raw) : [];
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function readCatIconsMap() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cfg:caticons:get", {});
+      return res.icons && typeof res.icons === "object" && !Array.isArray(res.icons) ? res.icons : {};
+    }
+    try {
+      const raw = localStorage.getItem(CAT_ICONS_KEY);
+      if (!raw) return {};
+      const p = JSON.parse(raw);
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function readIncomeIconsMap() {
+    if (isInIframe()) {
+      const res = await requestParent("stitch:cfg:incaticons:get", {});
+      return res.icons && typeof res.icons === "object" && !Array.isArray(res.icons) ? res.icons : {};
+    }
+    try {
+      const raw = localStorage.getItem(INCOME_ICONS_KEY);
+      if (!raw) return {};
+      const p = JSON.parse(raw);
+      return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    } catch {
+      return {};
+    }
+  }
+
+  const MATERIAL_ICON_ALIASES = { vaccine: "medical_services", emoji_food_beverage: "fastfood" };
+  function normalizeMaterialIcon(name) {
+    const raw = String(name || "").trim();
+    if (!raw) return "label";
+    return MATERIAL_ICON_ALIASES[raw] || raw;
+  }
+  function categoryMaterialIcon(category, iconsMap) {
+    const c = String(category || "住家").trim() || "住家";
+    const v = iconsMap[c];
+    let resolved = "label";
+    if (v && /^[a-z0-9_]+$/.test(String(v))) resolved = String(v);
+    else resolved = DEFAULT_CAT_ICONS[c] || DEFAULT_INCOME_ICONS[c] || "label";
+    return normalizeMaterialIcon(resolved);
+  }
+
+  function hashHue(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h % 360;
+  }
+
+  function categoryMeta(category) {
+    let c = String(category || "住家").trim() || "住家";
+    if (c === "餐飲") c = "飲食";
+    const map = {
+      飲食: { label: "飲食", dot: "#22c55e", pillBg: "#ecfdf5" },
+      交通: { label: "交通", dot: "#3b82f6", pillBg: "#eff6ff" },
+      住家: { label: "住家", dot: "#64748b", pillBg: "#f8fafc" },
+      服飾: { label: "服飾", dot: "#a855f7", pillBg: "#faf5ff" },
+      其它: { label: "其它", dot: "#9ca3af", pillBg: "#f9fafb" },
+      薪水: { label: "薪水", dot: "#22c55e", pillBg: "#ecfdf5" },
+      獎金: { label: "獎金", dot: "#10b981", pillBg: "#d1fae5" },
+      回饋: { label: "回饋", dot: "#14b8a6", pillBg: "#ccfbf1" },
+      交易: { label: "交易", dot: "#059669", pillBg: "#ecfdf5" },
+    };
+    if (map[c]) return map[c];
+    const hue = hashHue(c);
+    return { label: c, dot: `hsl(${hue} 82% 45%)`, pillBg: `hsl(${hue} 85% 96%)` };
+  }
+
+  function isIncomeTransaction(item) {
+    return item && item.flow === "income";
+  }
+
+  function formatMoney(n) {
+    const v = Number(n) || 0;
+    return Math.abs(v).toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function formatDateLong(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("zh-TW", { year: "numeric", month: "long", day: "numeric" });
+  }
+
+  function formatLineAmount(item) {
+    const value = Math.abs(Number(item?.amount) || 0);
+    const inc = isIncomeTransaction(item);
+    const text = "$" + formatMoney(value);
+    const cls = inc ? "text-secondary" : "text-on-surface";
+    return { text, cls };
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function parseSearchQuery() {
+    const raw = (location.hash || "").slice(1).trim();
+    if (!raw.startsWith("search:")) return null;
+    try {
+      const q = decodeURIComponent(raw.slice("search:".length));
+      const t = String(q || "").trim();
+      return t || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function rowMatchesQuery(item, qLower) {
+    const category = String(item.category || "住家").toLowerCase();
+    const note = String(item.note || "").toLowerCase();
+    return category.includes(qLower) || note.includes(qLower);
+  }
+
+  async function refreshSearchView() {
+    const qRaw = parseSearchQuery();
+    if (!qRaw) {
+      if (titleEl) titleEl.textContent = "搜尋";
+      if (totalEl) {
+        totalEl.textContent = "$0";
+        totalEl.className = "text-2xl font-extrabold tabular-nums text-on-surface-variant";
+      }
+      if (listEl) listEl.innerHTML = "";
+      return;
+    }
+
+    const qLower = qRaw.toLowerCase();
+    if (titleEl) titleEl.textContent = qRaw;
+
+    const items = await readTransactions();
+    const rows = items.filter((t) => rowMatchesQuery(t, qLower));
+    rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    let signed = 0;
+    rows.forEach((item) => {
+      const amt = Number(item.amount) || 0;
+      if (!Number.isFinite(amt)) return;
+      if (isIncomeTransaction(item)) signed += amt;
+      else signed -= amt;
+    });
+
+    if (totalEl) {
+      const abs = Math.abs(signed);
+      const numStr = abs.toLocaleString("zh-TW", { maximumFractionDigits: 0 });
+      if (signed < 0) {
+        totalEl.textContent = "$-" + numStr;
+        totalEl.className = "text-2xl font-extrabold tabular-nums text-error";
+      } else if (signed > 0) {
+        totalEl.textContent = "$" + numStr;
+        totalEl.className = "text-2xl font-extrabold tabular-nums text-on-surface";
+      } else {
+        totalEl.textContent = "$0";
+        totalEl.className = "text-2xl font-extrabold tabular-nums text-on-surface-variant";
+      }
+    }
+
+    if (!listEl) return;
+    if (rows.length === 0) {
+      listEl.innerHTML =
+        '<div class="px-4 py-10 text-center text-sm text-on-surface-variant">沒有符合「' +
+        escapeHtml(qRaw) +
+        "」的紀錄。</div>";
+      return;
+    }
+
+    const catIcons = await readCatIconsMap();
+    const incIcons = await readIncomeIconsMap();
+    const mergedIcons = { ...DEFAULT_INCOME_ICONS, ...incIcons, ...catIcons };
+
+    listEl.innerHTML = rows
+      .map((item) => {
+        const cat = item.category ? String(item.category) : "住家";
+        const meta = categoryMeta(cat);
+        const gIcon = categoryMaterialIcon(cat, mergedIcons);
+        const noteLine = item.note ? String(item.note) : "（無備註）";
+        const amtInfo = formatLineAmount(item);
+        const dateStr = formatDateLong(item.createdAt);
+        return `
+          <div class="flex items-start gap-3 px-4 py-4">
+            <div class="w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-white shadow-sm" style="background:${meta.dot}">
+              <span class="material-symbols-outlined text-[22px]" aria-hidden="true">${gIcon}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-on-surface leading-snug break-words">${escapeHtml(noteLine)}</p>
+              <p class="text-sm text-on-surface-variant mt-1">${escapeHtml(dateStr)}</p>
+            </div>
+            <div class="text-lg font-bold tabular-nums shrink-0 ${amtInfo.cls}">${amtInfo.text}</div>
+          </div>`;
+      })
+      .join("");
+  }
+
+  document.getElementById("search-back-btn")?.addEventListener("click", () => {
+    if (isInIframe()) {
+      if (window.parent === window) {
+        location.hash = "#history";
+        return;
+      }
+      try {
+        window.parent.postMessage({ type: "stitch:embed:navigate", route: "history" }, "*");
+      } catch (e) {
+        try {
+          location.hash = "#history";
+        } catch (e2) {}
+      }
+      return;
+    }
+    try {
+      const u = new URL("../history/code.html", location.href);
+      location.href = u.href;
+    } catch (e) {
+      location.href = "../history/code.html";
+    }
+  });
+
+  window.addEventListener("stitch:route", () => void refreshSearchView());
+  window.addEventListener("hashchange", () => void refreshSearchView());
+  window.addEventListener("stitch:transactions:changed", () => void refreshSearchView());
+
+  void refreshSearchView();
+})();
+} catch (_stitchErr) { console.error("[stitch:search]", _stitchErr); }
 })();
 
 
