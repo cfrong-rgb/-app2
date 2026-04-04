@@ -979,34 +979,11 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="button" class="p-2 rounded-full hover:bg-[#f2f1eb] active:scale-95 duration-200 text-[#725638]" id="header-search-btn" aria-label="聚焦搜尋">
 <span class="material-symbols-outlined" data-icon="search">search</span>
 </button>
-<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-container flex items-center justify-center border border-white">
-<img alt="User Profile" class="w-full h-full object-cover" data-alt="minimalist avatar of a person with friendly expression, warm brown tones matching the brand identity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpWXGgA64liKZM32bAMcvif_E_jmnSyZZlQCnHMs4RHdSmvD3NGwEcw_8PYnd0TcwzjRSEYUR2UIpty5LH-jTtsomY7nxUUBAMkjCb0HXkzENHMyT3UbtrPAnf7wJnEQhhw5ENKQUJTG2rHaZ1VzPmRdW2Xt5q4EDdySYO-xY0hoBYovd1hAJrRYn-O-znsW-eQkTPiQyhxcHa3b4gkp2m0AWzjXnTdQQwgI4LsEenexX5WmLbO2D0Ub6Yj__9GFjzpZsNMe9TLxg"/>
-</div>
 </div>
 </header>
 <div role="main" class="stitch-page-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
-<!-- Editorial Filter Section -->
-<section class="mb-10 mt-4 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain touch-pan-x">
-<div class="flex w-max gap-3 hide-scrollbar py-2" id="category-filter-chips" role="tablist" aria-label="分類篩選">
-<button type="button" class="filter-chip px-6 py-2 bg-primary text-on-primary rounded-full text-sm font-medium whitespace-nowrap shadow-sm active:scale-95 duration-200" data-filter="" aria-selected="true">
-          全部紀錄
-        </button>
-<button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="飲食" aria-selected="false">
-          飲食
-        </button>
-<button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="交通" aria-selected="false">
-          交通
-        </button>
-<button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="住家" aria-selected="false">
-          住家
-        </button>
-<button type="button" class="filter-chip px-6 py-2 bg-surface-container-low text-on-surface-variant rounded-full text-sm font-medium whitespace-nowrap active:scale-95 duration-200" data-filter="服飾" aria-selected="false">
-          服飾
-        </button>
-</div>
-</section>
-<!-- LocalStorage Transactions (Beautified) -->
-<section class="mb-12">
+<!-- LocalStorage Transactions（搜尋與匯出；已移除頂部分類籤） -->
+<section class="mb-12 mt-2">
 <div class="flex items-end justify-between gap-3 mb-4 min-w-0">
 <div class="min-w-0">
 <h2 class="text-2xl font-extrabold tracking-tight text-primary">我的記帳紀錄</h2>
@@ -1119,7 +1096,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 </div>
 </nav>
-<div role="main" class="stitch-page-main pt-24 pb-[max(11rem,env(safe-area-inset-bottom,0px)+6.5rem)] w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
+<div role="main" class="stitch-page-main pt-24 pb-[max(14rem,env(safe-area-inset-bottom,0px)+8rem)] w-full max-w-none mx-auto box-border px-4 sm:px-6 lg:px-10 xl:px-12">
 <div class="max-w-lg mx-auto mb-8" id="flow-toggle-wrap">
 <div class="flex rounded-full p-1 bg-surface-container-low border border-outline-variant/35 shadow-sm" role="tablist" aria-label="支出或收入">
 <button type="button" id="flow-expense-btn" role="tab" aria-selected="true" class="flow-tab flex-1 py-3 rounded-full text-sm font-extrabold transition-all bg-primary text-on-primary shadow-sm">支出</button>
@@ -3148,7 +3125,6 @@ try {
 const STORAGE_KEY = "stitch_transactions";
   const listRoot = document.getElementById("local-transactions-list");
   const searchInput = document.getElementById("tx-search-input");
-  const chipContainer = document.getElementById("category-filter-chips");
   const headerMenuBtn = document.getElementById("header-menu-btn");
   const headerSearchBtn = document.getElementById("header-search-btn");
   const drawerRoot = document.getElementById("drawer-root");
@@ -3182,7 +3158,6 @@ const STORAGE_KEY = "stitch_transactions";
     交易: "trending_up",
   };
 
-  let activeCategoryFilter = "";
   let editingTransactionId = null;
   /** expense | income — 編輯表單目前類型 */
   let editTxFlow = "expense";
@@ -3509,27 +3484,6 @@ const STORAGE_KEY = "stitch_transactions";
     searchInput?.select();
   });
 
-  function updateChipStyles() {
-    if (!chipContainer) return;
-    chipContainer.querySelectorAll(".filter-chip").forEach((btn) => {
-      const on = btn.getAttribute("data-filter") === activeCategoryFilter;
-      btn.setAttribute("aria-selected", on ? "true" : "false");
-      btn.classList.toggle("bg-primary", on);
-      btn.classList.toggle("text-on-primary", on);
-      btn.classList.toggle("shadow-sm", on);
-      btn.classList.toggle("bg-surface-container-low", !on);
-      btn.classList.toggle("text-on-surface-variant", !on);
-    });
-  }
-
-  chipContainer?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".filter-chip");
-    if (!btn) return;
-    activeCategoryFilter = btn.getAttribute("data-filter") || "";
-    updateChipStyles();
-    renderTransactions();
-  });
-
   function isIncomeTransaction(item) {
     return item && item.flow === "income";
   }
@@ -3717,15 +3671,6 @@ const STORAGE_KEY = "stitch_transactions";
     const items = await readTransactions();
     let filtered = items;
 
-    if (activeCategoryFilter) {
-      filtered = filtered.filter((item) => {
-        const cat = String(item.category || "");
-        if (cat.includes(activeCategoryFilter)) return true;
-        if (activeCategoryFilter === "飲食" && cat === "餐飲") return true;
-        return false;
-      });
-    }
-
     const q = String(searchInput?.value || "").trim().toLowerCase();
     if (q) {
       filtered = filtered.filter((item) => {
@@ -3742,7 +3687,7 @@ const STORAGE_KEY = "stitch_transactions";
     }
     if (filtered.length === 0) {
       listRoot.innerHTML =
-        '<div class="glass-card p-6 rounded-2xl text-on-surface-variant text-sm text-center">找不到符合的結果，試試看換個關鍵字或分類篩選。</div>';
+        '<div class="glass-card p-6 rounded-2xl text-on-surface-variant text-sm text-center">找不到符合的結果，試試看換個搜尋關鍵字。</div>';
       return;
     }
 
@@ -3965,7 +3910,6 @@ const STORAGE_KEY = "stitch_transactions";
   });
   window.addEventListener("stitch:transactions:changed", () => void renderTransactions());
 
-  updateChipStyles();
   setDrawerOpen(false);
   renderTransactions();
 } catch (_stitchErr) { console.error("[stitch:history]", _stitchErr); }
@@ -4510,6 +4454,40 @@ const STORAGE_KEY = "stitch_transactions";
 
   let transactionDateYmd = ymdFromDate(new Date());
 
+  function createdAtForTransaction() {
+    return new Date().toISOString();
+  }
+
+  function formatTxDateLabel(ymd) {
+    const t = String(ymd || "").trim();
+    if (!t) return "今天";
+    const today = ymdFromDate(new Date());
+    if (t === today) return "今天";
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+    if (!m) return t;
+    return `${Number(m[1])}/${Number(m[2])}/${Number(m[3])}`;
+  }
+
+  function syncTxDateUi() {
+    const inp = document.getElementById("tx-date-input");
+    const lab = document.getElementById("tx-date-label");
+    if (inp && transactionDateYmd) inp.value = transactionDateYmd;
+    if (lab) lab.textContent = formatTxDateLabel(transactionDateYmd);
+  }
+
+  function wireTxDateInput() {
+    const inp = document.getElementById("tx-date-input");
+    if (!inp) return;
+    const apply = () => {
+      const v = String(inp.value || "").trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        transactionDateYmd = v;
+        syncTxDateUi();
+      }
+    };
+    inp.addEventListener("change", apply);
+    inp.addEventListener("input", apply);
+  }
 
   /** 與鍵盤輸入同步顯示（千分位、保留輸入中的小數點狀態） */
   function formatAmountLive(raw) {
@@ -5603,6 +5581,10 @@ const STORAGE_KEY = "stitch_transactions";
     let numAmt =
       typeof rawAmt === "number" && Number.isFinite(rawAmt) ? Math.round(rawAmt) : Math.round(Number(rawAmt) || 0);
     if (!Number.isFinite(numAmt)) numAmt = 0;
+    let prefSid = "";
+    try {
+      prefSid = String(JSON.parse(localStorage.getItem("stitch_prefs") || "{}").googleSheetId || "").trim();
+    } catch (e) {}
     return {
       date: String(o.date != null ? o.date : ""),
       time: String(o.time != null ? o.time : ""),
@@ -5611,6 +5593,7 @@ const STORAGE_KEY = "stitch_transactions";
       note: String(o.note != null ? o.note : ""),
       amount: numAmt,
       id: String(o.id != null ? o.id : ""),
+      sheetId: String(o.sheetId != null && String(o.sheetId).trim() ? o.sheetId : prefSid),
     };
   }
 
@@ -5721,6 +5704,10 @@ const STORAGE_KEY = "stitch_transactions";
 
   function navigateToStitchHistory() {
     if (isInIframe()) {
+      if (window.parent === window) {
+        location.hash = "#history";
+        return;
+      }
       try {
         window.parent.postMessage({ type: "stitch:embed:navigate", route: "history" }, "*");
       } catch (e) {
@@ -5893,10 +5880,11 @@ const STORAGE_KEY = "stitch_transactions";
     }
   });
 
+  wireTxDateInput();
   resetCalcWorkingAndTape();
   syncTxDateUi();
   updateAmountDisplay();
-  Promise.all([bootCategories(), bootIncomeCategories()]).then(() => setTxFlow("expense"));
+  Promise.allSettled([bootCategories(), bootIncomeCategories()]).then(() => setTxFlow("expense"));
 } catch (_stitchErr) { console.error("[stitch:add]", _stitchErr); }
 })();
 
@@ -6550,7 +6538,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
   /**
    * 與明細資料庫一致：以 stitch_transactions 全量同步至試算表。
-   * 送出的 JSON 每列僅允許英文鍵名：date, time, type, category, note, amount, id（試算表標題可為中文）。
+   * 送出的 rows[] 每列鍵名順序：date, time, type, category, note, amount, id, sheetId（皆英文；amount 為 Number）。
    */
   function transactionToGoogleSheetRow(t) {
     if (!t || typeof t !== "object") return null;
@@ -6567,8 +6555,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     };
   }
 
-  /** 強制每列僅含七個英文鍵，避免多餘欄位被序列化 */
+  /** 每列固定八個英文鍵；amount 為 Number；sheetId 與試算表設定一致。 */
   function sanitizeGoogleSyncRow(r) {
+    const { sheetId: prefSheetId } = readGoogleSyncPrefs();
+    const sid = String(prefSheetId || "").trim();
     const o = r && typeof r === "object" ? r : {};
     const rawAmt = o.amount;
     let numAmt =
@@ -6582,6 +6572,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       note: String(o.note != null ? o.note : ""),
       amount: numAmt,
       id: String(o.id != null ? o.id : ""),
+      sheetId: String(o.sheetId != null && String(o.sheetId).trim() ? o.sheetId : sid),
     };
   }
 
