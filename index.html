@@ -2133,7 +2133,7 @@ function __stitchBuildBridge() {
     }
     if (type === "stitch:avatar:set") {
       const dataUrl = String(p.dataUrl || "");
-      if (!dataUrl.startsWith("data:image/") || dataUrl.length > 2_800_000) {
+      if (!dataUrl.startsWith("data:image/") || dataUrl.length > 2800000) {
         return { type: "stitch:avatar:set:result", requestId, ok: false };
       }
       writeAvatarDataUrl(dataUrl);
@@ -2462,6 +2462,7 @@ if ("serviceWorker" in navigator) {
 
 (function stitchPage_home() {
 "use strict";
+try {
 const STORAGE_KEY = "stitch_transactions";
   const SHORTCUT_PARENT_MAP_KEY = "stitch_shortcut_parent_map";
   const EXPENSE_PARENT_GROUPS_HOME = ["飲食", "交通", "住家", "服飾", "其它"];
@@ -3137,10 +3138,13 @@ const STORAGE_KEY = "stitch_transactions";
   loadGreeting();
   loadHeaderAvatar();
   refreshHomeDashboard();
+} catch (_stitchErr) { console.error("[stitch:home]", _stitchErr); }
 })();
+
 
 (function stitchPage_history() {
 "use strict";
+try {
 const STORAGE_KEY = "stitch_transactions";
   const listRoot = document.getElementById("local-transactions-list");
   const searchInput = document.getElementById("tx-search-input");
@@ -3964,10 +3968,13 @@ const STORAGE_KEY = "stitch_transactions";
   updateChipStyles();
   setDrawerOpen(false);
   renderTransactions();
+} catch (_stitchErr) { console.error("[stitch:history]", _stitchErr); }
 })();
+
 
 (function stitchPage_add() {
 "use strict";
+try {
 const STORAGE_KEY = "stitch_transactions";
   const CATEGORIES_KEY = "stitch_categories";
   const CAT_ICONS_KEY = "stitch_category_icons";
@@ -5890,10 +5897,13 @@ const STORAGE_KEY = "stitch_transactions";
   syncTxDateUi();
   updateAmountDisplay();
   Promise.all([bootCategories(), bootIncomeCategories()]).then(() => setTxFlow("expense"));
+} catch (_stitchErr) { console.error("[stitch:add]", _stitchErr); }
 })();
+
 
 (function stitchPage_invoice() {
 "use strict";
+try {
 const CARRIER_KEY = "stitch_invoice_carrier";
   const RECORDS_KEY = "stitch_invoice_records";
   const SETTINGS_KEY = "stitch_invoice_settings";
@@ -7267,10 +7277,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     console.error("[invoice init]", err);
     alert("發票頁面初始化失敗，請重新整理頁面。");
   });
+} catch (_stitchErr) { console.error("[stitch:invoice]", _stitchErr); }
 })();
+
 
 (function stitchPage_profile() {
 "use strict";
+try {
 const BUDGET_KEY = "stitch_monthly_budget";
   const USER_AVATAR_KEY = "userAvatar";
   const DEFAULT_PROFILE_AVATAR =
@@ -7631,7 +7644,7 @@ const BUDGET_KEY = "stitch_monthly_budget";
           if (input) input.value = "";
           return;
         }
-        if (s.length > 2_800_000) {
+        if (s.length > 2800000) {
           alert("圖片過大，請選擇較小的檔案。");
           if (input) input.value = "";
           return;
@@ -7749,7 +7762,9 @@ const BUDGET_KEY = "stitch_monthly_budget";
   loadProfileName();
   loadProfileAvatars();
   refreshBudgetUI();
+} catch (_stitchErr) { console.error("[stitch:profile]", _stitchErr); }
 })();
+
 
 </script>
 </body>
