@@ -652,28 +652,6 @@ body {
             opacity: 0;
             cursor: pointer;
         }
-        #add-qr-scanner-overlay { z-index: 125; }
-        #add-qr-reader video {
-            border-radius: 1.25rem;
-            object-fit: cover;
-        }
-        #add-qr-scanner-overlay #add-qr-reader canvas {
-            border-radius: 1.25rem;
-        }
-        /* html5-qrcode 掃描框：奶茶色描邊，與主題一致 */
-        #add-qr-scanner-overlay #add-qr-reader__scan_region,
-        #add-qr-scanner-overlay #add-qr-reader__scan_region img {
-            border-radius: 1.25rem !important;
-        }
-        #add-qr-scanner-overlay #add-qr-reader__scan_region {
-            outline: 2px solid rgba(253, 214, 175, 0.85) !important;
-            outline-offset: -2px;
-            box-shadow: 0 0 0 1px rgba(114, 86, 56, 0.35), 0 0 28px rgba(253, 214, 175, 0.15) !important;
-        }
-        #add-qr-scanner-overlay #add-qr-reader__dashboard_section_csr button {
-            color: #fdd6af !important;
-            border-radius: 9999px !important;
-        }
         /* 自訂類別圖示：連字 + 每格強制裁切，避免連字失效時英文詞溢出疊到鄰格（如出現怪字） */
         #custom-category-icon-picker {
             line-height: 0;
@@ -1136,9 +1114,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <h1 class="font-['Plus_Jakarta_Sans'] font-extrabold text-[#725638] tracking-tighter text-lg" id="add-page-title">新增支出</h1>
 </div>
 <div class="flex items-center gap-2 sm:gap-3">
-<button type="button" id="nav-invoice-qr-btn" class="p-2 rounded-full bg-primary-container/55 border border-primary/20 text-primary hover:bg-primary-container active:scale-95 transition touch-manipulation shadow-sm" aria-label="掃描發票 QR Code" title="掃描發票">
-<span class="material-symbols-outlined text-2xl" aria-hidden="true">qr_code_scanner</span>
-</button>
 <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
 <img alt="User Profile" class="w-full h-full object-cover" data-alt="portrait of a smiling man with a warm expression in soft natural lighting professional headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7NBVDToVpypQirRHEU9N3ye9lnZOzCm6R5xM2aqPQSLFFRHtLOgzomYMoOxx9qsoFYrZUoqQhnrNWTDPXa5sIPWw_8UKBPYdrthuAYFtP5hcZpD6InX0FAjA_6hox3CWFIhS0mza7-O5Ie_dphNT4NSzXShPhXnCKU2-VW_b6v6a_VZxkLUl059FOajffbH5giJSmz-YyojbbCpKEGR3MK2-WTq2DIecBOrF1dlUgQVlM97tsesW8PTuLTHRiFhsPEc7pGPt2s6U"/>
 </div>
@@ -1273,7 +1248,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <div class="flex flex-wrap justify-center gap-6 sm:gap-8" id="income-category-row"></div>
 </div>
-<!-- ② 輸入價格（算式／結果／發票） -->
+<!-- ② 輸入價格（算式／結果） -->
 <div class="relative mb-10 scroll-mt-28" id="add-amount-entry-block">
 <div class="organic-cloud bg-gradient-to-br from-primary-container to-secondary-container opacity-20 absolute -inset-4 blur-2xl -z-10"></div>
 <div class="text-center py-6 px-2">
@@ -1302,31 +1277,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="button" data-calc="." class="min-h-[2.75rem] sm:min-h-[3rem] text-xl font-bold bg-surface-container-low rounded-xl hover:bg-surface-container-highest active:scale-95 transition-all">.</button>
 </div>
 </div>
-</div>
-<div class="flex flex-col items-center gap-2 mt-5" id="invoice-scan-wrap">
-<button type="button" id="invoice-qr-scan-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-container to-secondary-container border-2 border-primary/25 shadow-lg flex items-center justify-center text-primary hover:brightness-95 active:scale-95 transition-all touch-manipulation" aria-label="掃描發票 QR Code">
-<span class="material-symbols-outlined text-3xl" aria-hidden="true">qr_code_scanner</span>
-</button>
-<span class="text-[11px] font-bold text-on-surface-variant tracking-wide">掃描發票 QR Code</span>
-<p class="text-[10px] text-on-surface-variant/90 text-center max-w-xs leading-relaxed px-2">先掃左側（發票資訊），再掃右側（明細）。僅本機解析，格式依店家而異。</p>
-</div>
-<div id="invoice-fields-wrap" class="mt-4 w-full max-w-md mx-auto space-y-3">
-<div>
-<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1" for="tx-invoice-number">發票號碼</label>
-<input type="text" id="tx-invoice-number" class="w-full bg-white/80 backdrop-blur-xl border border-outline-variant/40 rounded-2xl px-4 py-3 font-mono font-bold text-on-surface text-sm uppercase" placeholder="例 AB-12345678" maxlength="12" autocomplete="off"/>
-</div>
-<div id="invoice-store-row" class="hidden rounded-2xl border border-primary/20 bg-primary-container/25 px-4 py-3 text-left">
-<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">店家／賣方</p>
-<p class="text-sm font-bold text-on-surface leading-snug" id="invoice-store-text"></p>
-<p class="text-[10px] text-on-surface-variant mt-1 hidden" id="invoice-seller-tax-hint"></p>
-</div>
-<button type="button" id="invoice-clear-btn" class="text-xs font-bold text-error hover:underline w-full text-center">清除發票掃描資料</button>
-<p id="invoice-lottery-result" class="text-sm font-semibold text-on-surface text-center hidden" role="status" aria-live="polite"></p>
-</div>
-<div id="invoice-lines-section" class="mt-6 w-full max-w-lg mx-auto hidden">
-<h3 class="text-sm font-extrabold text-primary mb-3 ml-1">品項與金額（右側 QR）</h3>
-<p class="text-[10px] text-on-surface-variant mb-3 px-1 leading-relaxed">店家名稱見上方「店家／賣方」；每筆可調整類別，儲存時依類別各寫一筆。</p>
-<div id="invoice-lines-list" class="space-y-3"></div>
 </div>
 </div>
 <button type="button" id="add-step-to-note-btn" class="w-full max-w-md mx-auto mb-10 py-3.5 px-4 rounded-2xl bg-secondary-container text-on-secondary-container text-sm font-extrabold border border-secondary/25 shadow-sm active:scale-[0.99] transition-transform">下一步：備註（可略過）</button>
@@ -1358,19 +1308,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div id="add-floating-save" class="fixed bottom-0 left-0 right-0 w-full p-4 sm:p-6 flex flex-col items-center gap-1.5 z-[55] box-border pointer-events-none">
 <div id="add-floating-save-bar" class="w-full max-w-none bg-[#ffffffcc] backdrop-blur-xl rounded-full p-2 shadow-[0_12px_40px_rgba(114,86,56,0.1)] flex gap-2 pointer-events-auto">
 <button type="button" class="flex-1 min-h-[52px] py-4 px-6 sm:px-8 bg-primary rounded-full text-on-primary text-base font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform touch-manipulation" id="save-transaction-btn"><span class="material-symbols-outlined" aria-hidden="true">save</span> <span id="save-transaction-label">儲存交易</span></button>
-</div>
-</div>
-<!-- 發票 QR 相機掃描（全螢幕） -->
-<div id="add-qr-scanner-overlay" class="fixed inset-0 hidden flex-col bg-gradient-to-b from-[#3a3228]/96 via-[#2a241c]/97 to-[#1a1510]/98 backdrop-blur-xl" aria-hidden="true">
-<div class="shrink-0 flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-primary-fixed/20 bg-black/15">
-<p class="text-sm font-extrabold text-primary-fixed tracking-tight">掃描發票 QR</p>
-<button type="button" id="add-qr-close-btn" class="p-2 rounded-full bg-primary-container/25 text-primary-fixed border border-primary-fixed/30 hover:bg-primary-container/45 active:scale-95 transition" aria-label="關閉相機">
-<span class="material-symbols-outlined">close</span>
-</button>
-</div>
-<div class="flex-1 min-h-0 flex flex-col items-center justify-center p-5 sm:p-6">
-<div id="add-qr-reader" class="w-full max-w-[min(100%,20rem)] rounded-[1.25rem] overflow-hidden bg-black/35 border-2 border-primary-fixed/35 shadow-[0_0_40px_rgba(253,214,175,0.12),inset_0_0_0_1px_rgba(255,255,255,0.06)] ring-1 ring-primary/20"></div>
-<p id="add-qr-hint" class="text-xs text-primary-fixed/85 text-center mt-5 max-w-sm leading-relaxed px-2">請將 QR 對準框線；建議先掃發票<strong class="text-primary-fixed">左側</strong>，再點右上角圖示掃<strong class="text-primary-fixed">右側</strong>明細。</p>
 </div>
 </div>
 <!-- 編輯分類：主分類細項（Tag）+ 新增細項；自訂名稱請由主畫面「其它」新增 -->
@@ -1583,6 +1520,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
           <option value="其他">其他</option>
         </select>
       </div>
+      <p id="inv-lottery-result" class="text-sm font-semibold text-on-surface text-center hidden mt-2" role="status" aria-live="polite"></p>
     </div>
     <div class="p-4 border-t border-amber-100">
       <button type="button" class="w-full py-3.5 rounded-xl font-bold bg-secondary text-on-secondary" id="inv-add-submit">加入明細</button>
@@ -4037,7 +3975,6 @@ const STORAGE_KEY = "stitch_transactions";
   const SHORTCUT_PARENT_MAP_KEY = "stitch_shortcut_parent_map";
   const INCOME_CATEGORIES_KEY = "stitch_income_categories";
   const INCOME_ICONS_KEY = "stitch_income_icons";
-  const INVOICE_RECORDS_KEY = "stitch_invoice_records";
   /** 支出主分類（寫入交易／圓餅圖） */
   const EXPENSE_PARENT_GROUPS = ["飲食", "交通", "住家", "服飾", "其它"];
   /** 自訂細項尚未指定主分類：僅在「新增細項…」各下拉池中，不顯示於任一主分類標籤列 */
@@ -4566,519 +4503,6 @@ const STORAGE_KEY = "stitch_transactions";
 
   let transactionDateYmd = ymdFromDate(new Date());
 
-  /** 發票掃描：拆項明細（儲存時各寫一筆） */
-  let invoiceLineItems = [];
-  let invoiceStoreName = "";
-  let invoiceSellerTaxId = "";
-  let lastQrDecoded = "";
-  let qrDecodeCooldownUntil = 0;
-  let html5QrInstance = null;
-
-  function invoiceSplitActive() {
-    return txFlow === "expense" && invoiceLineItems.length > 0;
-  }
-
-  function guessCategoryFromItemName(name, allowed) {
-    const list = Array.isArray(allowed) && allowed.length ? allowed : [...EXPENSE_PARENT_GROUPS];
-    const pick = (pref) => {
-      for (const p of pref) {
-        if (list.includes(p)) return p;
-      }
-      return list[0] || "飲食";
-    };
-    const t = String(name || "");
-    if (
-      /奶茶|咖啡|早餐|吐司|麵包|便當|午餐|晚餐|火鍋|拉麵|壽司|飯糰|滷味|小吃|手搖|飲料|果汁|豆漿|漢堡|雞排|餐廳|鍋燒|湯麵|水餃|包子|三明治|甜點|蛋糕|茶飲/.test(t)
-    ) {
-      return pick(["飲食"]);
-    }
-    if (/車|加油|停車|捷運|高鐵|台鐵|ibus|悠遊|一卡通|Uber|計程|租車|高鐵|機票|船票|YouBike/.test(t)) {
-      return pick(["交通"]);
-    }
-    if (/電影|KTV|遊戲|點數|Steam|演唱會|門票|遊樂|娛樂|書籍|雜誌/.test(t)) {
-      return pick(["服飾", "住家"]);
-    }
-    if (/超市|量販|全聯|家樂福|momo|網購|購物|百貨|服飾|鞋|化妝|3C/.test(t)) {
-      return pick(["飲食", "服飾"]);
-    }
-    return pick(["住家", "飲食"]);
-  }
-
-  function hexToAmount(s) {
-    if (!s || String(s).length !== 8) return null;
-    const n = parseInt(String(s).replace(/[^0-9a-fA-F]/g, ""), 16);
-    return Number.isFinite(n) && n >= 0 ? n : null;
-  }
-
-  /** 民國日期 7 碼（YYY+MM+DD）→ 西元 YYYY-MM-DD；含曆日檢查 */
-  function parseRocSevenDigitsToYmd(rocStr) {
-    if (!rocStr || !/^\d{7}$/.test(rocStr)) return null;
-    const rocY = parseInt(rocStr.slice(0, 3), 10);
-    const mm = parseInt(rocStr.slice(3, 5), 10);
-    const dd = parseInt(rocStr.slice(5, 7), 10);
-    if (rocY < 1 || rocY > 200 || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
-    const gy = rocY + 1911;
-    const cal = new Date(gy, mm - 1, dd);
-    if (cal.getFullYear() !== gy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) return null;
-    return gy + "-" + pad2(mm) + "-" + pad2(dd);
-  }
-
-  function alignTaiwanInvoiceCompact(raw) {
-    const tryOne = (s) => {
-      const compact = String(s || "")
-        .trim()
-        .replace(/^\uFEFF/, "")
-        .replace(/[\s\u200B-\u200D\uFEFF]/g, "");
-      const idx = compact.search(/[A-Z]{2}\d{8}/i);
-      if (idx < 0) return null;
-      return compact.slice(idx);
-    };
-    let a = tryOne(raw);
-    if (!a && raw) a = tryOne(String(raw).normalize("NFKC"));
-    return a;
-  }
-
-  function findInvoiceRocYmdInCompact(compact) {
-    const c = String(compact || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
-    const aligned = alignTaiwanInvoiceCompact(c);
-    if (!aligned || aligned.length < 17) return null;
-    const m = aligned.match(/^([A-Z]{2}\d{8})(\d{7})/i);
-    if (!m) return null;
-    return parseRocSevenDigitsToYmd(m[2]);
-  }
-
-  const INVOICE_AMOUNT_MAX_NT = 200000000;
-
-  function pickInvoiceHexAmounts(sales, total) {
-    let s = sales;
-    let t = total;
-    if (s != null && t != null && s > 0 && t > 0 && t < s) {
-      const x = s;
-      s = t;
-      t = x;
-    }
-    const ok = (n) => n != null && n > 0 && n <= INVOICE_AMOUNT_MAX_NT;
-    if (ok(t)) return { totalAmount: t, salesAmount: s };
-    if (ok(s)) return { totalAmount: s, salesAmount: s };
-    if (t != null && t > INVOICE_AMOUNT_MAX_NT && ok(s)) return { totalAmount: s, salesAmount: s };
-    return { totalAmount: null, salesAmount: s };
-  }
-
-  /** 財政部左側 QR：對齊字軌後讀欄位；金額做含稅／未稅與上限檢查 */
-  function parseTaiwanInvoiceLeftQr(raw) {
-    const text = alignTaiwanInvoiceCompact(raw);
-    if (!text || text.length < 17) return null;
-    const inv10 = text.slice(0, 10).toUpperCase();
-    if (!/^[A-Z]{2}\d{8}$/.test(inv10)) return null;
-    const dateYmd = parseRocSevenDigitsToYmd(text.slice(10, 17));
-    if (!dateYmd) return null;
-    let sales = null;
-    let total = null;
-    if (text.length >= 37) {
-      sales = hexToAmount(text.slice(21, 29));
-      total = hexToAmount(text.slice(29, 37));
-    }
-    const picked = pickInvoiceHexAmounts(sales, total);
-    let sellerTaxId = "";
-    if (text.length >= 53) {
-      const sid = text.slice(45, 53);
-      if (/^\d{8}$/.test(sid)) sellerTaxId = sid;
-    }
-    return {
-      invoiceNumber: inv10.slice(0, 2) + "-" + inv10.slice(2),
-      dateYmd,
-      totalAmount: picked.totalAmount,
-      salesAmount: picked.salesAmount,
-      sellerTaxId,
-    };
-  }
-
-  try {
-    window.__stitchParseTaiwanInvoiceLeftQr = parseTaiwanInvoiceLeftQr;
-  } catch (e) {
-    /* ignore */
-  }
-
-  /** 右側 QR：** 分段、冒號分隔、JSON；並嘗試擷取店名 */
-  function parseTaiwanInvoiceRightQr(raw) {
-    const text = String(raw || "").trim();
-    const result = { storeName: "", items: [] };
-    if (text.length < 8) return result;
-    const allowed = Array.from(categorySelect?.options || []).map((o) => o.value);
-    const items = result.items;
-    let storeHint = "";
-
-    const pushItem = (name, amt) => {
-      const n = Math.round(Number(amt));
-      if (!name || !Number.isFinite(n) || n <= 0) return;
-      const nm = String(name).trim().slice(0, 40);
-      if (nm.length < 1) return;
-      items.push({
-        id: "invl_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        name: nm,
-        amount: n,
-        category: guessCategoryFromItemName(nm, allowed),
-      });
-    };
-
-    const extractStoreBeforeStar = () => {
-      if (!text.includes("**")) return;
-      const headPart = text.split(/\*\*/)[0].trim();
-      const lines = headPart.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
-      const lab = /^(?:店名|商店|賣方|營業人|商店名稱|公司名稱|銷售方)[:：]\s*(.+)$/i;
-      for (const line of lines) {
-        const lm = line.match(lab);
-        if (lm) {
-          storeHint = lm[1].trim().slice(0, 80);
-          return;
-        }
-      }
-      for (const line of lines) {
-        if (/^[A-Z]{2}\d{8}/i.test(line)) continue;
-        if (/^\d+[.:：]/.test(line)) continue;
-        if (/^[:：]/.test(line)) continue;
-        if (line.split(":").length >= 5) continue;
-        if (line.length >= 2 && line.length <= 60 && /[:：]/.test(line) === false && !/^\d+$/.test(line)) {
-          storeHint = line.slice(0, 80);
-          return;
-        }
-      }
-    };
-    extractStoreBeforeStar();
-
-    if (text.includes("**")) {
-      const parts = text.split(/\*\*/).map((p) => p.trim()).filter(Boolean);
-      for (const p of parts) {
-        const segs = p.split(":");
-        if (segs.length >= 5) {
-          const name = (segs[1] || "").trim();
-          const sub = parseFloat(String(segs[segs.length - 1]).replace(/[^\d.]/g, ""));
-          if (name && Number.isFinite(sub) && sub > 0) pushItem(name, sub);
-        } else if (segs.length >= 2) {
-          const last = segs[segs.length - 1].replace(/[^\d.]/g, "");
-          const first = (segs[1] || segs[0].replace(/^\d+[.:：]?\s*/, "")).trim();
-          const amt = parseFloat(last);
-          if (first && Number.isFinite(amt) && amt > 0) pushItem(first, amt);
-        }
-      }
-      if (items.length) {
-        result.storeName = storeHint;
-        return result;
-      }
-    }
-    for (const line of text.split(/[\r\n;；]/)) {
-      const m = line.trim().match(/^([^:：]{1,40})[:：]\s*(\d{1,7})\s*$/);
-      if (m) pushItem(m[1].trim(), m[2]);
-    }
-    if (items.length) {
-      result.storeName = storeHint;
-      return result;
-    }
-    if (!storeHint) {
-      const fl = text.split(/[\r\n]/)[0].trim();
-      if (fl && fl.length < 60 && !/^\d+[.:：]/.test(fl) && !/^[A-Z]{2}\d{8}/i.test(fl)) {
-        storeHint = fl.slice(0, 80);
-      }
-    }
-    try {
-      const j = JSON.parse(text);
-      if (Array.isArray(j)) {
-        j.forEach((row) => {
-          if (row && (row.name || row.品名)) pushItem(row.name || row.品名, row.amount || row.金額 || row.price);
-        });
-      }
-    } catch (e) {
-      /* ignore */
-    }
-    result.storeName = storeHint;
-    return result;
-  }
-
-  function renderInvoiceStoreUi() {
-    const row = document.getElementById("invoice-store-row");
-    const txt = document.getElementById("invoice-store-text");
-    const hint = document.getElementById("invoice-seller-tax-hint");
-    if (!row || !txt) return;
-    if (invoiceSellerTaxId && hint) {
-      hint.textContent = "賣方統編：" + invoiceSellerTaxId;
-      hint.classList.remove("hidden");
-    } else if (hint) {
-      hint.textContent = "";
-      hint.classList.add("hidden");
-    }
-    if (invoiceStoreName || invoiceSellerTaxId) {
-      row.classList.remove("hidden");
-      txt.textContent = invoiceStoreName || "（店名請對照發票紙本或右側 QR 明細）";
-    } else {
-      row.classList.add("hidden");
-      txt.textContent = "";
-    }
-  }
-
-  function applyInvoiceLeftParsed(data) {
-    if (!data) return;
-    const invEl = document.getElementById("tx-invoice-number");
-    if (invEl) invEl.value = data.invoiceNumber || "";
-    if (data.dateYmd) {
-      transactionDateYmd = data.dateYmd;
-      syncTxDateUi();
-    }
-    invoiceSellerTaxId = data.sellerTaxId || "";
-    renderInvoiceStoreUi();
-    if (data.totalAmount != null && Number.isFinite(data.totalAmount) && data.totalAmount > 0) {
-      resetCalcWorkingAndTape();
-      amountInput = String(data.totalAmount);
-      normalizeAfterTyping();
-      updateAmountDisplay();
-    }
-  }
-
-  function renderInvoiceLinesList() {
-    const section = document.getElementById("invoice-lines-section");
-    const listEl = document.getElementById("invoice-lines-list");
-    if (!section || !listEl) return;
-    if (!invoiceLineItems.length) {
-      section.classList.add("hidden");
-      listEl.innerHTML = "";
-      return;
-    }
-    section.classList.remove("hidden");
-    const opts = Array.from(categorySelect.options)
-      .map((o) => {
-        const v = o.value.replace(/"/g, "&quot;");
-        const t = o.textContent.replace(/</g, "&lt;");
-        return `<option value="${v}">${t}</option>`;
-      })
-      .join("");
-    listEl.innerHTML = invoiceLineItems
-      .map(
-        (line, idx) => `
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2 p-4 rounded-2xl bg-surface-container-low border border-outline-variant/25" data-invoice-line-id="${line.id}">
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-bold text-on-surface-variant">品項</p>
-          <p class="font-bold text-on-surface truncate">${String(line.name).replace(/</g, "&lt;")}</p>
-          <p class="text-sm font-extrabold text-primary mt-1">${line.amount.toLocaleString("zh-TW")} 元</p>
-        </div>
-        <div class="sm:w-44 shrink-0">
-          <label class="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">消費類別</label>
-          <select class="invoice-line-cat w-full px-3 py-2.5 rounded-xl border border-outline-variant/40 bg-white text-sm font-bold text-on-surface" data-idx="${idx}">
-            ${opts}
-          </select>
-        </div>
-      </div>`
-      )
-      .join("");
-    listEl.querySelectorAll(".invoice-line-cat").forEach((sel) => {
-      const idx = Number(sel.getAttribute("data-idx"));
-      if (!Number.isFinite(idx) || !invoiceLineItems[idx]) return;
-      sel.value = invoiceLineItems[idx].category;
-      sel.addEventListener("change", () => {
-        invoiceLineItems[idx].category = sel.value;
-      });
-    });
-    syncTotalFromInvoiceLines();
-  }
-
-  function syncTotalFromInvoiceLines() {
-    if (!invoiceLineItems.length) return;
-    const sum = invoiceLineItems.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    resetCalcWorkingAndTape();
-    amountInput = sum ? String(sum) : "";
-    normalizeAfterTyping();
-    updateAmountDisplay();
-  }
-
-  function clearInvoiceScanData() {
-    invoiceLineItems = [];
-    invoiceStoreName = "";
-    invoiceSellerTaxId = "";
-    renderInvoiceStoreUi();
-    const invEl = document.getElementById("tx-invoice-number");
-    if (invEl) invEl.value = "";
-    resetCalcWorkingAndTape();
-    amountInput = "";
-    normalizeAfterTyping();
-    updateAmountDisplay();
-    renderInvoiceLinesList();
-    lastQrDecoded = "";
-  }
-
-  function showInvoiceLotteryResult(msg) {
-    const el = document.getElementById("invoice-lottery-result");
-    if (!el) return;
-    const s = String(msg || "").trim();
-    if (!s) {
-      el.textContent = "";
-      el.classList.add("hidden");
-      return;
-    }
-    el.textContent = s;
-    el.classList.remove("hidden");
-  }
-
-  function requestOpenInvoiceQrScanner() {
-    if (txFlow !== "expense") setTxFlow("expense");
-    openInvoiceQrScanner();
-  }
-
-  function handleInvoiceQrDecoded(text) {
-    const now = Date.now();
-    if (text === lastQrDecoded && now < qrDecodeCooldownUntil) return;
-    lastQrDecoded = text;
-    qrDecodeCooldownUntil = now + 700;
-    const left = parseTaiwanInvoiceLeftQr(text);
-    if (left) {
-      applyInvoiceLeftParsed(left);
-      try {
-        if (navigator.vibrate) navigator.vibrate(40);
-      } catch (e) {}
-      void closeInvoiceQrScanner();
-      requestAnimationFrame(() => {
-        document.getElementById("invoice-fields-wrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-      return;
-    }
-    const rightParsed = parseTaiwanInvoiceRightQr(text);
-    const lines = rightParsed.items || [];
-    if (lines.length > 0) {
-      const compactGuess = String(text || "").replace(/[\s\u200B-\u200D\uFEFF]/g, "");
-      const guessYmd = findInvoiceRocYmdInCompact(compactGuess);
-      if (guessYmd) {
-        transactionDateYmd = guessYmd;
-        syncTxDateUi();
-      }
-      invoiceStoreName = rightParsed.storeName || invoiceStoreName;
-      invoiceLineItems = lines;
-      renderInvoiceStoreUi();
-      if (invoiceStoreName && noteInput && !String(noteInput.value || "").trim()) {
-        noteInput.value = invoiceStoreName;
-      }
-      renderInvoiceLinesList();
-      try {
-        if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
-      } catch (e) {}
-      void closeInvoiceQrScanner();
-      requestAnimationFrame(() => {
-        document.getElementById("invoice-lines-section")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
-      return;
-    }
-  }
-
-  async function openInvoiceQrScanner() {
-    if (typeof Html5Qrcode === "undefined") {
-      alert("無法載入掃描元件，請檢查網路後重新整理。");
-      return;
-    }
-    const overlay = document.getElementById("add-qr-scanner-overlay");
-    const readerId = "add-qr-reader";
-    if (!overlay) return;
-    overlay.classList.remove("hidden");
-    overlay.classList.add("flex");
-    overlay.setAttribute("aria-hidden", "false");
-    const hint = document.getElementById("add-qr-hint");
-    if (hint) {
-      hint.textContent =
-        "請將 QR 對準中央框線；讀取成功後會自動關閉。明細請再點掃描圖示掃發票右側。";
-    }
-    document.getElementById(readerId).innerHTML = "";
-    html5QrInstance = new Html5Qrcode(readerId);
-    const vw = Math.min(window.innerWidth - 56, 300);
-    const qh = Math.min(Math.round(vw * 0.92), 280);
-    const config = {
-      fps: 10,
-      qrbox: { width: vw, height: qh },
-      aspectRatio: 1,
-    };
-    try {
-      await html5QrInstance.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          handleInvoiceQrDecoded(decodedText);
-        },
-        () => {}
-      );
-    } catch (err) {
-      alert("無法開啟相機，請確認已允許權限，或使用 HTTPS／localhost 開啟此頁。");
-      closeInvoiceQrScanner();
-    }
-  }
-
-  async function closeInvoiceQrScanner() {
-    const overlay = document.getElementById("add-qr-scanner-overlay");
-    if (html5QrInstance) {
-      try {
-        await html5QrInstance.stop();
-      } catch (e) {}
-      try {
-        await html5QrInstance.clear();
-      } catch (e) {}
-      html5QrInstance = null;
-    }
-    if (overlay) {
-      overlay.classList.add("hidden");
-      overlay.classList.remove("flex");
-      overlay.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  function formatTxDateLabel(ymd) {
-    const parts = ymd.split("-").map(Number);
-    if (parts.length !== 3) return ymd;
-    const target = new Date(parts[0], parts[1] - 1, parts[2]);
-    target.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.round((target.getTime() - today.getTime()) / 864e5);
-    if (diff === 0) return "今天";
-    if (diff === -1) return "昨天";
-    if (diff === 1) return "明天";
-    if (parts[0] !== today.getFullYear()) return parts[0] + "年" + parts[1] + "月" + parts[2] + "日";
-    return parts[1] + "月" + parts[2] + "日";
-  }
-
-  function syncTxDateUi() {
-    const inp = document.getElementById("tx-date-input");
-    const lab = document.getElementById("tx-date-label");
-    if (inp) inp.value = transactionDateYmd;
-    if (lab) lab.textContent = formatTxDateLabel(transactionDateYmd);
-  }
-
-  function createdAtForTransaction() {
-    const parts = transactionDateYmd.split("-").map(Number);
-    const now = new Date();
-    if (parts.length !== 3) return new Date().toISOString();
-    return new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds(),
-      now.getMilliseconds()
-    ).toISOString();
-  }
-
-  function onTxDateInputCommit() {
-    const el = document.getElementById("tx-date-input");
-    if (el && el.value) transactionDateYmd = el.value;
-    else if (el && !el.value) transactionDateYmd = ymdFromDate(new Date());
-    syncTxDateUi();
-  }
-
-  document.getElementById("tx-date-input")?.addEventListener("change", onTxDateInputCommit);
-  document.getElementById("tx-date-input")?.addEventListener("input", onTxDateInputCommit);
-
-  document.getElementById("invoice-qr-scan-btn")?.addEventListener("click", () => requestOpenInvoiceQrScanner());
-  document.getElementById("nav-invoice-qr-btn")?.addEventListener("click", () => requestOpenInvoiceQrScanner());
-  document.getElementById("add-qr-close-btn")?.addEventListener("click", () => closeInvoiceQrScanner());
-  document.getElementById("invoice-clear-btn")?.addEventListener("click", () => {
-    if (confirm("清除發票掃描資料（含明細）？")) {
-      clearInvoiceScanData();
-      showInvoiceLotteryResult("");
-    }
-  });
 
   /** 與鍵盤輸入同步顯示（千分位、保留輸入中的小數點狀態） */
   function formatAmountLive(raw) {
@@ -5277,7 +4701,6 @@ const STORAGE_KEY = "stitch_transactions";
 
   if (calcKeypad) {
     calcKeypad.addEventListener("click", (event) => {
-      if (invoiceSplitActive()) return;
       const btn = event.target.closest("button[data-calc]");
       if (!btn) return;
       const k = btn.getAttribute("data-calc");
@@ -5384,19 +4807,6 @@ const STORAGE_KEY = "stitch_transactions";
     document.getElementById("expense-category-section")?.classList.toggle("hidden", txFlow === "income");
     document.getElementById("income-category-section")?.classList.toggle("hidden", txFlow === "expense");
     editCategoriesBtn?.classList.toggle("hidden", txFlow === "income");
-    document.getElementById("invoice-scan-wrap")?.classList.toggle("hidden", txFlow !== "expense");
-    document.getElementById("invoice-fields-wrap")?.classList.toggle("hidden", txFlow !== "expense");
-    document.getElementById("nav-invoice-qr-btn")?.classList.toggle("hidden", txFlow !== "expense");
-    if (txFlow !== "expense") {
-      closeInvoiceQrScanner();
-      invoiceLineItems = [];
-      invoiceStoreName = "";
-      invoiceSellerTaxId = "";
-      renderInvoiceStoreUi();
-      const invEl = document.getElementById("tx-invoice-number");
-      if (invEl) invEl.value = "";
-      renderInvoiceLinesList();
-    }
     const saveLab = document.getElementById("save-transaction-label");
     if (saveLab) saveLab.textContent = txFlow === "income" ? "確認收入" : "儲存交易";
     if (noteInput) {
@@ -6271,8 +5681,8 @@ const STORAGE_KEY = "stitch_transactions";
     if (userInitiated) alert("正在嘗試連線至 Google...");
     const data = {
       source: "stitch-sync",
-      sheetId,
-      spreadsheetId: sheetId,
+      sheetId: String(sheetId),
+      spreadsheetId: String(sheetId),
       syncedAt: new Date().toISOString(),
       rows,
     };
@@ -6302,42 +5712,6 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
-  async function appendInvoiceScanRecord(payload) {
-    const amt = Math.round(Number(payload.amount) || 0);
-    const dateYmd = String(payload.dateYmd || "").trim();
-    if (!dateYmd || amt <= 0) return;
-    const rec = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      storeName: String(payload.storeName || "掃描／記帳").trim() || "掃描／記帳",
-      dateYmd,
-      amount: amt,
-      invoiceNumber: String(payload.invoiceNumber || "").trim(),
-      carrierTag: String(payload.carrierTag || "掃描／記帳").trim(),
-      createdAt: new Date().toISOString(),
-    };
-    if (isInIframe()) {
-      const load = await requestParent("stitch:invoice:load", {});
-      const records = Array.isArray(load.records) ? [...load.records] : [];
-      records.unshift(rec);
-      await requestParent("stitch:invoice:save", {
-        carrier: load.carrier != null ? String(load.carrier) : "",
-        records,
-        settings:
-          load.settings && typeof load.settings === "object" && !Array.isArray(load.settings)
-            ? load.settings
-            : { highBrightness: false },
-      });
-      return;
-    }
-    try {
-      const raw = localStorage.getItem(INVOICE_RECORDS_KEY);
-      const p = raw ? JSON.parse(raw) : [];
-      const records = Array.isArray(p) ? p : [];
-      records.unshift(rec);
-      localStorage.setItem(INVOICE_RECORDS_KEY, JSON.stringify(records));
-    } catch (e) {}
-  }
-
   function navigateToStitchHistory() {
     if (isInIframe()) {
       try {
@@ -6355,71 +5729,6 @@ const STORAGE_KEY = "stitch_transactions";
   async function saveTransaction() {
     const flow = txFlow === "income" ? "income" : "expense";
 
-    if (flow === "expense" && invoiceLineItems.length > 0) {
-      const invRaw = (document.getElementById("tx-invoice-number")?.value || "").trim().toUpperCase();
-      const baseNote = (noteInput.value || "").trim();
-      const nSave = [];
-      for (let i = 0; i < invoiceLineItems.length; i++) {
-        const line = invoiceLineItems[i];
-        const amt = Math.round(Number(line.amount));
-        const cat = line.category || categorySelect.value || "住家";
-        if (!Number.isFinite(amt) || amt <= 0) continue;
-        const bits = [baseNote, line.name, invRaw ? "發票 " + invRaw : ""].filter(Boolean);
-        nSave.push({
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 9) + i,
-          amount: amt,
-          category: cat,
-          note: bits.join(" · "),
-          createdAt: createdAtForTransaction(),
-          bookedDate: transactionDateYmd,
-          flow: "expense",
-          source: "einvoice",
-          invoiceNumber: invRaw || undefined,
-          lineLabel: line.name,
-        });
-      }
-      if (nSave.length === 0) {
-        alert("明細金額有誤，請檢查掃描結果。");
-        return;
-      }
-      for (const rec of nSave) {
-        await addTransaction(rec);
-      }
-      const totalInv = nSave.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-      await appendInvoiceScanRecord({
-        storeName: (invoiceStoreName || baseNote || "").trim() || "掃描／記帳",
-        dateYmd: transactionDateYmd,
-        amount: totalInv,
-        invoiceNumber: String(invRaw || "").replace(/[^0-9A-Z\-]/gi, ""),
-        carrierTag: "掃描／記帳",
-      });
-      let lotteryLine = "";
-      if (typeof StitchLottery !== "undefined" && StitchLottery && invRaw) {
-        try {
-          lotteryLine = await StitchLottery.checkInvoice({
-            invoiceRaw: invRaw,
-            note: [baseNote, "發票 " + invRaw].filter(Boolean).join(" · "),
-            bookedDateYmd: transactionDateYmd,
-          });
-        } catch (e) {}
-      }
-      showInvoiceLotteryResult(lotteryLine);
-      clearInvoiceScanData();
-      noteInput.value = "";
-      transactionDateYmd = ymdFromDate(new Date());
-      syncTxDateUi();
-      updateAmountDisplay();
-      triggerGoogleSheetSyncAfterTxSave();
-      alert(
-        "已依明細儲存 " +
-          nSave.length +
-          " 筆支出（圓餅圖將分類加總）。" +
-          (lotteryLine ? "\n\n" + lotteryLine : "")
-      );
-      navigateToStitchHistory();
-      return;
-    }
-
     if (!finalizeCalcInputForSave()) return;
 
     const amount = Number(amountInput || "0");
@@ -6434,27 +5743,7 @@ const STORAGE_KEY = "stitch_transactions";
         : categorySelect.value || selectedCategory || "住家";
     if (flow === "expense") selectedCategory = cat;
 
-    const invNote = (document.getElementById("tx-invoice-number")?.value || "").trim();
-    let note = (noteInput.value || "").trim();
-    let noteForLottery = note;
-    if (flow === "expense" && invNote) {
-      noteForLottery = [note, "發票 " + invNote.toUpperCase()].filter(Boolean).join(" · ");
-      note = noteForLottery;
-    }
-
-    let lotteryLine = "";
-    if (flow === "expense" && typeof StitchLottery !== "undefined" && StitchLottery) {
-      try {
-        lotteryLine = await StitchLottery.checkInvoice({
-          invoiceRaw: invNote,
-          note: noteForLottery,
-          bookedDateYmd: transactionDateYmd,
-        });
-      } catch (e) {}
-      showInvoiceLotteryResult(lotteryLine);
-    } else {
-      showInvoiceLotteryResult("");
-    }
+    const note = (noteInput.value || "").trim();
 
     const record = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -6465,33 +5754,18 @@ const STORAGE_KEY = "stitch_transactions";
       bookedDate: transactionDateYmd,
       flow,
     };
-    if (flow === "expense" && invNote) {
-      record.source = "einvoice";
-      record.invoiceNumber = invNote.toUpperCase();
-    }
 
     await addTransaction(record);
-
-    if (flow === "expense" && invNote) {
-      await appendInvoiceScanRecord({
-        storeName: (note || "").split("·")[0].trim() || invoiceStoreName || "掃描／記帳",
-        dateYmd: transactionDateYmd,
-        amount: Number(amount.toFixed(2)),
-        invoiceNumber: invNote.toUpperCase().replace(/[^0-9A-Z\-]/gi, ""),
-        carrierTag: "掃描／記帳",
-      });
-    }
 
     resetCalcWorkingAndTape();
     amountInput = "";
     noteInput.value = "";
-    if (document.getElementById("tx-invoice-number")) document.getElementById("tx-invoice-number").value = "";
     transactionDateYmd = ymdFromDate(new Date());
     syncTxDateUi();
     updateAmountDisplay();
     triggerGoogleSheetSyncAfterTxSave();
     const baseMsg = flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。";
-    alert(baseMsg + (lotteryLine ? "\n\n" + lotteryLine : ""));
+    alert(baseMsg);
     navigateToStitchHistory();
   }
 
@@ -6569,8 +5843,6 @@ const STORAGE_KEY = "stitch_transactions";
 
   noteInput.addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
-    const qrOv = document.getElementById("add-qr-scanner-overlay");
-    if (qrOv && !qrOv.classList.contains("hidden")) return;
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) return;
     if (categoryEditorOverlay && !categoryEditorOverlay.classList.contains("hidden")) return;
     e.preventDefault();
@@ -6579,11 +5851,6 @@ const STORAGE_KEY = "stitch_transactions";
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" || (!e.ctrlKey && !e.metaKey)) return;
-    const qrOv = document.getElementById("add-qr-scanner-overlay");
-    if (qrOv && !qrOv.classList.contains("hidden")) {
-      e.preventDefault();
-      return;
-    }
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
       e.preventDefault();
       saveCustomCategoryBtn?.click();
@@ -6608,12 +5875,6 @@ const STORAGE_KEY = "stitch_transactions";
 
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    const qrOv = document.getElementById("add-qr-scanner-overlay");
-    if (qrOv && !qrOv.classList.contains("hidden")) {
-      closeInvoiceQrScanner();
-      e.preventDefault();
-      return;
-    }
     if (customCategoryOverlay && !customCategoryOverlay.classList.contains("hidden")) {
       closeCustomCategoryModal();
       e.preventDefault();
@@ -6987,6 +6248,153 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     } catch (e) {
       return false;
     }
+  }
+
+  function showInvLotteryResult(msg) {
+    const el = document.getElementById("inv-lottery-result");
+    if (!el) return;
+    const s = String(msg || "").trim();
+    if (!s) {
+      el.textContent = "";
+      el.classList.add("hidden");
+      return;
+    }
+    el.textContent = s;
+    el.classList.remove("hidden");
+  }
+
+  function createdAtForTransactionFromYmd(dateYmd) {
+    const parts = String(dateYmd || "").trim().split("-").map(Number);
+    const now = new Date();
+    if (parts.length !== 3) return new Date().toISOString();
+    return new Date(
+      parts[0],
+      parts[1] - 1,
+      parts[2],
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds()
+    ).toISOString();
+  }
+
+  function normalizeInvoiceDisplayForTx(s) {
+    const t = trimInvoiceField(s).replace(/\s/g, "").toUpperCase();
+    const m = t.match(/^([A-Z]{2})(\d{8})$/);
+    if (m) return m[1] + "-" + m[2];
+    return trimInvoiceField(s);
+  }
+
+  async function addTransaction(record) {
+    if (isInIframe()) {
+      await requestParent("stitch:tx:add", { record });
+      return;
+    }
+    const all = readTransactionsLocal();
+    all.unshift(record);
+    localStorage.setItem(TX_STORAGE_KEY, JSON.stringify(all));
+    try {
+      window.dispatchEvent(new CustomEvent("stitch:transactions:changed"));
+    } catch (e) {}
+  }
+
+  /**
+   * 掃描解析或手動「加入明細」：寫入 stitch_transactions 並觸發試算表同步。
+   * StitchLottery.checkInvoice 參數與原新增頁儲存流程一致。
+   */
+  async function saveRecordFromInvoiceForm(opts) {
+    const fromManual = !!(opts && opts.fromManual);
+    let storeName = trimInvoiceField(document.getElementById("inv-f-store").value);
+    const dateYmd = trimInvoiceField(document.getElementById("inv-f-date").value);
+    const amount = Math.floor(Number(document.getElementById("inv-f-amount").value));
+    const invoiceRawField = trimInvoiceField(document.getElementById("inv-f-num").value);
+
+    if (!storeName) {
+      if (fromManual) {
+        alert("請填寫店家名稱");
+        return;
+      }
+      storeName = "發票掃描";
+      document.getElementById("inv-f-store").value = storeName;
+    }
+    if (!dateYmd) {
+      if (fromManual) alert("請選擇日期");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      if (fromManual) alert("請輸入有效金額");
+      return;
+    }
+
+    const invKey = normalizeInvoiceNumberKey(invoiceRawField);
+    if (invKey) {
+      const txs = await readTransactionsForInvoiceMerge();
+      const dup = txs.some(
+        (t) => normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(t)) === invKey
+      );
+      if (dup) {
+        let lotteryLine = "";
+        if (typeof StitchLottery !== "undefined" && StitchLottery && invoiceRawField) {
+          try {
+            lotteryLine = await StitchLottery.checkInvoice({
+              invoiceRaw: invoiceRawField,
+              note: [storeName, "發票 " + invoiceRawField].filter(Boolean).join(" · "),
+              bookedDateYmd: dateYmd,
+            });
+          } catch (e) {}
+        }
+        showInvLotteryResult(lotteryLine);
+        if (fromManual) alert("明細中已有相同發票號碼，已略過重複寫入。");
+        return;
+      }
+    }
+
+    let lotteryLine = "";
+    if (typeof StitchLottery !== "undefined" && StitchLottery && invoiceRawField) {
+      try {
+        lotteryLine = await StitchLottery.checkInvoice({
+          invoiceRaw: invoiceRawField,
+          note: [storeName, "發票 " + invoiceRawField].filter(Boolean).join(" · "),
+          bookedDateYmd: dateYmd,
+        });
+      } catch (e) {}
+    }
+    showInvLotteryResult(lotteryLine);
+
+    const invDisp = invKey ? normalizeInvoiceDisplayForTx(invoiceRawField) : "";
+    const note = invDisp ? [storeName, "發票 " + invDisp].filter(Boolean).join(" · ") : storeName;
+
+    const record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      amount: Math.round(amount),
+      category: "飲食",
+      note,
+      createdAt: createdAtForTransactionFromYmd(dateYmd),
+      bookedDate: dateYmd,
+      flow: "expense",
+      source: "einvoice",
+    };
+    if (invDisp) record.invoiceNumber = invDisp;
+
+    await addTransaction(record);
+    await rebuildStoreRecordsFromSources();
+    store = await loadStore();
+    periodAnchor = periodContainingDate(new Date(dateYmd + "T12:00:00"));
+    renderList();
+    scheduleGoogleSync(true);
+
+    if (fromManual) {
+      const addOv = document.getElementById("inv-add-overlay");
+      if (addOv) {
+        addOv.classList.add("hidden");
+        addOv.classList.remove("flex");
+      }
+      navigate("history");
+    }
+  }
+
+  async function afterInvoiceQrParsed() {
+    await saveRecordFromInvoiceForm({ fromManual: false });
   }
 
   function formatYmdSlashes(dateYmd) {
@@ -7396,6 +6804,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       addOv.classList.remove("hidden");
       addOv.classList.add("flex");
     }
+    void afterInvoiceQrParsed();
   }
 
   async function init() {
@@ -7515,6 +6924,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       document.getElementById("inv-f-store").value = "";
       document.getElementById("inv-f-amount").value = "";
       document.getElementById("inv-f-num").value = "";
+      showInvLotteryResult("");
       addOv.classList.remove("hidden");
       addOv.classList.add("flex");
     });
@@ -7527,38 +6937,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       if (e.target === addOv) closeAdd();
     });
     document.getElementById("inv-add-submit").addEventListener("click", async () => {
-      const storeName = document.getElementById("inv-f-store").value.trim();
-      const dateYmd = document.getElementById("inv-f-date").value;
-      const amount = Math.floor(Number(document.getElementById("inv-f-amount").value));
-      const invoiceNumber = document.getElementById("inv-f-num").value.trim();
-      const carrierTag = document.getElementById("inv-f-tag").value;
-      if (!storeName) {
-        alert("請填寫店家名稱");
-        return;
-      }
-      if (!dateYmd) {
-        alert("請選擇日期");
-        return;
-      }
-      if (!Number.isFinite(amount) || amount <= 0) {
-        alert("請輸入有效金額");
-        return;
-      }
-      const rec = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-        storeName,
-        dateYmd,
-        amount,
-        invoiceNumber: trimInvoiceField(invoiceNumber),
-        carrierTag,
-        createdAt: new Date().toISOString(),
-      };
-      store.records.unshift(rec);
-      await saveStore(store, { userSync: true });
-      periodAnchor = periodContainingDate(new Date(dateYmd + "T12:00:00"));
-      renderList();
-      closeAdd();
-      navigate("history");
+      await saveRecordFromInvoiceForm({ fromManual: true });
     });
 
     document.getElementById("inv-list-root").addEventListener("click", async (e) => {
@@ -7641,6 +7020,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         parseQrToForm(text);
         document.getElementById("inv-add-overlay").classList.remove("hidden");
         document.getElementById("inv-add-overlay").classList.add("flex");
+        void afterInvoiceQrParsed();
       } catch (err) {
         alert("無法從圖片辨識 QR，請改用手動新增或換一張清楚的照片。");
       }
@@ -7790,6 +7170,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
     else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
   }
+
+  window.saveRecord = saveRecordFromInvoiceForm;
 
   window.__stitchGoogleSheetSync = {
     schedule: scheduleGoogleSync,
