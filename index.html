@@ -6263,21 +6263,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     el.classList.remove("hidden");
   }
 
-  function createdAtForTransactionFromYmd(dateYmd) {
-    const parts = String(dateYmd || "").trim().split("-").map(Number);
-    const now = new Date();
-    if (parts.length !== 3) return new Date().toISOString();
-    return new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds(),
-      now.getMilliseconds()
-    ).toISOString();
-  }
-
   function normalizeInvoiceDisplayForTx(s) {
     const t = trimInvoiceField(s).replace(/\s/g, "").toUpperCase();
     const m = t.match(/^([A-Z]{2})(\d{8})$/);
@@ -6298,8 +6283,72 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     } catch (e) {}
   }
 
+  function parseYmdFromPayloadDate(d) {
+    const s = String(d || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1] + "-" + m[2] + "-" + m[3];
+    const m2 = s.match(/^(\d{4})\/(\d{2})\/(\d{2})/);
+    if (m2) return m2[1] + "-" + m2[2] + "-" + m2[3];
+    return s;
+  }
+
+  function createdAtIsoFromPayloadDateTime(dateYmd, timeStr) {
+    const ymd = parseYmdFromPayloadDate(dateYmd);
+    const parts = String(ymd).split("-").map(Number);
+    const now = new Date();
+    if (parts.length !== 3) return now.toISOString();
+    let h = now.getHours();
+    let mi = now.getMinutes();
+    let sec = now.getSeconds();
+    const t = String(timeStr || "").trim();
+    const tm = t.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (tm) {
+      h = Number(tm[1]) || 0;
+      mi = Number(tm[2]) || 0;
+      sec = tm[3] != null ? Number(tm[3]) : 0;
+    }
+    return new Date(parts[0], parts[1] - 1, parts[2], h, mi, sec, 0).toISOString();
+  }
+
   /**
-   * 掃描解析或手動「加入明細」：寫入 stitch_transactions 並觸發試算表同步。
+   * 寫入明細（stitch_transactions）並觸發試算表同步。
+   * payload 與試算表欄位對齊：date、time、type、category、note、amount、id（另可含 invoiceNumber）。
+   */
+  async function saveRecord(payload) {
+    if (!payload || typeof payload !== "object") return;
+    const id =
+      String(payload.id || "").trim() || Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const bookedDate = parseYmdFromPayloadDate(payload.date);
+    const amount = Math.round(Number(payload.amount) || 0);
+    if (!bookedDate || !Number.isFinite(amount) || amount <= 0) return;
+    const category = String(payload.category || "飲食").trim() || "飲食";
+    const note = String(payload.note || "").trim();
+    const typ = String(payload.type || "支出").trim();
+    const flow = typ === "收入" || typ === "income" ? "income" : "expense";
+    const createdAt = createdAtIsoFromPayloadDateTime(bookedDate, payload.time);
+    const record = {
+      id,
+      amount,
+      category,
+      note,
+      createdAt,
+      bookedDate,
+      flow,
+    };
+    const inv = payload.invoiceNumber != null ? String(payload.invoiceNumber).trim() : "";
+    if (inv) record.invoiceNumber = inv;
+    if (flow === "expense") record.source = "einvoice";
+
+    await addTransaction(record);
+    await rebuildStoreRecordsFromSources();
+    store = await loadStore();
+    periodAnchor = periodContainingDate(new Date(bookedDate + "T12:00:00"));
+    renderList();
+    scheduleGoogleSync(true);
+  }
+
+  /**
+   * 掃描解析或手動「加入明細」：先自動對獎，再呼叫 saveRecord。
    * StitchLottery.checkInvoice 參數與原新增頁儲存流程一致。
    */
   async function saveRecordFromInvoiceForm(opts) {
@@ -6362,26 +6411,26 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     showInvLotteryResult(lotteryLine);
 
     const invDisp = invKey ? normalizeInvoiceDisplayForTx(invoiceRawField) : "";
-    const note = invDisp ? [storeName, "發票 " + invDisp].filter(Boolean).join(" · ") : storeName;
+    const noteForTx = invDisp ? "發票 " + invDisp : storeName;
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const now = new Date();
+    const timeStr =
+      String(now.getHours()).padStart(2, "0") +
+      ":" +
+      String(now.getMinutes()).padStart(2, "0") +
+      ":" +
+      String(now.getSeconds()).padStart(2, "0");
 
-    const record = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      amount: Math.round(amount),
+    await saveRecord({
+      id,
+      date: dateYmd,
+      time: timeStr,
+      type: "支出",
       category: "飲食",
-      note,
-      createdAt: createdAtForTransactionFromYmd(dateYmd),
-      bookedDate: dateYmd,
-      flow: "expense",
-      source: "einvoice",
-    };
-    if (invDisp) record.invoiceNumber = invDisp;
-
-    await addTransaction(record);
-    await rebuildStoreRecordsFromSources();
-    store = await loadStore();
-    periodAnchor = periodContainingDate(new Date(dateYmd + "T12:00:00"));
-    renderList();
-    scheduleGoogleSync(true);
+      note: noteForTx,
+      amount: Math.round(amount),
+      invoiceNumber: invDisp || undefined,
+    });
 
     if (fromManual) {
       const addOv = document.getElementById("inv-add-overlay");
@@ -7205,7 +7254,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
   }
 
-  window.saveRecord = saveRecordFromInvoiceForm;
+  window.saveRecord = saveRecord;
 
   window.__stitchGoogleSheetSync = {
     schedule: scheduleGoogleSync,
@@ -7214,34 +7263,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   };
   window.__stitchSanitizeGoogleSyncRow = sanitizeGoogleSyncRow;
 
-  let invoicePageInitDone = false;
-  function shouldInitInvoiceForCurrentShell() {
-    try {
-      if (document.documentElement.classList.contains("stitch-single-app")) {
-        return (location.hash || "#home").slice(1).trim() === "invoice";
-      }
-    } catch (e) {}
-    return true;
-  }
-
-  async function runInvoicePageInitIfNeeded() {
-    if (invoicePageInitDone) return;
-    if (!shouldInitInvoiceForCurrentShell()) return;
-    try {
-      await init();
-      invoicePageInitDone = true;
-    } catch (e) {
-      console.error("[invoice page init]", e);
-      alert("發票頁面初始化失敗，請重新整理頁面。");
-    }
-  }
-  window.addEventListener("stitch:route", (e) => {
-    try {
-      if (e.detail && e.detail.route === "invoice") void runInvoicePageInitIfNeeded();
-    } catch (err) {}
+  void init().catch((err) => {
+    console.error("[invoice init]", err);
+    alert("發票頁面初始化失敗，請重新整理頁面。");
   });
-  window.addEventListener("hashchange", () => void runInvoicePageInitIfNeeded());
-  void runInvoicePageInitIfNeeded();
 })();
 
 (function stitchPage_profile() {
