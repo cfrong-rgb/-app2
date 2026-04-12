@@ -1,7 +1,7 @@
 /**
  * Service Worker — 快取單頁與靜態資源、CDN 腳本，離線可開啟 index.html
  */
-const CACHE = "stitch-pwa-v44";
+const CACHE = "stitch-pwa-v46";
 
 const APP_ASSETS = [
   "index.html",
