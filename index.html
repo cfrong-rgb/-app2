@@ -577,7 +577,7 @@ body {
       max-width: none;
       box-sizing: border-box;
       overflow-x: auto;
-      white-space: nowrap;
+      white-space: nowrap !important;
       font-size: clamp(0.8rem, 3.2vw, 1rem);
     }
 
@@ -1023,7 +1023,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-xl text-on-surface-variant hover:bg-black/[0.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" id="tx-search-inline-btn" aria-label="搜尋">
 <span class="material-symbols-outlined text-[22px] leading-none pointer-events-none" aria-hidden="true">search</span>
 </button>
-<input class="w-full min-w-[12rem] pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" title="搜尋分類、備註或月份；六碼年月如 202603＝2026年3月" type="search" enterkeyhint="search" autocomplete="off" style="overflow-x:auto"/>
+<input class="w-full min-w-[12rem] pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" title="搜尋分類、備註或月份；六碼年月如 202603＝2026年3月" type="search" enterkeyhint="search" autocomplete="off" style="overflow-x:auto;white-space:nowrap"/>
 </form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
@@ -1043,7 +1043,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 匯出 Excel
 </button>
 </div>
-<div class="mb-3 hidden" id="stitch-history-invoice-banner-wrap" aria-live="polite"></div>
 <div class="space-y-4" id="local-transactions-list"></div>
 </section>
 </div>
@@ -3689,10 +3688,14 @@ const STORAGE_KEY = "stitch_transactions";
     }
   }
 
-  /** 獨立開啟 history 頁且網址為 #invoice:… 時，與 SPA 殼層一致寫入篩選鍵 */
+  /** 獨立開啟 history 頁：#invoice:… 寫入篩選；#history 清除篩選（與 SPA 殼層一致） */
   function applyInvoiceFilterFromLocationHash() {
     try {
       const h = (location.hash || "").replace(/^#/, "").trim();
+      if (h === "history") {
+        sessionStorage.removeItem(HIST_INV_FILTER_KEY);
+        return true;
+      }
       if (h.startsWith("invoice:")) {
         const raw = decodeURIComponent(h.slice("invoice:".length).trim());
         if (raw) {
@@ -3706,11 +3709,16 @@ const STORAGE_KEY = "stitch_transactions";
     return false;
   }
 
-  /** 發票總額模式 invoiceItems，或拆單 invoiceSplitGroup */
+  /** 發票總額模式 invoiceItems／items，或拆單 invoiceSplitGroup */
   function getInvoiceExpandRows(item, allItems) {
     if (!item || typeof item !== "object") return [];
-    if (Array.isArray(item.invoiceItems) && item.invoiceItems.length > 0) {
-      return item.invoiceItems.map((x) => ({
+    const direct = Array.isArray(item.invoiceItems)
+      ? item.invoiceItems
+      : Array.isArray(item.items)
+        ? item.items
+        : [];
+    if (direct.length > 0) {
+      return direct.map((x) => ({
         name: String(x.name != null ? x.name : "").trim() || "品項",
         amount: Math.round(Number(x.amount) || 0),
       }));
@@ -3926,20 +3934,6 @@ const STORAGE_KEY = "stitch_transactions";
 
     const invFilterRaw = readHistoryInvoiceFilterRaw();
     const invWantKey = invFilterRaw ? normalizeInvoiceKeyForHist(invFilterRaw) : "";
-    const bannerWrap = document.getElementById("stitch-history-invoice-banner-wrap");
-    if (bannerWrap) {
-      if (invFilterRaw) {
-        bannerWrap.classList.remove("hidden");
-        bannerWrap.innerHTML = `<div class="flex flex-wrap items-center gap-2 rounded-2xl border border-primary/20 bg-primary-container/35 px-4 py-3 text-sm text-on-surface">
-  <span class="material-symbols-outlined text-primary text-xl shrink-0" aria-hidden="true">filter_alt</span>
-  <span class="min-w-0 flex-1 leading-snug">篩選發票：<span class="font-mono font-bold">${escapeHtml(invFilterRaw)}</span></span>
-  <button type="button" class="shrink-0 px-3 py-1.5 rounded-full bg-white text-xs font-bold text-primary border border-primary/25" id="stitch-clear-invoice-filter">清除</button>
-</div>`;
-      } else {
-        bannerWrap.classList.add("hidden");
-        bannerWrap.innerHTML = "";
-      }
-    }
 
     if (items.length === 0) {
       listRoot.innerHTML =
@@ -4210,24 +4204,7 @@ const STORAGE_KEY = "stitch_transactions";
   window.addEventListener("stitch:transactions:changed", () => void renderTransactions());
 
   window.addEventListener("hashchange", () => {
-    if (applyInvoiceFilterFromLocationHash()) void renderTransactions();
-  });
-
-  document.body.addEventListener("click", (e) => {
-    const btn = e.target.closest("#stitch-clear-invoice-filter");
-    if (!btn) return;
-    try {
-      sessionStorage.removeItem(HIST_INV_FILTER_KEY);
-    } catch (err) {
-      /* ignore */
-    }
-    if (document.documentElement.classList.contains("stitch-single-app")) {
-      try {
-        location.hash = "#history";
-      } catch (err2) {
-        /* ignore */
-      }
-    }
+    applyInvoiceFilterFromLocationHash();
     void renderTransactions();
   });
 
@@ -6343,6 +6320,36 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return o;
   }
 
+  /** 自 stitch_transactions 列萃取品項（支援 invoiceItems 或 items） */
+  function extractInvoiceLineItemsFromTx(t) {
+    if (!t || typeof t !== "object") return [];
+    const raw = Array.isArray(t.invoiceItems) ? t.invoiceItems : Array.isArray(t.items) ? t.items : [];
+    const out = [];
+    for (const x of raw) {
+      if (!x || typeof x !== "object") continue;
+      const name = String(x.name != null ? x.name : "").trim();
+      const amount = Math.round(Number(x.amount) || 0);
+      if (name && amount > 0) out.push({ name: name.slice(0, 120), amount });
+    }
+    return out;
+  }
+
+  function linesFromSplitTransactions(txs) {
+    const lines = [];
+    for (const t of txs) {
+      const sub = extractInvoiceLineItemsFromTx(t);
+      if (sub.length) {
+        lines.push(...sub);
+        continue;
+      }
+      const note = String(t.note || "");
+      const m = note.match(/^(.+?)\s*[·•]\s*發票\s+/);
+      const name = m ? m[1].trim() : note.slice(0, 48) || "品項";
+      lines.push({ name, amount: Math.round(Number(t.amount) || 0) });
+    }
+    return lines;
+  }
+
   function normalizePersistedInvoiceRecords(arr) {
     const a = Array.isArray(arr) ? arr : [];
     return a.map((r) => normalizeInvoiceRecordFields({ ...r }));
@@ -6361,32 +6368,38 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const ymd = trimInvoiceField(t.bookedDate || "");
     let storeName = trimInvoiceField(t.note) || trimInvoiceField(t.category) || "明細帳目";
     if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
-    return normalizeInvoiceRecordFields({
+    const lines = extractInvoiceLineItemsFromTx(t);
+    const base = {
       id: "txinv:" + String(t.id),
       dateYmd: ymd,
       amount: Math.round(Number(t.amount) || 0),
       invoiceNumber: inv,
       storeName: storeName || "明細帳目",
       carrierTag: "明細帳目",
-    });
+    };
+    if (lines.length) base.invoiceItems = lines;
+    return normalizeInvoiceRecordFields(base);
   }
 
   /** 同一發票號多筆拆單：合併為一列，金額加總 */
-  function transactionToInvoiceRecordAggregated(firstT, invDisplay, sumAmount, lineCount) {
+  function transactionToInvoiceRecordAggregated(firstT, invDisplay, sumAmount, lineCount, allTxs) {
     const inv = trimInvoiceField(invDisplay);
     const ymd = trimInvoiceField(firstT.bookedDate || "");
     let base = trimInvoiceField(firstT.note) || trimInvoiceField(firstT.category) || "明細帳目";
     if (base.length > 36) base = base.slice(0, 36) + "…";
     let storeName = lineCount > 1 ? base + " · " + lineCount + "筆" : base;
     if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
-    return normalizeInvoiceRecordFields({
+    const splitLines = linesFromSplitTransactions(Array.isArray(allTxs) ? allTxs : [firstT]);
+    const o = {
       id: "txinv:" + String(firstT.id),
       dateYmd: ymd,
       amount: Math.round(Number(sumAmount) || 0),
       invoiceNumber: inv,
       storeName: storeName || "明細帳目",
       carrierTag: "明細帳目",
-    });
+    };
+    if (splitLines.length) o.invoiceItems = splitLines;
+    return normalizeInvoiceRecordFields(o);
   }
 
   function buildMergedInvoiceRecords(persisted, txs) {
@@ -6407,10 +6420,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       const amt = Math.round(Number(t.amount) || 0);
       const prev = groups.get(k);
       if (!prev) {
-        groups.set(k, { first: t, sum: amt, n: 1 });
+        groups.set(k, { first: t, sum: amt, n: 1, txs: [t] });
       } else {
         prev.sum += amt;
         prev.n += 1;
+        prev.txs.push(t);
       }
     }
     for (const [k, g] of groups) {
@@ -6419,7 +6433,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       if (g.n <= 1) {
         out.push(transactionToInvoiceRecord(g.first, ex));
       } else {
-        out.push(transactionToInvoiceRecordAggregated(g.first, ex, g.sum, g.n));
+        out.push(transactionToInvoiceRecordAggregated(g.first, ex, g.sum, g.n, g.txs));
       }
     }
     return out;
@@ -6569,8 +6583,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const inv = payload.invoiceNumber != null ? String(payload.invoiceNumber).trim() : "";
     if (inv) record.invoiceNumber = inv;
     if (flow === "expense") record.source = "einvoice";
-    if (Array.isArray(payload.invoiceItems)) {
-      const clean = payload.invoiceItems
+    const payloadItems = Array.isArray(payload.invoiceItems)
+      ? payload.invoiceItems
+      : Array.isArray(payload.items)
+        ? payload.items
+        : [];
+    if (payloadItems.length) {
+      const clean = payloadItems
         .filter((x) => x && typeof x === "object")
         .map((x) => ({
           name: String(x.name != null ? x.name : "").trim().slice(0, 120),
@@ -7003,34 +7022,45 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     location.href = "../history/code.html#invoice:" + encodeURIComponent(disp);
   }
 
+  function lineItemsFromRecordObj(rec) {
+    if (!rec || typeof rec !== "object") return [];
+    const raw = Array.isArray(rec.invoiceItems)
+      ? rec.invoiceItems
+      : Array.isArray(rec.items)
+        ? rec.items
+        : [];
+    const out = [];
+    for (const x of raw) {
+      if (!x || typeof x !== "object") continue;
+      const name = String(x.name != null ? x.name : "").trim();
+      const amount = Math.round(Number(x.amount) || 0);
+      if (name && amount > 0) out.push({ name: name.slice(0, 120), amount });
+    }
+    return out;
+  }
+
   function buildInvoiceLedgerPreview(rec, txs) {
     const inv = trimInvoiceField(rec.invoiceNumber || "");
     if (!inv) return { lines: [], invDisp: "" };
     const want = normalizeInvoiceNumberKey(inv);
     if (!want) return { lines: [], invDisp: "" };
     const invDisp = normalizeInvoiceDisplayForTx(inv);
+    const fromRec = lineItemsFromRecordObj(rec);
+    if (fromRec.length > 0) {
+      return { lines: fromRec, invDisp };
+    }
     const matches = txs.filter((t) => normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(t)) === want);
     if (matches.length === 0) return { lines: [], invDisp };
     if (matches.length > 1) {
       return {
-        lines: matches.map((t) => {
-          const note = String(t.note || "");
-          const m = note.match(/^(.+?)\s*[·•]\s*發票\s+/);
-          const name = m ? m[1].trim() : note.slice(0, 48) || "品項";
-          return { name, amount: Math.round(Number(t.amount) || 0) };
-        }),
+        lines: linesFromSplitTransactions(matches),
         invDisp,
       };
     }
     const one = matches[0];
-    if (one.invoiceItems && one.invoiceItems.length) {
-      return {
-        lines: one.invoiceItems.map((x) => ({
-          name: String(x.name || "").trim() || "品項",
-          amount: Math.round(Number(x.amount) || 0),
-        })),
-        invDisp,
-      };
+    const fromTx = extractInvoiceLineItemsFromTx(one);
+    if (fromTx.length) {
+      return { lines: fromTx, invDisp };
     }
     return {
       lines: [{ name: "金額", amount: Math.round(Number(one.amount) || 0) }],
@@ -7089,8 +7119,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     hint.classList.toggle("text-primary-container/90", !isError);
   }
 
-  async function closeInvQrCamera() {
-    const overlay = document.getElementById("inv-qr-camera-overlay");
+  /** 完整釋放 Html5Qrcode 相機狀態，避免 Cannot transition to a new state */
+  async function disposeInvQrScannerFully() {
     if (invHtml5QrInstance) {
       try {
         await invHtml5QrInstance.stop();
@@ -7100,6 +7130,14 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       } catch (e) {}
       invHtml5QrInstance = null;
     }
+    const readerEl = document.getElementById("inv-qr-reader");
+    if (readerEl) readerEl.innerHTML = "";
+    await new Promise((r) => setTimeout(r, 180));
+  }
+
+  async function closeInvQrCamera() {
+    await disposeInvQrScannerFully();
+    const overlay = document.getElementById("inv-qr-camera-overlay");
     if (overlay) {
       overlay.classList.add("hidden");
       overlay.classList.remove("flex");
@@ -7168,6 +7206,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     const readerEl = document.getElementById(readerId);
     if (readerEl) readerEl.innerHTML = "";
+    await new Promise((r) => setTimeout(r, 40));
     invHtml5QrInstance = new Html5Qrcode(readerId);
     const vw = Math.min(window.innerWidth - 56, 300);
     const qh = Math.min(Math.round(vw * 0.92), 280);
@@ -7193,11 +7232,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       }
     }
     if (!started) {
-      try {
-        if (invHtml5QrInstance) await invHtml5QrInstance.clear();
-      } catch (e) {}
-      invHtml5QrInstance = null;
-      if (readerEl) readerEl.innerHTML = "";
+      await disposeInvQrScannerFully();
       setInvQrCameraHint(invCameraErrorMessage(lastErr), true);
     }
   }
@@ -7559,6 +7594,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       let nm = String(name || "").replace(/\s+/g, " ").trim();
       nm = nm.replace(/^[#\d.\s、]+/, "").trim();
       if (!nm || nm.length > 100) return;
+      if (/^[A-Z]{2}[\s-]?\d{8}$/i.test(nm.replace(/\s/g, ""))) return;
       if (!Number.isFinite(n) || n <= 0 || n > INV_AMT_MAX) return;
       const key = nm + "\0" + n;
       if (seen.has(key)) return;
@@ -7572,9 +7608,16 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (s.indexOf("**") >= 0) {
       const parts = s.split("**").map((p) => p.trim()).filter(Boolean);
       for (const p of parts) {
+        if (/^[A-Z]{2}\d{8}$/i.test(p.replace(/[-\s]/g, ""))) continue;
+        if (/^\d{7,8}$/.test(p)) continue;
         let m = p.match(/^(.{1,64}?)[：:]\s*(\d{1,8})\s*$/);
         if (m) {
           addItem(m[1], m[2]);
+          continue;
+        }
+        m = p.match(/^(.+?)[\t]\s*(\d{1,8})\s*$/);
+        if (m && /[^\d\s]/.test(m[1])) {
+          addItem(m[1].trim(), m[2]);
           continue;
         }
         m = p.match(/^(.+?)\s+(\d{1,8})$/);
@@ -7582,6 +7625,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
           addItem(m[1].replace(/[:：]\s*$/, ""), m[2]);
         }
       }
+    }
+
+    const lines = s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    for (const line of lines) {
+      if (line.length > 120) continue;
+      let m = line.match(/^(.{2,50}?)[：:\t]\s*(\d{1,8})\s*$/);
+      if (m) addItem(m[1], m[2]);
     }
 
     const re = /([^\n\r\*]{2,44})[：:]\s*(\d{1,7})(?=\s*(?:$|\n|\*\*|[\u4e00-\u9fff]*[：:]))/g;
