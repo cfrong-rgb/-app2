@@ -1006,7 +1006,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <div class="mb-4">
 <form id="tx-search-form" class="relative" action="#" method="get" autocomplete="off">
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
-<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註…（Enter 開啟統計）" type="search" enterkeyhint="search" autocomplete="off"/>
+<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註；輸入 1–12 可查該月（Enter）" type="search" enterkeyhint="search" autocomplete="off"/>
 </form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
@@ -2230,6 +2230,7 @@ function applyEmbedShellTheme() {
     const raw = (location.hash || "#home").slice(1).trim();
     if (raw.startsWith("category:")) return "category";
     if (raw.startsWith("search:")) return "search";
+    if (raw.startsWith("month:")) return "search";
     const allowed = ["home", "history", "add", "invoice", "profile"];
     return allowed.includes(raw) ? raw : "home";
   }
@@ -3567,22 +3568,47 @@ const STORAGE_KEY = "stitch_transactions";
     searchInput?.select();
   });
 
+  const HOME_VIEW_MONTH_KEY = "stitch_home_view_ym";
+
+  function yearForMonthQuickSearch() {
+    try {
+      const s = localStorage.getItem(HOME_VIEW_MONTH_KEY);
+      const m = String(s || "").trim().match(/^(\d{4})-\d{2}$/);
+      if (m) return Number(m[1]);
+    } catch (e) {
+      /* ignore */
+    }
+    return new Date().getFullYear();
+  }
+
+  /** Digits 1–12 (e.g. 04, 4): month quick filter; otherwise text search. */
+  function tryMonthQuickSearchYm(trimmed) {
+    if (!/^(0?[1-9]|1[0-2])$/.test(trimmed)) return null;
+    const month = parseInt(trimmed, 10);
+    if (month < 1 || month > 12) return null;
+    const y = yearForMonthQuickSearch();
+    if (!Number.isFinite(y)) return null;
+    return y + "-" + String(month).padStart(2, "0");
+  }
+
   function navigateToSearch(q) {
     const trimmed = String(q || "").trim();
     if (!trimmed) {
       searchInput?.focus();
       return;
     }
+    const ym = tryMonthQuickSearchYm(trimmed);
+    const frag = ym ? "month:" + ym : "search:" + encodeURIComponent(trimmed);
     if (document.documentElement.classList.contains("stitch-single-app")) {
-      location.hash = "#search:" + encodeURIComponent(trimmed);
+      location.hash = "#" + frag;
       return;
     }
     try {
       const u = new URL("../search/code.html", location.href);
-      u.hash = "search:" + encodeURIComponent(trimmed);
+      u.hash = frag;
       location.href = u.href;
     } catch (e) {
-      location.hash = "#search:" + encodeURIComponent(trimmed);
+      location.hash = "#" + frag;
     }
   }
 
@@ -3612,6 +3638,26 @@ const STORAGE_KEY = "stitch_transactions";
       minute: "2-digit",
       hour12: false,
     });
+  }
+
+  /** List row: prefer bookedDate for calendar day; time from createdAt. */
+  function formatListDateTime(item) {
+    const ymd = String(item.bookedDate || "").trim();
+    const t = item.createdAt ? new Date(item.createdAt) : null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(ymd) && t && !Number.isNaN(t.getTime())) {
+      const p = ymd.split("-").map(Number);
+      const disp = new Date(p[0], p[1] - 1, p[2], t.getHours(), t.getMinutes(), t.getSeconds());
+      if (!Number.isNaN(disp.getTime())) {
+        return disp.toLocaleString("zh-TW", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      }
+    }
+    return formatDate(item.createdAt);
   }
 
   function hashHue(str) {
@@ -3817,7 +3863,7 @@ const STORAGE_KEY = "stitch_transactions";
                   <div class="flex items-center gap-0.5 sm:gap-2 shrink-0">
                     <div class="text-right min-w-0 max-w-[9rem] sm:max-w-none">
                       <p class="text-lg sm:text-xl font-extrabold tracking-tight tabular-nums truncate ${inc ? "text-secondary" : "text-on-surface"}">${formatTxAmount(item)}</p>
-                      <p class="text-[11px] text-on-surface-variant tracking-widest mt-2">${formatDate(item.createdAt)}</p>
+                      <p class="text-[11px] text-on-surface-variant tracking-widest mt-2">${formatListDateTime(item)}</p>
                     </div>
                     <div class="flex flex-col gap-0.5 sm:flex-row sm:items-center">
                     <button
@@ -4554,8 +4600,17 @@ const STORAGE_KEY = "stitch_transactions";
 
   let transactionDateYmd = ymdFromDate(new Date());
 
+  /** Align createdAt calendar day with the user-picked booking date; time uses current local clock. */
   function createdAtForTransaction() {
-    return new Date().toISOString();
+    const ymd = String(transactionDateYmd || "").trim();
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (!m) return new Date().toISOString();
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return new Date().toISOString();
+    const now = new Date();
+    return new Date(y, mo - 1, d, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()).toISOString();
   }
 
   function formatTxDateLabel(ymd) {
@@ -5838,6 +5893,10 @@ const STORAGE_KEY = "stitch_transactions";
     if (flow === "expense") selectedCategory = cat;
 
     const note = (noteInput.value || "").trim();
+
+    const dateInp = document.getElementById("tx-date-input");
+    const picked = dateInp && String(dateInp.value || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(picked)) transactionDateYmd = picked;
 
     const record = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -8311,16 +8370,33 @@ try {
       .replace(/"/g, "&quot;");
   }
 
-  function parseSearchQuery() {
+  function parseSearchRoute() {
     const raw = (location.hash || "").slice(1).trim();
-    if (!raw.startsWith("search:")) return null;
-    try {
-      const q = decodeURIComponent(raw.slice("search:".length));
-      const t = String(q || "").trim();
-      return t || null;
-    } catch {
-      return null;
+    if (raw.startsWith("month:")) {
+      let rest = raw.slice("month:".length).trim();
+      try {
+        rest = decodeURIComponent(rest);
+      } catch (e) {}
+      const m = /^(\d{4})-(\d{2})$/.exec(String(rest).trim());
+      if (!m) return null;
+      const y = Number(m[1]);
+      const mo = Number(m[2]);
+      if (!Number.isFinite(y) || mo < 1 || mo > 12) return null;
+      const ym = m[1] + "-" + m[2];
+      const title = new Date(y, mo - 1, 1).toLocaleDateString("zh-TW", { year: "numeric", month: "long" });
+      return { kind: "month", ym, title };
     }
+    if (raw.startsWith("search:")) {
+      try {
+        const q = decodeURIComponent(raw.slice("search:".length));
+        const t = String(q || "").trim();
+        if (!t) return null;
+        return { kind: "text", query: t, title: t };
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   function rowMatchesQuery(item, qLower) {
@@ -8329,10 +8405,38 @@ try {
     return category.includes(qLower) || note.includes(qLower);
   }
 
+  function itemYmKey(item) {
+    const b = String(item.bookedDate || "").trim();
+    const md = /^(\d{4})-(\d{2})-\d{2}$/.exec(b);
+    if (md) return md[1] + "-" + md[2];
+    const c = item.createdAt ? new Date(item.createdAt) : null;
+    if (!c || Number.isNaN(c.getTime())) return null;
+    return c.getFullYear() + "-" + String(c.getMonth() + 1).padStart(2, "0");
+  }
+
+  function sortKeyDesc(item) {
+    const b = String(item.bookedDate || "").trim();
+    const md = /^(\d{4})-(\d{2})-(\d{2})$/.exec(b);
+    if (md) {
+      return new Date(Number(md[1]), Number(md[2]) - 1, Number(md[3]), 12, 0, 0, 0).getTime();
+    }
+    const c = new Date(item.createdAt);
+    return Number.isNaN(c.getTime()) ? 0 : c.getTime();
+  }
+
+  function displayDateForRow(item) {
+    const b = String(item.bookedDate || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(b)) {
+      const d = new Date(b + "T12:00:00");
+      if (!Number.isNaN(d.getTime())) return formatDateLong(d.toISOString());
+    }
+    return formatDateLong(item.createdAt);
+  }
+
   async function refreshSearchView() {
-    const qRaw = parseSearchQuery();
-    if (!qRaw) {
-      if (titleEl) titleEl.textContent = "搜尋";
+    const route = parseSearchRoute();
+    if (!route) {
+      if (titleEl) titleEl.textContent = "\u641c\u5c0b";
       if (totalEl) {
         totalEl.textContent = "$0";
         totalEl.className = "text-2xl font-extrabold tabular-nums text-on-surface-variant";
@@ -8341,12 +8445,18 @@ try {
       return;
     }
 
-    const qLower = qRaw.toLowerCase();
-    if (titleEl) titleEl.textContent = qRaw;
+    if (titleEl) titleEl.textContent = route.title;
 
     const items = await readTransactions();
-    const rows = items.filter((t) => rowMatchesQuery(t, qLower));
-    rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    let rows;
+    if (route.kind === "month") {
+      rows = items.filter((t) => itemYmKey(t) === route.ym);
+    } else {
+      const qLower = route.query.toLowerCase();
+      rows = items.filter((t) => rowMatchesQuery(t, qLower));
+    }
+    rows.sort((a, b) => sortKeyDesc(b) - sortKeyDesc(a));
+
 
     let signed = 0;
     rows.forEach((item) => {
@@ -8373,10 +8483,12 @@ try {
 
     if (!listEl) return;
     if (rows.length === 0) {
+      const emptyHint =
+        route.kind === "month"
+          ? "沒有 " + escapeHtml(route.title) + " 的紀錄。"
+          : "沒有符合「" + escapeHtml(route.query) + "」的紀錄。";
       listEl.innerHTML =
-        '<div class="px-4 py-10 text-center text-sm text-on-surface-variant">沒有符合「' +
-        escapeHtml(qRaw) +
-        "」的紀錄。</div>";
+        '<div class="px-4 py-10 text-center text-sm text-on-surface-variant">' + emptyHint + "</div>";
       return;
     }
 
@@ -8391,7 +8503,7 @@ try {
         const gIcon = categoryMaterialIcon(cat, mergedIcons);
         const noteLine = item.note ? String(item.note) : "（無備註）";
         const amtInfo = formatLineAmount(item);
-        const dateStr = formatDateLong(item.createdAt);
+        const dateStr = displayDateForRow(item);
         return `
           <div class="flex items-start gap-3 px-4 py-4">
             <div class="w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-white shadow-sm" style="background:${meta.dot}">
