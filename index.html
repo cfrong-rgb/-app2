@@ -560,6 +560,19 @@ body {
     html.stitch-app-embed #tx-edit-sheet {
       max-height: min(34rem, calc(100vh - 5.5rem));
     }
+    /* 搜尋欄：窄螢幕縮字、表單可橫向捲動，避免 placeholder 被裁切 */
+    #tx-search-form {
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #tx-search-input {
+      min-width: 0;
+      width: 100%;
+      max-width: none;
+      font-size: clamp(0.75rem, 3.4vw, 1rem);
+    }
 
 /* --- add --- */
 html,
@@ -1003,7 +1016,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-xl text-on-surface-variant hover:bg-black/[0.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" id="tx-search-inline-btn" aria-label="搜尋">
 <span class="material-symbols-outlined text-[22px] leading-none pointer-events-none" aria-hidden="true">search</span>
 </button>
-<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant text-sm sm:text-base" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" type="search" enterkeyhint="search" autocomplete="off"/>
+<input class="w-full min-w-[min(100%,18rem)] pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" type="search" enterkeyhint="search" autocomplete="off"/>
 </form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
@@ -5758,17 +5771,6 @@ const STORAGE_KEY = "stitch_transactions";
     };
   }
 
-  /** 與發票頁共用：儲存明細後觸發 Google 試算表同步（延遲與 debounce 在 invoice 端） */
-  function triggerGoogleSheetSyncAfterTxSave() {
-    try {
-      if (window.__stitchGoogleSheetSync && typeof window.__stitchGoogleSheetSync.schedule === "function") {
-        window.__stitchGoogleSheetSync.schedule(true);
-        return;
-      }
-    } catch (e) {}
-    void stitchGoogleSheetSyncStandalone_(true);
-  }
-
   let __stitchGsyncTimerStandalone = null;
   function stitchGoogleSheetSyncStandalone_(userInitiated) {
     if (__stitchGsyncTimerStandalone) clearTimeout(__stitchGsyncTimerStandalone);
@@ -5922,9 +5924,26 @@ const STORAGE_KEY = "stitch_transactions";
     transactionDateYmd = ymdFromDate(new Date());
     syncTxDateUi();
     updateAmountDisplay();
-    triggerGoogleSheetSyncAfterTxSave();
-    const baseMsg = flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。";
-    alert(baseMsg);
+
+    let sheetId = "";
+    let webAppUrl = "";
+    try {
+      const d = JSON.parse(localStorage.getItem("stitch_prefs") || "{}");
+      sheetId = String(d.googleSheetId || "").trim();
+      webAppUrl = String(d.googleAppsScriptUrl || "").trim();
+    } catch (e) {}
+    const hasGoogle = !!(sheetId && webAppUrl);
+
+    if (hasGoogle) {
+      if (window.__stitchGoogleSheetSync && typeof window.__stitchGoogleSheetSync.syncToGoogleSheets === "function") {
+        await window.__stitchGoogleSheetSync.syncToGoogleSheets({ userInitiated: true, silent: false });
+      } else {
+        await __stitchRunGoogleSheetSyncStandalone({ userInitiated: true });
+      }
+    } else {
+      alert(flow === "income" ? "已記錄收入。" : "已儲存到本機紀錄。");
+    }
+
     navigateToStitchHistory();
   }
 
@@ -6507,7 +6526,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     store = await loadStore();
     periodAnchor = periodContainingDate(new Date(bookedDate + "T12:00:00"));
     renderList();
-    scheduleGoogleSync(true);
+    await syncToGoogleSheets({ userInitiated: true, silent: false });
   }
 
   /**
