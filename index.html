@@ -988,11 +988,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </button>
 <h1 class="text-xl font-bold text-[#725638] tracking-tight font-headline truncate">交易明細</h1>
 </div>
-<div class="flex items-center gap-2 shrink-0">
-<button type="button" class="p-2 rounded-full hover:bg-[#f2f1eb] active:scale-95 duration-200 text-[#725638]" id="header-search-btn" aria-label="聚焦搜尋">
-<span class="material-symbols-outlined" data-icon="search">search</span>
-</button>
-</div>
 </header>
 <div role="main" class="stitch-page-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
 <!-- LocalStorage Transactions（搜尋與匯出；已移除頂部分類籤） -->
@@ -1005,8 +1000,10 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <div class="mb-4">
 <form id="tx-search-form" class="relative" action="#" method="get" autocomplete="off">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
-<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類或備註；輸入 1–12 可查該月（Enter）" type="search" enterkeyhint="search" autocomplete="off"/>
+<button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-xl text-on-surface-variant hover:bg-black/[0.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" id="tx-search-inline-btn" aria-label="搜尋">
+<span class="material-symbols-outlined text-[22px] leading-none pointer-events-none" aria-hidden="true">search</span>
+</button>
+<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant text-sm sm:text-base" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" type="search" enterkeyhint="search" autocomplete="off"/>
 </form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
@@ -3210,7 +3207,6 @@ const STORAGE_KEY = "stitch_transactions";
   const searchInput = document.getElementById("tx-search-input");
   const txSearchForm = document.getElementById("tx-search-form");
   const headerMenuBtn = document.getElementById("header-menu-btn");
-  const headerSearchBtn = document.getElementById("header-search-btn");
   const drawerRoot = document.getElementById("drawer-root");
   const drawerBackdrop = document.getElementById("drawer-backdrop");
   const sideDrawer = document.getElementById("side-drawer");
@@ -3563,31 +3559,41 @@ const STORAGE_KEY = "stitch_transactions";
     setDrawerOpen(false);
   });
 
-  headerSearchBtn?.addEventListener("click", () => {
-    searchInput?.focus();
-    searchInput?.select();
-  });
-
-  const HOME_VIEW_MONTH_KEY = "stitch_home_view_ym";
-
-  function yearForMonthQuickSearch() {
-    try {
-      const s = localStorage.getItem(HOME_VIEW_MONTH_KEY);
-      const m = String(s || "").trim().match(/^(\d{4})-\d{2}$/);
-      if (m) return Number(m[1]);
-    } catch (e) {
-      /* ignore */
-    }
-    return new Date().getFullYear();
-  }
-
-  /** Digits 1–12 (e.g. 04, 4): month quick filter; otherwise text search. */
+  /**
+   * Month quick filter → returns "YYYY-MM" for hash month:…
+   * Supports: YYYYMM e.g. 202603; 2026-04, 2026/3; 3-2026; 3 / 03 → 當年度該月.
+   */
   function tryMonthQuickSearchYm(trimmed) {
-    if (!/^(0?[1-9]|1[0-2])$/.test(trimmed)) return null;
-    const month = parseInt(trimmed, 10);
+    const t = String(trimmed || "").trim();
+    const yInRange = (y) => Number.isFinite(y) && y >= 1900 && y <= 2100;
+
+    let m = /^(\d{4})[-/.](0?[1-9]|1[0-2])$/.exec(t);
+    if (m) {
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      if (yInRange(y) && mo >= 1 && mo <= 12) return m[1] + "-" + String(mo).padStart(2, "0");
+    }
+
+    m = /^(0?[1-9]|1[0-2])[-/.](\d{4})$/.exec(t);
+    if (m) {
+      const mo = parseInt(m[1], 10);
+      const y = parseInt(m[2], 10);
+      if (yInRange(y) && mo >= 1 && mo <= 12) return m[2] + "-" + String(mo).padStart(2, "0");
+    }
+
+    /* YYYYMM e.g. 202603 → 2026-03 */
+    m = /^(\d{4})(0[1-9]|1[0-2])$/.exec(t);
+    if (m) {
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      if (yInRange(y) && mo >= 1 && mo <= 12) return m[1] + "-" + String(mo).padStart(2, "0");
+    }
+
+    /* 僅 1–12 或 01–12：過濾「當年度」該月 */
+    if (!/^(0?[1-9]|1[0-2])$/.test(t)) return null;
+    const month = parseInt(t, 10);
     if (month < 1 || month > 12) return null;
-    const y = yearForMonthQuickSearch();
-    if (!Number.isFinite(y)) return null;
+    const y = new Date().getFullYear();
     return y + "-" + String(month).padStart(2, "0");
   }
 
