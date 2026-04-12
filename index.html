@@ -560,7 +560,7 @@ body {
     html.stitch-app-embed #tx-edit-sheet {
       max-height: min(34rem, calc(100vh - 5.5rem));
     }
-    /* 搜尋欄：小螢幕可橫向捲動，避免 placeholder 被裁切 */
+    /* 搜尋欄：父層可橫向捲動；輸入框 min-width 確保 placeholder（含 如: 202603）完整可見 */
     #tx-search-form {
       display: block;
       max-width: 100%;
@@ -572,12 +572,12 @@ body {
     }
     #tx-search-input {
       display: block;
-      width: max(100%, 12rem);
-      min-width: min(100%, 22rem);
-      max-width: none;
       box-sizing: border-box;
+      min-width: 300px;
+      width: max(100%, 300px);
+      max-width: none;
       overflow-x: auto;
-      white-space: nowrap !important;
+      white-space: nowrap;
       font-size: clamp(0.8rem, 3.2vw, 1rem);
     }
 
@@ -1023,7 +1023,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <button type="submit" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-xl text-on-surface-variant hover:bg-black/[0.04] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" id="tx-search-inline-btn" aria-label="搜尋">
 <span class="material-symbols-outlined text-[22px] leading-none pointer-events-none" aria-hidden="true">search</span>
 </button>
-<input class="w-full min-w-[12rem] pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" title="搜尋分類、備註或月份；六碼年月如 202603＝2026年3月" type="search" enterkeyhint="search" autocomplete="off" style="overflow-x:auto;white-space:nowrap"/>
+<input class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white shadow-sm border border-black/5 focus:outline-none focus:ring-0 focus:border-black/10 text-on-surface placeholder:text-on-surface-variant" id="tx-search-input" placeholder="搜尋分類、備註或月份 (如: 202603)" title="搜尋分類、備註或月份；六碼年月如 202603＝2026年3月" type="search" enterkeyhint="search" autocomplete="off" style="min-width:300px;overflow-x:auto;white-space:nowrap"/>
 </form>
 </div>
 <!-- 進階區間匯出 Excel（大地色系） -->
@@ -3227,6 +3227,8 @@ const STORAGE_KEY = "stitch_transactions";
 try {
 const STORAGE_KEY = "stitch_transactions";
   const HIST_INV_FILTER_KEY = "stitch_history_invoice_filter";
+  const HIST_SCROLL_INV_KEY = "stitch_history_scroll_invoice_key";
+  const HIST_FOCUS_FIRST_FILTERED_KEY = "stitch_history_focus_first_filtered";
   const listRoot = document.getElementById("local-transactions-list");
   const searchInput = document.getElementById("tx-search-input");
   const txSearchForm = document.getElementById("tx-search-form");
@@ -3680,6 +3682,39 @@ const STORAGE_KEY = "stitch_transactions";
     return false;
   }
 
+  function transactionInvoiceNavKey(item) {
+    if (!item || typeof item !== "object") return "";
+    if (item.invoiceNumber != null && String(item.invoiceNumber).trim()) {
+      return normalizeInvoiceKeyForHist(item.invoiceNumber);
+    }
+    const note = String(item.note || "");
+    const m = note.match(/([A-Z]{2})[\s-]?([0-9]{8})/i);
+    return m ? (m[1] + m[2]).toUpperCase() : "";
+  }
+
+  function formatInvoiceLineDisplayMeta(x) {
+    if (!x || typeof x !== "object") return "";
+    const q = x.quantity != null ? Number(x.quantity) : NaN;
+    const u = x.unitPrice != null ? Math.round(Number(x.unitPrice)) : NaN;
+    if (Number.isFinite(q) && q > 0 && Number.isFinite(u) && u > 0) return "×" + q + " @" + u;
+    if (Number.isFinite(q) && q > 0) return "×" + q;
+    return "";
+  }
+
+  function expandRowsFromStoredLineItems(raw) {
+    const arr = Array.isArray(raw) ? raw : [];
+    const out = [];
+    for (const x of arr) {
+      if (!x || typeof x !== "object") continue;
+      const name = String(x.name != null ? x.name : "").trim() || "品項";
+      const amount = Math.round(Number(x.amount) || 0);
+      if (!name || amount <= 0) continue;
+      const meta = formatInvoiceLineDisplayMeta(x);
+      out.push({ name: name.slice(0, 120), amount, meta });
+    }
+    return out;
+  }
+
   function readHistoryInvoiceFilterRaw() {
     try {
       return String(sessionStorage.getItem(HIST_INV_FILTER_KEY) || "").trim();
@@ -3709,30 +3744,34 @@ const STORAGE_KEY = "stitch_transactions";
     return false;
   }
 
-  /** 發票總額模式 invoiceItems／items，或拆單 invoiceSplitGroup */
+  /** 發票總額模式 items／invoiceItems，或拆單 invoiceSplitGroup（優先 items） */
   function getInvoiceExpandRows(item, allItems) {
     if (!item || typeof item !== "object") return [];
-    const direct = Array.isArray(item.invoiceItems)
-      ? item.invoiceItems
-      : Array.isArray(item.items)
-        ? item.items
+    const direct = Array.isArray(item.items)
+      ? item.items
+      : Array.isArray(item.invoiceItems)
+        ? item.invoiceItems
         : [];
     if (direct.length > 0) {
-      return direct.map((x) => ({
-        name: String(x.name != null ? x.name : "").trim() || "品項",
-        amount: Math.round(Number(x.amount) || 0),
-      }));
+      return expandRowsFromStoredLineItems(direct);
     }
     const g = item.invoiceSplitGroup != null ? String(item.invoiceSplitGroup).trim() : "";
     if (g && Array.isArray(allItems)) {
       const rows = allItems.filter((t) => t && String(t.invoiceSplitGroup || "") === g);
       rows.sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
-      return rows.map((t) => {
+      const out = [];
+      for (const t of rows) {
+        const sub = expandRowsFromStoredLineItems(t.items || t.invoiceItems);
+        if (sub.length) {
+          out.push(...sub);
+          continue;
+        }
         const note = String(t.note || "");
         const m = note.match(/^(.+?)\s*[·•]\s*發票\s+/);
         const name = m ? m[1].trim() : note.slice(0, 56) || "品項";
-        return { name, amount: Math.round(Number(t.amount) || 0) };
-      });
+        out.push({ name, amount: Math.round(Number(t.amount) || 0), meta: "" });
+      }
+      return out;
     }
     return [];
   }
@@ -3970,26 +4009,30 @@ const STORAGE_KEY = "stitch_transactions";
         const amtSign = inc ? "+" : "-";
         const invDetailBlock =
           expandRows.length > 0
-            ? `<details class="inv-tx-expand border-t border-black/5 bg-surface-container-low/25">
-  <summary class="cursor-pointer list-none px-4 py-2.5 flex items-center justify-between gap-2 text-xs font-bold text-primary hover:bg-black/[0.03] [&::-webkit-details-marker]:hidden">
-    <span class="flex items-center gap-1.5 min-w-0"><span class="material-symbols-outlined text-base shrink-0" aria-hidden="true">receipt_long</span><span class="truncate">發票購物明細（${expandRows.length} 項）</span></span>
-    <span class="material-symbols-outlined text-lg shrink-0 opacity-80" aria-hidden="true">expand_more</span>
-  </summary>
-  <ul class="px-4 pb-3 pt-0 text-sm max-h-52 overflow-y-auto border-t border-black/5 divide-y divide-black/[0.06]">
+            ? `<div class="inv-tx-lines border-t border-black/5 bg-surface-container-low/25">
+  <p class="px-4 pt-3 pb-1 text-xs font-bold text-primary flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-base shrink-0" aria-hidden="true">receipt_long</span>
+    <span>發票購物明細（${expandRows.length} 項）</span>
+  </p>
+  <ul class="px-4 pb-3 pt-0 text-sm max-h-52 overflow-y-auto divide-y divide-black/[0.06]">
     ${expandRows
       .map(
         (r) =>
           `<li class="flex justify-between gap-3 py-2.5 text-on-surface leading-snug">
-      <span class="min-w-0 flex-1 break-words">${escapeHtml(r.name)}</span>
-      <span class="shrink-0 font-bold tabular-nums">${amtSign}$${Number(r.amount).toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+      <span class="min-w-0 flex-1 break-words">
+        <span class="block">${escapeHtml(r.name)}</span>
+        ${r.meta ? `<span class="block text-[11px] text-on-surface-variant font-normal mt-0.5">${escapeHtml(r.meta)}</span>` : ""}
+      </span>
+      <span class="shrink-0 font-bold tabular-nums self-start">${amtSign}$${Number(r.amount).toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
     </li>`
       )
       .join("")}
   </ul>
-</details>`
+</div>`
             : "";
+        const invNavK = transactionInvoiceNavKey(item);
         return `
-          <div class="glass-card rounded-2xl overflow-hidden group max-w-full min-w-0" data-transaction-id="${String(item.id || "")}">
+          <div class="glass-card rounded-2xl overflow-hidden group max-w-full min-w-0" data-transaction-id="${String(item.id || "")}" data-inv-nav-key="${invNavK.replace(/"/g, "")}">
             <div class="flex items-stretch min-w-0 max-w-full">
               <div class="w-2 shrink-0" style="background:${barColor}"></div>
               <div class="flex-1 min-w-0 overflow-hidden flex flex-col">
@@ -4040,6 +4083,21 @@ const STORAGE_KEY = "stitch_transactions";
         `;
       })
       .join("");
+
+    try {
+      const sk = String(sessionStorage.getItem(HIST_SCROLL_INV_KEY) || "").trim();
+      const focusFirst = sessionStorage.getItem(HIST_FOCUS_FIRST_FILTERED_KEY) === "1";
+      if (sk && invWantKey && sk === invWantKey && focusFirst) {
+        sessionStorage.removeItem(HIST_SCROLL_INV_KEY);
+        sessionStorage.removeItem(HIST_FOCUS_FIRST_FILTERED_KEY);
+        requestAnimationFrame(() => {
+          const el = listRoot.querySelector('[data-inv-nav-key="' + sk.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"]');
+          if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+      }
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   async function deleteTransactionById(id) {
@@ -6320,16 +6378,28 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return o;
   }
 
-  /** 自 stitch_transactions 列萃取品項（支援 invoiceItems 或 items） */
+  /** 單一品項列正規化（寫入 stitch_transactions.items／invoiceItems 時共用） */
+  function normalizeLineItemForStorage(x) {
+    if (!x || typeof x !== "object") return null;
+    const name = String(x.name != null ? x.name : "").trim().slice(0, 120);
+    const amount = Math.round(Number(x.amount) || 0);
+    if (!name || amount <= 0) return null;
+    const o = { name, amount };
+    const q = Number(x.quantity);
+    if (Number.isFinite(q) && q > 0) o.quantity = q;
+    const u = Math.round(Number(x.unitPrice));
+    if (Number.isFinite(u) && u > 0) o.unitPrice = u;
+    return o;
+  }
+
+  /** 自 stitch_transactions 列萃取品項（優先 items，相容 invoiceItems） */
   function extractInvoiceLineItemsFromTx(t) {
     if (!t || typeof t !== "object") return [];
-    const raw = Array.isArray(t.invoiceItems) ? t.invoiceItems : Array.isArray(t.items) ? t.items : [];
+    const raw = Array.isArray(t.items) ? t.items : Array.isArray(t.invoiceItems) ? t.invoiceItems : [];
     const out = [];
     for (const x of raw) {
-      if (!x || typeof x !== "object") continue;
-      const name = String(x.name != null ? x.name : "").trim();
-      const amount = Math.round(Number(x.amount) || 0);
-      if (name && amount > 0) out.push({ name: name.slice(0, 120), amount });
+      const row = normalizeLineItemForStorage(x);
+      if (row) out.push(row);
     }
     return out;
   }
@@ -6377,7 +6447,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       storeName: storeName || "明細帳目",
       carrierTag: "明細帳目",
     };
-    if (lines.length) base.invoiceItems = lines;
+    if (lines.length) {
+      base.items = lines;
+      base.invoiceItems = lines;
+    }
     return normalizeInvoiceRecordFields(base);
   }
 
@@ -6398,7 +6471,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       storeName: storeName || "明細帳目",
       carrierTag: "明細帳目",
     };
-    if (splitLines.length) o.invoiceItems = splitLines;
+    if (splitLines.length) {
+      o.items = splitLines;
+      o.invoiceItems = splitLines;
+    }
     return normalizeInvoiceRecordFields(o);
   }
 
@@ -6556,7 +6632,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
   /**
    * 寫入明細（stitch_transactions）。
-   * payload：date、time、type、category、note、amount、id（另可含 invoiceNumber、invoiceItems、invoiceSplitGroup）。
+   * payload：date、time、type、category、note、amount、id（另可含 invoiceNumber、items／invoiceItems、invoiceSplitGroup）。
    * opts.skipFinalize：同一次拆單多筆時，僅最後一筆為 false，避免重複重繪。
    */
   function buildLedgerRecordFromSavePayload(payload) {
@@ -6583,20 +6659,17 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const inv = payload.invoiceNumber != null ? String(payload.invoiceNumber).trim() : "";
     if (inv) record.invoiceNumber = inv;
     if (flow === "expense") record.source = "einvoice";
-    const payloadItems = Array.isArray(payload.invoiceItems)
-      ? payload.invoiceItems
-      : Array.isArray(payload.items)
-        ? payload.items
+    const payloadItems = Array.isArray(payload.items)
+      ? payload.items
+      : Array.isArray(payload.invoiceItems)
+        ? payload.invoiceItems
         : [];
     if (payloadItems.length) {
-      const clean = payloadItems
-        .filter((x) => x && typeof x === "object")
-        .map((x) => ({
-          name: String(x.name != null ? x.name : "").trim().slice(0, 120),
-          amount: Math.round(Number(x.amount) || 0),
-        }))
-        .filter((x) => x.name && x.amount > 0);
-      if (clean.length) record.invoiceItems = clean;
+      const clean = payloadItems.map(normalizeLineItemForStorage).filter(Boolean);
+      if (clean.length) {
+        record.items = clean;
+        record.invoiceItems = clean;
+      }
     }
     const g = payload.invoiceSplitGroup != null ? String(payload.invoiceSplitGroup).trim() : "";
     if (g) record.invoiceSplitGroup = g.slice(0, 80);
@@ -6638,7 +6711,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       .map((it) => {
         const nm = escapeHtml(String(it.name || ""));
         const am = Number(it.amount) || 0;
-        return `<li class="flex justify-between gap-2 py-1.5"><span class="min-w-0 flex-1 break-words">${nm}</span><span class="font-bold tabular-nums shrink-0 text-on-surface">${am.toLocaleString("zh-TW")}<span class="text-[10px] ml-px">元</span></span></li>`;
+        const q = Number(it.quantity);
+        const u = Math.round(Number(it.unitPrice));
+        let meta = "";
+        if (Number.isFinite(q) && q > 0 && Number.isFinite(u) && u > 0)
+          meta = ` <span class="text-on-surface-variant font-normal">×${q} @${u}</span>`;
+        else if (Number.isFinite(q) && q > 0) meta = ` <span class="text-on-surface-variant font-normal">×${q}</span>`;
+        return `<li class="flex justify-between gap-2 py-1.5"><span class="min-w-0 flex-1 break-words">${nm}${meta}</span><span class="font-bold tabular-nums shrink-0 text-on-surface">${am.toLocaleString("zh-TW")}<span class="text-[10px] ml-px">元</span></span></li>`;
       })
       .join("");
     const sum = items.reduce((s, x) => s + (Number(x.amount) || 0), 0);
@@ -6760,6 +6839,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const noteLine = invDisp
           ? String(line.name || "品項").trim() + " · 發票 " + invDisp
           : String(line.name || "品項").trim();
+        const oneLine = normalizeLineItemForStorage({
+          name: String(line.name || "品項"),
+          amount: Math.round(Number(line.amount) || 0),
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+        });
+        const lineArr = oneLine ? [oneLine] : [];
         await saveRecord(
           {
             id,
@@ -6771,6 +6857,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
             amount: Math.round(Number(line.amount) || 0),
             invoiceNumber: invDisp || undefined,
             invoiceSplitGroup: splitGroup,
+            ...(lineArr.length ? { items: lineArr, invoiceItems: lineArr } : {}),
           },
           { skipFinalize: i < lines.length - 1 }
         );
@@ -6795,10 +6882,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         invoiceNumber: invDisp || undefined,
       };
       if (lines.length > 0) {
-        payload.invoiceItems = lines.map((x) => ({
-          name: String(x.name || "").trim().slice(0, 120),
-          amount: Math.round(Number(x.amount) || 0),
-        }));
+        const linePayload = lines.map((x) => normalizeLineItemForStorage(x)).filter(Boolean);
+        if (linePayload.length) {
+          payload.items = linePayload;
+          payload.invoiceItems = linePayload;
+        }
       }
       await saveRecord(payload);
     }
@@ -6943,19 +7031,22 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const ledger = buildInvoiceLedgerPreview(r, txsAll);
         const ledgerDetails =
           ledger.lines.length > 0
-            ? `<details class="rounded-lg border border-amber-100/90 bg-white/75 text-left">
-  <summary class="cursor-pointer list-none px-2 py-1.5 text-[11px] font-bold text-primary flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-    <span>明細帳目</span><span class="material-symbols-outlined text-base opacity-80">expand_more</span>
-  </summary>
-  <ul class="px-2 pb-2 pt-0 text-[11px] space-y-0 divide-y divide-amber-100/80">
+            ? `<div class="rounded-lg border border-amber-100/90 bg-white/75 text-left">
+  <p class="px-2 pt-2 pb-1 text-[11px] font-bold text-primary flex items-center gap-1"><span class="material-symbols-outlined text-base opacity-90">receipt_long</span>明細帳目（${ledger.lines.length} 項）</p>
+  <ul class="px-2 pb-2 pt-0 text-[11px] space-y-0 divide-y divide-amber-100/80 max-h-48 overflow-y-auto">
     ${ledger.lines
-      .map(
-        (l) =>
-          `<li class="flex justify-between gap-2 py-1.5"><span class="min-w-0 flex-1 break-words text-on-surface">${escapeHtml(l.name)}</span><span class="font-bold tabular-nums shrink-0 text-on-surface">${Number(l.amount).toLocaleString("zh-TW")}<span class="text-[9px] ml-px">元</span></span></li>`
-      )
+      .map((l) => {
+        const q = Number(l.quantity);
+        const u = Math.round(Number(l.unitPrice));
+        let meta = "";
+        if (Number.isFinite(q) && q > 0 && Number.isFinite(u) && u > 0)
+          meta = ` <span class="text-on-surface-variant font-normal">×${q} @${u}</span>`;
+        else if (Number.isFinite(q) && q > 0) meta = ` <span class="text-on-surface-variant font-normal">×${q}</span>`;
+        return `<li class="flex justify-between gap-2 py-1.5"><span class="min-w-0 flex-1 break-words text-on-surface">${escapeHtml(l.name)}${meta}</span><span class="font-bold tabular-nums shrink-0 text-on-surface">${Number(l.amount).toLocaleString("zh-TW")}<span class="text-[9px] ml-px">元</span></span></li>`;
+      })
       .join("")}
   </ul>
-</details>`
+</div>`
             : "";
         const ledgerBtn =
           ledger.invDisp !== ""
@@ -7010,6 +7101,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (!disp) return;
     try {
       sessionStorage.setItem("stitch_history_invoice_filter", disp);
+      sessionStorage.setItem("stitch_history_scroll_invoice_key", normalizeInvoiceNumberKey(disp));
+      sessionStorage.setItem("stitch_history_focus_first_filtered", "1");
     } catch (e) {}
     if (typeof document !== "undefined" && document.documentElement.classList.contains("stitch-single-app")) {
       try {
@@ -7024,17 +7117,15 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
   function lineItemsFromRecordObj(rec) {
     if (!rec || typeof rec !== "object") return [];
-    const raw = Array.isArray(rec.invoiceItems)
-      ? rec.invoiceItems
-      : Array.isArray(rec.items)
-        ? rec.items
+    const raw = Array.isArray(rec.items)
+      ? rec.items
+      : Array.isArray(rec.invoiceItems)
+        ? rec.invoiceItems
         : [];
     const out = [];
     for (const x of raw) {
-      if (!x || typeof x !== "object") continue;
-      const name = String(x.name != null ? x.name : "").trim();
-      const amount = Math.round(Number(x.amount) || 0);
-      if (name && amount > 0) out.push({ name: name.slice(0, 120), amount });
+      const row = normalizeLineItemForStorage(x);
+      if (row) out.push(row);
     }
     return out;
   }
@@ -7119,8 +7210,29 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     hint.classList.toggle("text-primary-container/90", !isError);
   }
 
+  /**
+   * 強制停止頁面上所有 video 的 MediaStream（等同 stream.getTracks().forEach(t=>t.stop())），
+   * 避免 Html5Qrcode 內部舊串流未釋放導致 Cannot transition to a new state。
+   */
+  function forceStopAllVideoCameraTracks() {
+    try {
+      document.querySelectorAll("video").forEach((video) => {
+        const stream = video.srcObject;
+        if (stream && typeof stream.getTracks === "function") {
+          stream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch (err) {}
+          });
+        }
+        video.srcObject = null;
+      });
+    } catch (e) {}
+  }
+
   /** 完整釋放 Html5Qrcode 相機狀態，避免 Cannot transition to a new state */
   async function disposeInvQrScannerFully() {
+    forceStopAllVideoCameraTracks();
     if (invHtml5QrInstance) {
       try {
         await invHtml5QrInstance.stop();
@@ -7130,6 +7242,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       } catch (e) {}
       invHtml5QrInstance = null;
     }
+    forceStopAllVideoCameraTracks();
     const readerEl = document.getElementById("inv-qr-reader");
     if (readerEl) readerEl.innerHTML = "";
     await new Promise((r) => setTimeout(r, 180));
@@ -7206,6 +7319,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
 
     const readerEl = document.getElementById(readerId);
     if (readerEl) readerEl.innerHTML = "";
+    forceStopAllVideoCameraTracks();
     await new Promise((r) => setTimeout(r, 40));
     invHtml5QrInstance = new Html5Qrcode(readerId);
     const vw = Math.min(window.innerWidth - 56, 300);
@@ -7229,6 +7343,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         try {
           await invHtml5QrInstance.stop();
         } catch (x) {}
+        try {
+          await invHtml5QrInstance.clear();
+        } catch (x2) {}
+        forceStopAllVideoCameraTracks();
       }
     }
     if (!started) {
@@ -7281,6 +7399,18 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         window.parent.addEventListener("stitch:transactions:changed", onTransactionsChangedForInvoice);
       }
     } catch (e) {}
+
+    function onStitchRouteReleaseCamera(e) {
+      const r = e.detail && e.detail.route;
+      if (r && r !== "invoice") void closeInvQrCamera();
+    }
+    window.addEventListener("stitch:route", onStitchRouteReleaseCamera);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) void closeInvQrCamera();
+    });
+    window.addEventListener("pagehide", () => {
+      void closeInvQrCamera();
+    });
 
     document.getElementById("inv-back-btn").addEventListener("click", () => navigate("home"));
     document.getElementById("inv-open-carrier-btn").addEventListener("click", () => openCarrierSettings());
@@ -7589,17 +7719,22 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   function parseInvoiceLineItemsFromTaiwanRaw(raw) {
     const items = [];
     const seen = new Set();
-    const addItem = (name, amt) => {
+    const addItem = (name, amt, opt) => {
       const n = Math.round(Number(amt));
       let nm = String(name || "").replace(/\s+/g, " ").trim();
       nm = nm.replace(/^[#\d.\s、]+/, "").trim();
       if (!nm || nm.length > 100) return;
       if (/^[A-Z]{2}[\s-]?\d{8}$/i.test(nm.replace(/\s/g, ""))) return;
       if (!Number.isFinite(n) || n <= 0 || n > INV_AMT_MAX) return;
-      const key = nm + "\0" + n;
+      const q = opt && opt.quantity != null ? Number(opt.quantity) : null;
+      const u = opt && opt.unitPrice != null ? Math.round(Number(opt.unitPrice)) : null;
+      const key = nm + "\0" + n + "\0" + (q != null && Number.isFinite(q) ? q : "") + "\0" + (u != null && u > 0 ? u : "");
       if (seen.has(key)) return;
       seen.add(key);
-      items.push({ name: nm.slice(0, 80), amount: n });
+      const row = { name: nm.slice(0, 80), amount: n };
+      if (q != null && Number.isFinite(q) && q > 0) row.quantity = q;
+      if (u != null && u > 0) row.unitPrice = u;
+      items.push(row);
     };
 
     const s = String(raw || "").trim();
@@ -7610,7 +7745,12 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       for (const p of parts) {
         if (/^[A-Z]{2}\d{8}$/i.test(p.replace(/[-\s]/g, ""))) continue;
         if (/^\d{7,8}$/.test(p)) continue;
-        let m = p.match(/^(.{1,64}?)[：:]\s*(\d{1,8})\s*$/);
+        let m = p.match(/^(.+?)\s+[x×]\s*(\d+)\s*[@＠]\s*(\d{1,8})\s+(\d{1,8})\s*$/);
+        if (m && /[^\d\s]/.test(m[1])) {
+          addItem(m[1].trim(), m[4], { quantity: m[2], unitPrice: m[3] });
+          continue;
+        }
+        m = p.match(/^(.{1,64}?)[：:]\s*(\d{1,8})\s*$/);
         if (m) {
           addItem(m[1], m[2]);
           continue;
@@ -7630,7 +7770,12 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const lines = s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     for (const line of lines) {
       if (line.length > 120) continue;
-      let m = line.match(/^(.{2,50}?)[：:\t]\s*(\d{1,8})\s*$/);
+      let m = line.match(/^(.+?)\s+[x×]\s*(\d+)\s*[@＠]\s*(\d{1,8})\s+(\d{1,8})\s*$/);
+      if (m && /[^\d\s]/.test(m[1])) {
+        addItem(m[1].trim(), m[4], { quantity: m[2], unitPrice: m[3] });
+        continue;
+      }
+      m = line.match(/^(.{2,50}?)[：:\t]\s*(\d{1,8})\s*$/);
       if (m) addItem(m[1], m[2]);
     }
 
