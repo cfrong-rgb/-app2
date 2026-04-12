@@ -580,6 +580,12 @@ body {
       white-space: nowrap;
       font-size: clamp(0.8rem, 3.2vw, 1rem);
     }
+    .stitch-history-top-bar {
+      padding-top: max(0px, env(safe-area-inset-top, 0px));
+    }
+    main.stitch-history-main {
+      padding-top: calc(5rem + env(safe-area-inset-top, 0px));
+    }
 
 /* --- add --- */
 html,
@@ -1001,7 +1007,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 
 <div class="stitch-view" data-stitch-view="history" hidden>
 <!-- TopAppBar -->
-<header class="fixed top-0 left-0 right-0 w-full max-w-full min-w-0 z-50 bg-[#f8f6f1]/80 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 h-16 transition-colors box-border">
+<header class="stitch-history-top-bar fixed top-0 left-0 right-0 w-full max-w-full min-w-0 z-50 bg-[#f8f6f1]/80 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 min-h-16 h-16 transition-colors box-border">
 <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
 <button type="button" class="p-2 rounded-full hover:bg-[#f2f1eb] active:scale-95 duration-200 text-[#725638]" id="header-menu-btn" aria-label="開啟選單" aria-expanded="false" aria-controls="side-drawer">
 <span class="material-symbols-outlined" data-icon="menu">menu</span>
@@ -1009,7 +1015,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 <h1 class="text-xl font-bold text-[#725638] tracking-tight font-headline truncate">交易明細</h1>
 </div>
 </header>
-<div role="main" class="stitch-page-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
+<div role="main" class="stitch-page-main stitch-history-main pt-20 pb-32 px-4 sm:px-6 max-w-2xl w-full min-w-0 mx-auto box-border overflow-x-hidden">
 <!-- LocalStorage Transactions（搜尋與匯出；已移除頂部分類籤） -->
 <section class="mb-12 mt-2">
 <div class="flex items-end justify-between gap-3 mb-4 min-w-0">
@@ -3653,11 +3659,22 @@ const STORAGE_KEY = "stitch_transactions";
     return item && item.flow === "income";
   }
 
+  function formatHistMoneyPlain(n) {
+    const value = Number(n) || 0;
+    const isInt = Math.abs(value - Math.round(value)) < 1e-9;
+    return (
+      "$" +
+      (isInt
+        ? Math.round(value).toLocaleString("zh-TW")
+        : value.toLocaleString("zh-TW", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    );
+  }
+
   function formatTxAmount(item) {
     const value = Number(item?.amount) || 0;
     const inc = isIncomeTransaction(item);
     const sign = inc ? "+ " : "- ";
-    return sign + "$" + value.toLocaleString("zh-TW", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sign + formatHistMoneyPlain(value);
   }
 
   function normalizeInvoiceKeyForHist(s) {
@@ -4014,20 +4031,25 @@ const STORAGE_KEY = "stitch_transactions";
     <span class="material-symbols-outlined text-base shrink-0" aria-hidden="true">receipt_long</span>
     <span>發票購物明細（${expandRows.length} 項）</span>
   </p>
-  <ul class="px-4 pb-3 pt-0 text-sm max-h-52 overflow-y-auto divide-y divide-black/[0.06]">
+  <div class="px-4 pb-3 max-h-52 overflow-y-auto overflow-x-auto">
+    <table class="w-full text-sm text-on-surface border-collapse table-fixed">
+      <tbody>
     ${expandRows
       .map(
         (r) =>
-          `<li class="flex justify-between gap-3 py-2.5 text-on-surface leading-snug">
-      <span class="min-w-0 flex-1 break-words">
-        <span class="block">${escapeHtml(r.name)}</span>
-        ${r.meta ? `<span class="block text-[11px] text-on-surface-variant font-normal mt-0.5">${escapeHtml(r.meta)}</span>` : ""}
-      </span>
-      <span class="shrink-0 font-bold tabular-nums self-start">${amtSign}$${Number(r.amount).toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
-    </li>`
+          `<tr class="border-t border-black/[0.06]">
+      <td class="py-2.5 pr-3 w-[62%] min-w-0 break-words align-top leading-snug">${escapeHtml(r.name)}${
+            r.meta
+              ? `<div class="text-[11px] text-on-surface-variant font-normal mt-0.5">${escapeHtml(r.meta)}</div>`
+              : ""
+          }</td>
+      <td class="py-2.5 pl-2 text-right font-bold tabular-nums align-top whitespace-nowrap w-[38%]">${amtSign}${formatHistMoneyPlain(r.amount).replace(/^\$/, "")}</td>
+    </tr>`
       )
       .join("")}
-  </ul>
+      </tbody>
+    </table>
+  </div>
 </div>`
             : "";
         const invNavK = transactionInvoiceNavKey(item);
@@ -7033,19 +7055,28 @@ const CARRIER_KEY = "stitch_invoice_carrier";
           ledger.lines.length > 0
             ? `<div class="rounded-lg border border-amber-100/90 bg-white/75 text-left">
   <p class="px-2 pt-2 pb-1 text-[11px] font-bold text-primary flex items-center gap-1"><span class="material-symbols-outlined text-base opacity-90">receipt_long</span>明細帳目（${ledger.lines.length} 項）</p>
-  <ul class="px-2 pb-2 pt-0 text-[11px] space-y-0 divide-y divide-amber-100/80 max-h-48 overflow-y-auto">
+  <div class="px-2 pb-2 pt-0 max-h-48 overflow-y-auto overflow-x-auto">
+    <table class="w-full text-[11px] border-collapse table-fixed text-on-surface">
+      <tbody>
     ${ledger.lines
       .map((l) => {
         const q = Number(l.quantity);
         const u = Math.round(Number(l.unitPrice));
         let meta = "";
         if (Number.isFinite(q) && q > 0 && Number.isFinite(u) && u > 0)
-          meta = ` <span class="text-on-surface-variant font-normal">×${q} @${u}</span>`;
-        else if (Number.isFinite(q) && q > 0) meta = ` <span class="text-on-surface-variant font-normal">×${q}</span>`;
-        return `<li class="flex justify-between gap-2 py-1.5"><span class="min-w-0 flex-1 break-words text-on-surface">${escapeHtml(l.name)}${meta}</span><span class="font-bold tabular-nums shrink-0 text-on-surface">${Number(l.amount).toLocaleString("zh-TW")}<span class="text-[9px] ml-px">元</span></span></li>`;
+          meta = `<div class="text-on-surface-variant font-normal mt-0.5">×${q} @${u}</div>`;
+        else if (Number.isFinite(q) && q > 0) meta = `<div class="text-on-surface-variant font-normal mt-0.5">×${q}</div>`;
+        const am = Number(l.amount) || 0;
+        const amDisp =
+          Math.abs(am - Math.round(am)) < 1e-9
+            ? Math.round(am).toLocaleString("zh-TW")
+            : am.toLocaleString("zh-TW", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `<tr class="border-t border-amber-100/80"><td class="py-1.5 pr-2 w-[62%] min-w-0 break-words align-top">${escapeHtml(l.name)}${meta}</td><td class="py-1.5 pl-1 text-right font-bold tabular-nums align-top whitespace-nowrap w-[38%]">${amDisp}<span class="text-[9px] ml-px">元</span></td></tr>`;
       })
       .join("")}
-  </ul>
+      </tbody>
+    </table>
+  </div>
 </div>`
             : "";
         const ledgerBtn =
@@ -7168,6 +7199,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   let invHtml5QrInstance = null;
   let invLastCameraDecoded = "";
   let invLastCameraDecodeAt = 0;
+  /** 相機 start/stop 序列化，避免 Html5Qrcode「Already under transition」 */
+  let invCameraLifecycleChain = Promise.resolve();
 
   /** 僅清空表單與品項暫存（不動相機解碼去重變數，供單次掃描成功後覆寫前使用） */
   function resetInvoiceFormStaging() {
@@ -7234,35 +7267,45 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   async function disposeInvQrScannerFully() {
     forceStopAllVideoCameraTracks();
     if (invHtml5QrInstance) {
-      try {
-        await invHtml5QrInstance.stop();
-      } catch (e) {}
-      try {
-        await invHtml5QrInstance.clear();
-      } catch (e) {}
+      const inst = invHtml5QrInstance;
       invHtml5QrInstance = null;
+      try {
+        await inst.stop();
+      } catch (e) {}
+      try {
+        await inst.clear();
+      } catch (e) {}
     }
     forceStopAllVideoCameraTracks();
     const readerEl = document.getElementById("inv-qr-reader");
     if (readerEl) readerEl.innerHTML = "";
-    await new Promise((r) => setTimeout(r, 180));
+    await new Promise((r) => setTimeout(r, 380));
+  }
+
+  function runInvCameraExclusive(fn) {
+    invCameraLifecycleChain = invCameraLifecycleChain
+      .then(() => fn())
+      .catch(() => {});
+    return invCameraLifecycleChain;
   }
 
   async function closeInvQrCamera() {
-    await disposeInvQrScannerFully();
-    const overlay = document.getElementById("inv-qr-camera-overlay");
-    if (overlay) {
-      overlay.classList.add("hidden");
-      overlay.classList.remove("flex");
-      overlay.setAttribute("aria-hidden", "true");
-    }
-    const hint = document.getElementById("inv-qr-camera-hint");
-    if (hint) {
-      hint.textContent = invQrCameraHintDefault();
-      hint.setAttribute("role", "status");
-      hint.classList.remove("text-red-300");
-      hint.classList.add("text-primary-container/90");
-    }
+    await runInvCameraExclusive(async () => {
+      await disposeInvQrScannerFully();
+      const overlay = document.getElementById("inv-qr-camera-overlay");
+      if (overlay) {
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+      const hint = document.getElementById("inv-qr-camera-hint");
+      if (hint) {
+        hint.textContent = invQrCameraHintDefault();
+        hint.setAttribute("role", "status");
+        hint.classList.remove("text-red-300");
+        hint.classList.add("text-primary-container/90");
+      }
+    });
   }
 
   function invCameraErrorMessage(err) {
@@ -7301,58 +7344,64 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const overlay = document.getElementById("inv-qr-camera-overlay");
     const readerId = "inv-qr-reader";
     if (!overlay) return;
-    await closeInvQrCamera();
-    overlay.classList.remove("hidden");
-    overlay.classList.add("flex");
-    overlay.setAttribute("aria-hidden", "false");
-    resetInvoiceScanStaging();
-    setInvQrCameraHint(invQrCameraHintDefault(), false);
 
-    if (!window.isSecureContext) {
-      setInvQrCameraHint("相機需在 HTTPS 或 localhost 環境下才能使用。請改用安全連線開啟本站，或使用下方「從相簿選圖」。", true);
-      return;
-    }
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
-      setInvQrCameraHint("此瀏覽器不支援相機 API，請更新瀏覽器，或改用「從相簿選圖」。", true);
-      return;
-    }
-
-    const readerEl = document.getElementById(readerId);
-    if (readerEl) readerEl.innerHTML = "";
-    forceStopAllVideoCameraTracks();
-    await new Promise((r) => setTimeout(r, 40));
-    invHtml5QrInstance = new Html5Qrcode(readerId);
-    const vw = Math.min(window.innerWidth - 56, 300);
-    const qh = Math.min(Math.round(vw * 0.92), 280);
-    const scanCfg = { fps: 10, qrbox: { width: vw, height: qh }, aspectRatio: 1 };
-    const onDecode = (decodedText) => {
-      onInvCameraQrDecoded(decodedText);
-    };
-    const onScanErr = () => {};
-
-    const cameraConfigs = [{ facingMode: { ideal: "environment" } }, { facingMode: "environment" }, true];
-    let lastErr = null;
-    let started = false;
-    for (let i = 0; i < cameraConfigs.length; i++) {
-      try {
-        await invHtml5QrInstance.start(cameraConfigs[i], scanCfg, onDecode, onScanErr);
-        started = true;
-        break;
-      } catch (e) {
-        lastErr = e;
-        try {
-          await invHtml5QrInstance.stop();
-        } catch (x) {}
-        try {
-          await invHtml5QrInstance.clear();
-        } catch (x2) {}
-        forceStopAllVideoCameraTracks();
-      }
-    }
-    if (!started) {
+    await runInvCameraExclusive(async () => {
       await disposeInvQrScannerFully();
-      setInvQrCameraHint(invCameraErrorMessage(lastErr), true);
-    }
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+      overlay.setAttribute("aria-hidden", "false");
+      resetInvoiceScanStaging();
+      setInvQrCameraHint(invQrCameraHintDefault(), false);
+
+      if (!window.isSecureContext) {
+        setInvQrCameraHint("相機需在 HTTPS 或 localhost 環境下才能使用。請改用安全連線開啟本站，或使用下方「從相簿選圖」。", true);
+        return;
+      }
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+        setInvQrCameraHint("此瀏覽器不支援相機 API，請更新瀏覽器，或改用「從相簿選圖」。", true);
+        return;
+      }
+
+      const readerEl = document.getElementById(readerId);
+      if (readerEl) readerEl.innerHTML = "";
+      forceStopAllVideoCameraTracks();
+      await new Promise((r) => setTimeout(r, 80));
+      invHtml5QrInstance = new Html5Qrcode(readerId);
+      const vw = Math.min(window.innerWidth - 56, 300);
+      const qh = Math.min(Math.round(vw * 0.92), 280);
+      const scanCfg = { fps: 8, qrbox: { width: vw, height: qh }, aspectRatio: 1 };
+      const onDecode = (decodedText) => {
+        onInvCameraQrDecoded(decodedText);
+      };
+      const onScanErr = () => {};
+
+      const cameraConfigs = [{ facingMode: { ideal: "environment" } }, { facingMode: "environment" }, true];
+      let lastErr = null;
+      let started = false;
+      for (let i = 0; i < cameraConfigs.length; i++) {
+        try {
+          await invHtml5QrInstance.start(cameraConfigs[i], scanCfg, onDecode, onScanErr);
+          started = true;
+          break;
+        } catch (e) {
+          lastErr = e;
+          try {
+            await invHtml5QrInstance.stop();
+          } catch (x) {}
+          try {
+            await invHtml5QrInstance.clear();
+          } catch (x2) {}
+          invHtml5QrInstance = null;
+          forceStopAllVideoCameraTracks();
+          await new Promise((r) => setTimeout(r, 200));
+          invHtml5QrInstance = new Html5Qrcode(readerId);
+        }
+      }
+      if (!started) {
+        await disposeInvQrScannerFully();
+        setInvQrCameraHint(invCameraErrorMessage(lastErr), true);
+      }
+    });
   }
 
   function onInvCameraQrDecoded(text) {
@@ -7362,19 +7411,24 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (t === invLastCameraDecoded && now - invLastCameraDecodeAt < 1200) return;
     invLastCameraDecoded = t;
     invLastCameraDecodeAt = now;
-    resetInvoiceFormStaging();
-    parseQrToForm(t);
-    void closeInvQrCamera();
-    const addOv = document.getElementById("inv-add-overlay");
-    if (addOv) {
-      addOv.classList.remove("hidden");
-      addOv.classList.add("flex");
-    }
-    void afterInvoiceQrParsed();
+    void (async () => {
+      await closeInvQrCamera();
+      resetInvoiceFormStaging();
+      parseQrToForm(t);
+      const addOv = document.getElementById("inv-add-overlay");
+      if (addOv) {
+        addOv.classList.remove("hidden");
+        addOv.classList.add("flex");
+      }
+      void afterInvoiceQrParsed();
+    })();
   }
 
   async function init() {
     store = await loadStore();
+    await runInvCameraExclusive(async () => {
+      await disposeInvQrScannerFully();
+    });
     periodAnchor = periodContainingDate(new Date());
     await renderBarcode();
     applyBrightnessUi();
@@ -7626,7 +7680,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         }
         const qr = new Html5Qrcode(tempId);
         const text = await qr.scanFile(f, true);
-        await qr.clear();
+        try {
+          await qr.clear();
+        } catch (e) {}
+        forceStopAllVideoCameraTracks();
         parseQrToForm(text);
         document.getElementById("inv-add-overlay").classList.remove("hidden");
         document.getElementById("inv-add-overlay").classList.add("flex");
@@ -7713,16 +7770,132 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     };
   }
 
-  /**
-   * 嘗試自發票右側長碼、** 分段或「品名：金額」樣式解析品項（格式隨店家／載具而異，採啟發式）。
-   */
-  function parseInvoiceLineItemsFromTaiwanRaw(raw) {
+  /** 右側明細：除 :3:3:1: 等前��數字段後再解析 */
+  function stripTaiwanDetailSegmentPrefix(seg) {
+    let t = String(seg || "").trim();
+    t = t.replace(/^\*+/, "").replace(/^★+/, "");
+    for (let i = 0; i < 48; i++) {
+      const before = t;
+      t = t.replace(/^:\d+(?::\d+)*/, "");
+      t = t.replace(/^:+(?=\d)/, "");
+      t = t.trim();
+      if (t === before) break;
+    }
+    t = t.replace(/^:+\s*/, "").trim();
+    return t;
+  }
+
+  function cleanTaiwanLineItemName(name) {
+    let n = String(name || "").replace(/\s+/g, " ").trim();
+    n = n.replace(/^[\s:*★‧•．]+/u, "");
+    for (let i = 0; i < 12; i++) {
+      const n2 = n.replace(/^(:?\d+)+:?/, "").trim();
+      if (n2 === n) break;
+      n = n2;
+    }
+    return n.replace(/^:+\s*/, "").trim();
+  }
+
+  /** 品名:數量� 串接（小計�數量×����� name:qty 時用發���小計 */
+  function extractChainedColonTriples(segment, invoiceTotalHint) {
+    const items = [];
+    let work = stripTaiwanDetailSegmentPrefix(segment);
+    const invTotal = Math.round(Number(invoiceTotalHint) || 0);
+    while (work.length > 1) {
+      const m = work.match(/^([^:0-9\s*][^:]{0,120}?):(\d{1,4}):(\d{1,6})/);
+      if (!m) break;
+      const name = cleanTaiwanLineItemName(m[1]);
+      const qty = parseInt(m[2], 10);
+      const unit = parseInt(m[3], 10);
+      if (!name || qty <= 0 || unit <= 0) {
+        work = work.slice(1);
+        continue;
+      }
+      if (/^[A-Z]{2}\d{8}$/i.test(name.replace(/[-\s]/g, ""))) {
+        work = work.slice(m[0].length);
+        continue;
+      }
+      const sub = qty * unit;
+      if (sub > INV_AMT_MAX || sub <= 0) {
+        work = work.slice(m[0].length);
+        continue;
+      }
+      items.push({
+        name: name.slice(0, 120),
+        quantity: qty,
+        unitPrice: unit,
+        amount: sub,
+      });
+      work = work.slice(m[0].length);
+    }
+    work = stripTaiwanDetailSegmentPrefix(work);
+    if (work.length) {
+      const m2 = work.match(/^([^:0-9\s*][^:]{0,120}?):(\d{1,4})$/);
+      if (m2) {
+        const name = cleanTaiwanLineItemName(m2[1]);
+        const qty = parseInt(m2[2], 10);
+        if (name && qty > 0) {
+          const sumSoFar = items.reduce((s, x) => s + x.amount, 0);
+          let amount =
+            invTotal > 0 && invTotal >= sumSoFar ? Math.max(1, invTotal - sumSoFar) : Math.max(1, qty);
+          amount = Math.round(amount);
+          let unit = qty > 0 ? Math.max(1, Math.round(amount / qty)) : amount;
+          if (unit * qty !== amount) amount = unit * qty;
+          items.push({ name: name.slice(0, 120), quantity: qty, unitPrice: unit, amount });
+        }
+      }
+    }
+    return items;
+  }
+
+  /** 細項小計之和��發票����不一致時，依����比例校正（以����為準） */
+  function reconcileInvoiceLineItemsToTotal(items, invoiceTotalHint) {
+    if (!Array.isArray(items) || items.length === 0) return items;
+    const target = Math.round(Number(invoiceTotalHint) || 0);
+    let lines = items
+      .map((x) => {
+        const qty = x.quantity != null ? Math.round(Number(x.quantity)) : null;
+        const unit = x.unitPrice != null ? Math.round(Number(x.unitPrice)) : null;
+        let amount = Math.round(Number(x.amount) || 0);
+        if (qty != null && unit != null && qty > 0 && unit > 0) {
+          const lin = qty * unit;
+          if (Math.abs(lin - amount) <= 2) amount = lin;
+        }
+        const name = String(x.name || "").trim();
+        if (!name) return null;
+        const o = { name: name.slice(0, 120), amount };
+        if (qty != null && qty > 0) o.quantity = qty;
+        if (unit != null && unit > 0) o.unitPrice = unit;
+        return o;
+      })
+      .filter(Boolean);
+    if (!(target > 0)) return lines;
+    let sum = lines.reduce((s, x) => s + x.amount, 0);
+    if (sum === target) return lines;
+    if (sum <= 0) return lines;
+    const factor = target / sum;
+    lines = lines.map((x) => ({
+      ...x,
+      amount: Math.max(1, Math.round(x.amount * factor)),
+    }));
+    sum = lines.reduce((s, x) => s + x.amount, 0);
+    const drift = target - sum;
+    if (drift !== 0 && lines.length) {
+      lines[lines.length - 1].amount += drift;
+      const last = lines[lines.length - 1];
+      if (last.quantity && last.quantity > 0) {
+        last.unitPrice = Math.max(1, Math.round(last.amount / last.quantity));
+      }
+    }
+    return lines;
+  }
+
+  function parseInvoiceLineItemsLegacyFallback(s, invoiceTotalHint) {
     const items = [];
     const seen = new Set();
     const addItem = (name, amt, opt) => {
       const n = Math.round(Number(amt));
-      let nm = String(name || "").replace(/\s+/g, " ").trim();
-      nm = nm.replace(/^[#\d.\s、]+/, "").trim();
+      const nm = cleanTaiwanLineItemName(String(name || ""));
       if (!nm || nm.length > 100) return;
       if (/^[A-Z]{2}[\s-]?\d{8}$/i.test(nm.replace(/\s/g, ""))) return;
       if (!Number.isFinite(n) || n <= 0 || n > INV_AMT_MAX) return;
@@ -7737,9 +7910,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       items.push(row);
     };
 
-    const s = String(raw || "").trim();
-    if (!s) return { items: [], storeHint: "" };
-
     if (s.indexOf("**") >= 0) {
       const parts = s.split("**").map((p) => p.trim()).filter(Boolean);
       for (const p of parts) {
@@ -7751,19 +7921,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
           continue;
         }
         m = p.match(/^(.{1,64}?)[：:]\s*(\d{1,8})\s*$/);
-        if (m) {
-          addItem(m[1], m[2]);
-          continue;
-        }
-        m = p.match(/^(.+?)[\t]\s*(\d{1,8})\s*$/);
-        if (m && /[^\d\s]/.test(m[1])) {
-          addItem(m[1].trim(), m[2]);
-          continue;
-        }
-        m = p.match(/^(.+?)\s+(\d{1,8})$/);
-        if (m && /[^\d\s]/.test(m[1]) && String(m[1]).trim().length >= 2) {
-          addItem(m[1].replace(/[:：]\s*$/, ""), m[2]);
-        }
+        if (m) addItem(m[1], m[2]);
       }
     }
 
@@ -7779,12 +7937,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       if (m) addItem(m[1], m[2]);
     }
 
-    const re = /([^\n\r\*]{2,44})[：:]\s*(\d{1,7})(?=\s*(?:$|\n|\*\*|[\u4e00-\u9fff]*[：:]))/g;
-    let mm;
-    while ((mm = re.exec(s)) !== null) {
-      addItem(mm[1], mm[2]);
-    }
-
     let storeHint = "";
     if (items.length === 0 && s.indexOf("**") >= 0) {
       const first = s.split("**")[0].trim();
@@ -7792,9 +7944,64 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         storeHint = first;
       }
     }
-
-    return { items, storeHint };
+    return { items: reconcileInvoiceLineItemsToTotal(items, invoiceTotalHint), storeHint };
   }
+
+  /**
+   * 台��電子發票�：**分段；品項多為「品名:數量�」串接。避免將 :4:4:1: �入品名。
+   * invoiceTotalHint：左側���，用於尾段�全�金��校正。
+   */
+  function parseInvoiceLineItemsFromTaiwanRaw(raw, invoiceTotalHint) {
+    const s = String(raw || "").trim();
+    if (!s) return { items: [], storeHint: "" };
+    const invOpt = invoiceTotalHint != null ? Math.round(Number(invoiceTotalHint) || 0) : 0;
+    const hintArg = invOpt > 0 ? invOpt : null;
+
+    try {
+      const seenKeys = new Set();
+      const merged = [];
+
+      function pushRows(rows) {
+        for (const r of rows) {
+          const k = String(r.name || "") + ":" + r.amount + ":" + (r.quantity || "") + ":" + (r.unitPrice || "");
+          if (seenKeys.has(k)) continue;
+          seenKeys.add(k);
+          merged.push(r);
+        }
+      }
+
+      const buckets = new Set();
+      if (s.indexOf("**") >= 0) {
+        for (const p of s.split("**")) {
+          const t = p.trim();
+          if (t) buckets.add(t);
+        }
+      }
+      buckets.add(s);
+
+      for (const b of buckets) {
+        if (/^[A-Z]{2}\d{8}$/i.test(b.replace(/[-\s]/g, ""))) continue;
+        if (/^\d{7,8}$/.test(b)) continue;
+        pushRows(extractChainedColonTriples(b, hintArg));
+      }
+
+      let storeHint = "";
+      if (merged.length === 0 && s.indexOf("**") >= 0) {
+        const first = s.split("**")[0].trim();
+        if (first.length >= 2 && first.length <= 40 && !/^\d+$/.test(first) && !/：/.test(first)) {
+          storeHint = first;
+        }
+      }
+
+      if (merged.length > 0) {
+        return { items: reconcileInvoiceLineItemsToTotal(merged, hintArg), storeHint };
+      }
+      return parseInvoiceLineItemsLegacyFallback(s, hintArg);
+    } catch (e) {
+      return parseInvoiceLineItemsLegacyFallback(s, hintArg);
+    }
+  }
+
 
   /** 從電子發票 QR／圖片辨識文字擷取欄位（優先解析購買日，失敗才用今天） */
   function parseQrToForm(text) {
@@ -7865,7 +8072,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
     else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
 
-    const parsedLines = parseInvoiceLineItemsFromTaiwanRaw(raw);
+    const invTotalForLines = Math.floor(Number(String(amtEl.value || "").replace(/,/g, "")));
+    const parsedLines = parseInvoiceLineItemsFromTaiwanRaw(
+      raw,
+      Number.isFinite(invTotalForLines) && invTotalForLines > 0 ? invTotalForLines : null
+    );
     invPendingLineItems = parsedLines.items;
     const storeEl = document.getElementById("inv-f-store");
     if (storeEl && !String(storeEl.value || "").trim() && parsedLines.storeHint) {
