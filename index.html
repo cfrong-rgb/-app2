@@ -1520,10 +1520,6 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
       <button type="button" class="p-2 rounded-full hover:bg-amber-50" id="inv-add-close" aria-label="關閉"><span class="material-symbols-outlined">close</span></button>
     </div>
     <div class="p-5 space-y-3 overflow-y-auto">
-      <div>
-        <label class="text-xs font-bold text-on-surface-variant block mb-1" for="inv-f-store">店家名稱</label>
-        <input id="inv-f-store" class="w-full px-4 py-3 rounded-xl border border-amber-200 text-sm" placeholder="例如 便利商店" maxlength="40"/>
-      </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="text-xs font-bold text-on-surface-variant block mb-1" for="inv-f-date">日期</label>
@@ -3433,6 +3429,20 @@ const STORAGE_KEY = "stitch_transactions";
       .replace(/"/g, "&quot;");
   }
 
+  /** Remove legacy invoice-scan prefix from note for list and export. */
+  function stripInvoiceScanNotePrefix(s) {
+    const t = String(s || "").trim();
+    if (!t) return "";
+    return t.replace(/^\u767c\u7968\u6383\u63cf(\s*[\u00B7\u2022\u30FB\uFF0E.]+\s*|\s+)/u, "").trim();
+  }
+
+  function formatTransactionNoteForList(note) {
+    const stripped = stripInvoiceScanNotePrefix(note);
+    if (stripped) return stripped;
+    const raw = String(note || "").trim();
+    return raw || "（無備註）";
+  }
+
   async function updateTransactionById(id, patch) {
     if (isInIframe()) {
       const res = await requestParent("stitch:tx:update", { id: String(id), patch });
@@ -4027,7 +4037,7 @@ const STORAGE_KEY = "stitch_transactions";
         formatExportTimeHms(item),
         flowLabel,
         item.category || "",
-        item.note || "",
+        stripInvoiceScanNotePrefix(item.note || "") || String(item.note || "").trim(),
         Number(item.amount) || 0,
         item.id || "",
       ];
@@ -4072,7 +4082,7 @@ const STORAGE_KEY = "stitch_transactions";
 
     listRoot.innerHTML = displayItems
       .map((item) => {
-        const note = item.note ? String(item.note) : "（無備註）";
+        const note = formatTransactionNoteForList(item.note);
         const category = item.category ? String(item.category) : "住家";
         const inc = isIncomeTransaction(item);
         const meta = categoryMeta(category);
@@ -6796,21 +6806,15 @@ const CARRIER_KEY = "stitch_invoice_carrier";
    */
   async function saveRecordFromInvoiceForm(opts) {
     const fromManual = !!(opts && opts.fromManual);
-    let storeName = trimInvoiceField(document.getElementById("inv-f-store").value);
     const dateYmd = trimInvoiceField(document.getElementById("inv-f-date").value);
     const amount = Math.floor(Number(document.getElementById("inv-f-amount").value));
     const invoiceRawField = trimInvoiceField(document.getElementById("inv-f-num").value);
     const mode = getInvSaveMode();
     const lines = Array.isArray(invPendingLineItems) ? invPendingLineItems.filter((x) => x && Number(x.amount) > 0) : [];
+    const invKeyEarly = normalizeInvoiceNumberKey(invoiceRawField);
+    const invDispEarly = invKeyEarly ? normalizeInvoiceDisplayForTx(invoiceRawField) : "";
+    const noteForLottery = invDispEarly ? "發票 " + invDispEarly : "";
 
-    if (!storeName) {
-      if (fromManual) {
-        alert("請填寫店家名稱");
-        return;
-      }
-      storeName = "發票掃描";
-      document.getElementById("inv-f-store").value = storeName;
-    }
     if (!dateYmd) {
       if (fromManual) alert("請選擇日期");
       return;
@@ -6828,11 +6832,10 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       }
     }
 
-    const invKey = normalizeInvoiceNumberKey(invoiceRawField);
-    if (invKey) {
+    if (invKeyEarly) {
       const txs = await readTransactionsForInvoiceMerge();
       const dup = txs.some(
-        (t) => normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(t)) === invKey
+        (t) => normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(t)) === invKeyEarly
       );
       if (dup) {
         let lotteryLine = "";
@@ -6840,7 +6843,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
           try {
             lotteryLine = await StitchLottery.checkInvoice({
               invoiceRaw: invoiceRawField,
-              note: [storeName, "發票 " + invoiceRawField].filter(Boolean).join(" · "),
+              note: noteForLottery,
               bookedDateYmd: dateYmd,
             });
           } catch (e) {}
@@ -6856,14 +6859,14 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       try {
         lotteryLine = await StitchLottery.checkInvoice({
           invoiceRaw: invoiceRawField,
-          note: [storeName, "發票 " + invoiceRawField].filter(Boolean).join(" · "),
+          note: noteForLottery,
           bookedDateYmd: dateYmd,
         });
       } catch (e) {}
     }
     showInvLotteryResult(lotteryLine);
 
-    const invDisp = invKey ? normalizeInvoiceDisplayForTx(invoiceRawField) : "";
+    const invDisp = invDispEarly;
     const now = new Date();
 
     if (mode === "split") {
@@ -6906,9 +6909,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         );
       }
     } else {
-      const noteForTx = invDisp
-        ? [storeName, "發票 " + invDisp].filter(Boolean).join(" · ")
-        : storeName;
+      const noteForTx = invDisp ? "發票 " + invDisp : "";
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       const timeStr =
         String(now.getHours()).padStart(2, "0") +
@@ -7191,7 +7192,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   function resetInvoiceFormStaging() {
     invPendingLineItems = [];
     showInvLotteryResult("");
-    const clearIds = ["inv-f-store", "inv-f-date", "inv-f-amount", "inv-f-num"];
+    const clearIds = ["inv-f-date", "inv-f-amount", "inv-f-num"];
     for (const id of clearIds) {
       const el = document.getElementById(id);
       if (el) el.value = "";
@@ -7531,7 +7532,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       const t = new Date();
       document.getElementById("inv-f-date").value =
         t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
-      document.getElementById("inv-f-store").value = "";
       document.getElementById("inv-f-amount").value = "";
       document.getElementById("inv-f-num").value = "";
       invPendingLineItems = [];
@@ -7954,7 +7954,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const dateEl = document.getElementById("inv-f-date");
     const numEl = document.getElementById("inv-f-num");
     const amtEl = document.getElementById("inv-f-amount");
-    document.getElementById("inv-f-store").value = "";
     numEl.value = "";
     amtEl.value = "";
     dateEl.value = "";
@@ -8012,8 +8011,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       dateEl.value = t.getFullYear() + "-" + invPad2(t.getMonth() + 1) + "-" + invPad2(t.getDate());
     }
 
-    if (raw.length <= 40 && !raw.includes("**")) document.getElementById("inv-f-store").value = "掃描內容";
-    else document.getElementById("inv-f-store").value = document.getElementById("inv-f-store").value || "發票掃描";
 
     const invTotalForLines = Math.floor(Number(String(amtEl.value || "").replace(/,/g, "")));
     const parsedLines = parseInvoiceLineItemsFromTaiwanRaw(
