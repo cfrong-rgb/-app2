@@ -745,6 +745,24 @@ body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color
   .inv-ledger-details[open] .inv-ledger-chevron {
     transform: rotate(180deg);
   }
+  /* Invoice row: merchant strip scroll + responsive font */
+  .inv-store-input-wrap {
+    max-width: 150px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .inv-store-input-wrap .inv-store-input {
+    display: block;
+    max-width: none;
+    min-width: 100%;
+    width: max-content;
+    white-space: nowrap;
+    font-size: clamp(0.62rem, 3.2vw, 0.875rem);
+    line-height: 1.25;
+  }
 
 /* --- profile --- */
 body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8f6f1; color: #2e2f2c; }
@@ -6425,8 +6443,106 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const o = { ...r };
     if (o.invoiceNumber != null) o.invoiceNumber = trimInvoiceField(o.invoiceNumber);
     if (o.storeName != null) o.storeName = trimInvoiceField(o.storeName);
+    if (o.merchantName != null) o.merchantName = trimInvoiceField(o.merchantName);
     if (o.dateYmd != null) o.dateYmd = trimInvoiceField(o.dateYmd);
     return o;
+  }
+
+  function looksLikeInvoiceOnlyLabel(s) {
+    const t = String(s || "").trim();
+    if (!t) return false;
+    const c = t.replace(/\s/g, "");
+    if (/^發票[A-Z]{2}[-]?\d{8}$/i.test(c)) return true;
+    if (/^發票\s*[A-Z]{2}[-\s]?\d{8}/i.test(t)) return true;
+    return false;
+  }
+
+  /** Row label: merchantName, else derive from line items / linked tx. */
+  function displayMerchantForInvoiceRow(r, txsAll) {
+    if (!r || typeof r !== "object") return "未命名店家";
+    const m = trimInvoiceField(r.merchantName);
+    if (m) return m;
+    const lines = Array.isArray(r.items) ? r.items : Array.isArray(r.invoiceItems) ? r.invoiceItems : [];
+    let s = trimInvoiceField(r.storeName);
+    if (looksLikeInvoiceOnlyLabel(s) || (!s && lines.length)) {
+      if (lines.length === 1) {
+        const nm = trimInvoiceField(lines[0].name);
+        if (nm) return nm.length > 48 ? nm.slice(0, 48) + "…" : nm;
+      }
+      if (lines.length > 1) {
+        const nm = trimInvoiceField(lines[0].name);
+        if (nm) return (nm.length > 36 ? nm.slice(0, 36) + "…" : nm) + " 等";
+      }
+      const want = normalizeInvoiceNumberKey(r.invoiceNumber);
+      if (want && Array.isArray(txsAll)) {
+        for (const t of txsAll) {
+          if (normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(t)) !== want) continue;
+          const sub = extractInvoiceLineItemsFromTx(t);
+          if (sub.length === 1) {
+            const nm = trimInvoiceField(sub[0].name);
+            if (nm) return nm.length > 48 ? nm.slice(0, 48) + "…" : nm;
+          }
+          if (sub.length > 1) {
+            const nm = trimInvoiceField(sub[0].name);
+            if (nm) return (nm.length > 36 ? nm.slice(0, 36) + "…" : nm) + " 等";
+          }
+          const note = String(t.note || "");
+          const pref = note.match(/^(.+?)\s*[·•]\s*發票\s+/);
+          if (pref) {
+            const a = trimInvoiceField(pref[1]);
+            if (a) return a.length > 48 ? a.slice(0, 48) + "…" : a;
+          }
+        }
+      }
+    }
+    if (s) return s.length > 48 ? s.slice(0, 48) + "…" : s;
+    return "未命名店家";
+  }
+
+  /**
+   * Merchant label from a transaction (note "name · 發票 …", or line items if invoice-only).
+   * @param {object} t
+   * @param {object[]|null} precomputedLines merged lines for split groups
+   */
+  function merchantNameFromTransaction(t, precomputedLines) {
+    if (!t || typeof t !== "object") return "";
+    const lines = Array.isArray(precomputedLines) ? precomputedLines : extractInvoiceLineItemsFromTx(t);
+    const note = String(t.note || "").trim();
+    const pref = note.match(/^(.+?)\s*[·•]\s*發票\s+/);
+    if (pref) {
+      const a = trimInvoiceField(pref[1]);
+      if (a) return a.length > 48 ? a.slice(0, 48) + "…" : a;
+    }
+    const compactNote = note.replace(/\s/g, "");
+    const invOnly =
+      /^發票([A-Z]{2}[-]?\d{8})/i.test(compactNote) ||
+      /^發票\s*[A-Z]{2}[-\s]?\d{8}$/i.test(note);
+    if (invOnly) {
+      if (lines.length === 1) {
+        const a = trimInvoiceField(lines[0].name);
+        if (a) return a.length > 48 ? a.slice(0, 48) + "…" : a;
+      }
+      if (lines.length > 1) {
+        const a = trimInvoiceField(lines[0].name);
+        if (a) return (a.length > 36 ? a.slice(0, 36) + "…" : a) + " 等";
+      }
+    }
+    if (note && !/^發票\s*[A-Z]{2}/i.test(note.slice(0, 14))) {
+      const a = trimInvoiceField(note);
+      if (a) return a.length > 48 ? a.slice(0, 48) + "…" : a;
+    }
+    if (lines.length >= 1) {
+      const a = trimInvoiceField(lines[0].name);
+      if (a)
+        return lines.length > 1
+          ? (a.length > 36 ? a.slice(0, 36) + "…" : a) + " 等"
+          : a.length > 48
+            ? a.slice(0, 48) + "…"
+            : a;
+    }
+    const cat = trimInvoiceField(t.category);
+    if (cat) return cat.length > 48 ? cat.slice(0, 48) + "…" : cat;
+    return "";
   }
 
   /** 單一品項列正規化（寫入 stitch_transactions.items／invoiceItems 時共用） */
@@ -6487,17 +6603,22 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   function transactionToInvoiceRecord(t, invDisplay) {
     const inv = trimInvoiceField(invDisplay);
     const ymd = trimInvoiceField(t.bookedDate || "");
-    let storeName = trimInvoiceField(t.note) || trimInvoiceField(t.category) || "明細帳目";
-    if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
     const lines = extractInvoiceLineItemsFromTx(t);
+    const merchant = merchantNameFromTransaction(t, lines);
+    let storeName =
+      merchant ||
+      trimInvoiceField(t.note) ||
+      trimInvoiceField(t.category) ||
+      "明細帳目";
+    if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
     const base = {
       id: "txinv:" + String(t.id),
       dateYmd: ymd,
       amount: Math.round(Number(t.amount) || 0),
       invoiceNumber: inv,
       storeName: storeName || "明細帳目",
-      carrierTag: "明細帳目",
     };
+    if (merchant) base.merchantName = merchant;
     if (lines.length) {
       base.items = lines;
       base.invoiceItems = lines;
@@ -6509,19 +6630,24 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   function transactionToInvoiceRecordAggregated(firstT, invDisplay, sumAmount, lineCount, allTxs) {
     const inv = trimInvoiceField(invDisplay);
     const ymd = trimInvoiceField(firstT.bookedDate || "");
-    let base = trimInvoiceField(firstT.note) || trimInvoiceField(firstT.category) || "明細帳目";
-    if (base.length > 36) base = base.slice(0, 36) + "…";
-    let storeName = lineCount > 1 ? base + " · " + lineCount + "筆" : base;
-    if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
     const splitLines = linesFromSplitTransactions(Array.isArray(allTxs) ? allTxs : [firstT]);
+    const merchant = merchantNameFromTransaction(firstT, splitLines);
+    let core =
+      merchant ||
+      trimInvoiceField(firstT.note) ||
+      trimInvoiceField(firstT.category) ||
+      "明細帳目";
+    if (core.length > 36) core = core.slice(0, 36) + "…";
+    let storeName = lineCount > 1 ? core + " · " + lineCount + "筆" : core;
+    if (storeName.length > 48) storeName = storeName.slice(0, 48) + "…";
     const o = {
       id: "txinv:" + String(firstT.id),
       dateYmd: ymd,
       amount: Math.round(Number(sumAmount) || 0),
       invoiceNumber: inv,
       storeName: storeName || "明細帳目",
-      carrierTag: "明細帳目",
     };
+    if (merchant) o.merchantName = merchant;
     if (splitLines.length) {
       o.items = splitLines;
       o.invoiceItems = splitLines;
@@ -6914,7 +7040,9 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         );
       }
     } else {
-      const noteForTx = invDisp ? "發票 " + invDisp : storeName;
+      const noteForTx = invDisp
+        ? [storeName, "發票 " + invDisp].filter(Boolean).join(" · ")
+        : storeName;
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       const timeStr =
         String(now.getHours()).padStart(2, "0") +
@@ -7071,6 +7199,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const numLine = r.invoiceNumber
           ? escapeHtml(r.invoiceNumber)
           : '<span class="text-on-surface-variant/80">無號碼</span>';
+        const merchantDisp = displayMerchantForInvoiceRow(r, txsAll);
         const link = findDetailForInvoiceRecord(r);
         const catLine = link.category
           ? `<span class="text-on-surface font-semibold">${escapeHtml(link.category)}</span>`
@@ -7120,10 +7249,11 @@ const CARRIER_KEY = "stitch_invoice_carrier";
               <p class="text-xs font-extrabold text-on-surface leading-tight tracking-tight">${escapeHtml(dateFull)}</p>
             </div>
             <div class="flex-1 min-w-0 overflow-hidden">
-              <input type="text" class="inv-store-input w-full text-sm font-bold text-secondary bg-white/90 border border-amber-200/80 rounded-lg px-2 py-1.5 mb-1 focus:outline-none focus:ring-2 focus:ring-primary/25" data-id="${escapeHtml(r.id)}" value="${escAttr(r.storeName || "未命名店家")}" maxlength="40" aria-label="發票名稱"/>
+              <div class="inv-store-input-wrap mb-1">
+              <input type="text" class="inv-store-input text-sm font-bold text-secondary bg-white/90 border border-amber-200/80 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/25" data-id="${escapeHtml(r.id)}" value="${escAttr(merchantDisp)}" maxlength="40" aria-label="消費商店名稱"/>
+              </div>
               <p class="text-xs text-on-surface-variant font-mono break-all">${numLine}</p>
               <p class="text-[11px] mt-1">${catLine}</p>
-              <span class="inline-block mt-1 max-w-full truncate text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-invoice-blue border border-blue-100">${escapeHtml(r.carrierTag || "手機條碼")}</span>
             </div>
             <div class="font-extrabold text-on-surface shrink-0 text-sm sm:text-base tabular-nums text-right whitespace-nowrap pt-0.5">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
             <button type="button" class="inv-del-btn p-1 text-on-surface-variant hover:text-red-600 shrink-0 self-start" data-id="${escapeHtml(r.id)}" aria-label="刪除">
@@ -7644,28 +7774,38 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const rec = store.records.find((x) => x.id === id);
         if (!rec) return;
         const v = String(inp.value || "").trim();
-        const prev = String(rec.storeName || "").trim();
-        if (v === prev) return;
+        const txs = await readTransactionsForInvoiceMerge();
+        const prevDisp = displayMerchantForInvoiceRow(rec, txs);
+        if (v === prevDisp) return;
         if (id && String(id).startsWith("txinv:")) {
           const txId = String(id).slice(6);
-          const txs = await readTransactionsForInvoiceMerge();
           const target = txs.find((x) => String(x.id) === txId);
           const invK = target ? normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(target)) : "";
-          const noteVal = v || "未命名店家";
+          let noteVal = v || "未命名店家";
           if (invK) {
             const same = txs.filter(
               (x) => normalizeInvoiceNumberKey(invoiceNumberFromTxForMerge(x)) === invK
             );
             const head = same[0];
+            if (head && same.length === 1) {
+              const rawInv = invoiceNumberFromTxForMerge(head);
+              const disp = rawInv ? normalizeInvoiceDisplayForTx(rawInv) : "";
+              if (disp) noteVal = [noteVal, "發票 " + disp].join(" · ");
+            }
             if (head) await patchTransactionNote(head.id, noteVal);
           } else {
+            const rawInv = target ? invoiceNumberFromTxForMerge(target) : "";
+            const disp = rawInv ? normalizeInvoiceDisplayForTx(rawInv) : "";
+            if (disp) noteVal = [noteVal, "發票 " + disp].join(" · ");
             await patchTransactionNote(txId, noteVal);
           }
           await rebuildStoreRecordsFromSources();
         } else {
           rec.storeName = v || "未命名店家";
+          rec.merchantName = rec.storeName;
           await saveStore(store);
         }
+        renderList();
       },
       true
     );
