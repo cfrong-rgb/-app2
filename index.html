@@ -562,6 +562,8 @@ body {
     }
     /* 搜尋欄：父層可橫向捲動；輸入框 min-width 確保 placeholder（含 如: 202603）完整可見 */
     #tx-search-form {
+      position: relative;
+      z-index: 40;
       display: block;
       max-width: 100%;
       min-width: 0;
@@ -571,6 +573,8 @@ body {
       scrollbar-width: thin;
     }
     #tx-search-input {
+      position: relative;
+      z-index: 1;
       display: block;
       box-sizing: border-box;
       min-width: 300px;
@@ -731,6 +735,15 @@ body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color
   #inv-qr-camera-overlay #inv-qr-reader__dashboard_section_csr button {
     color: #725638 !important;
     border-radius: 9999px !important;
+  }
+  .inv-ledger-details > summary {
+    list-style: none;
+  }
+  .inv-ledger-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .inv-ledger-details[open] .inv-ledger-chevron {
+    transform: rotate(180deg);
   }
 
 /* --- profile --- */
@@ -1079,7 +1092,7 @@ html.stitch-single-app [data-stitch-view="invoice"] #barcode-boost-wrap {
 </div>
 <div>
 <label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1.5" for="tx-edit-note">備註</label>
-<input class="w-full px-4 py-3 rounded-xl border border-primary/15 bg-white text-on-surface text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25" id="tx-edit-note" type="text" maxlength="120" placeholder="選填"/>
+<input class="w-full px-4 py-3 rounded-xl border border-primary/15 bg-white text-on-surface text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/25" id="tx-edit-note" type="text" maxlength="200" placeholder="選填"/>
 </div>
 <div>
 <label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1.5" for="tx-edit-date">日期</label>
@@ -3502,7 +3515,7 @@ const STORAGE_KEY = "stitch_transactions";
     if (amtEl) amtEl.value = String(Number(item.amount) || 0);
     const curCat = String(item.category || (editTxFlow === "income" ? "薪水" : "住家")).trim() || "住家";
     await fillEditCategorySelect(curCat);
-    if (noteEl) noteEl.value = item.note ? String(item.note) : "";
+    if (noteEl) noteEl.value = buildEditNoteDefault(item, items);
     if (dateEl) {
       const d = new Date(item.createdAt);
       if (Number.isNaN(d.getTime())) {
@@ -3791,6 +3804,22 @@ const STORAGE_KEY = "stitch_transactions";
       return out;
     }
     return [];
+  }
+
+  /** Edit sheet default note: invoice line names (items), else stored note. */
+  function buildEditNoteDefault(item, allItems) {
+    if (!item || typeof item !== "object") return "";
+    const rows = getInvoiceExpandRows(item, allItems);
+    if (!rows.length) return item.note ? String(item.note) : "";
+    const names = [];
+    for (const r of rows) {
+      const n = String(r?.name != null ? r.name : "").trim();
+      if (n) names.push(n);
+    }
+    if (!names.length) return item.note ? String(item.note) : "";
+    const joined = names.join("、");
+    const max = 200;
+    return joined.length <= max ? joined : joined.slice(0, max - 1) + "…";
   }
 
   function formatDate(iso) {
@@ -7046,16 +7075,15 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         const catLine = link.category
           ? `<span class="text-on-surface font-semibold">${escapeHtml(link.category)}</span>`
           : '<span class="text-on-surface-variant/70">類別：—</span>';
-        const noteLine =
-          link.note && link.note.length > 0
-            ? `<p class="text-[11px] text-on-surface-variant mt-1 line-clamp-2 break-words" title="${escAttr(link.note)}">備註：${escapeHtml(link.note)}</p>`
-            : '<p class="text-[11px] text-on-surface-variant/60 mt-1">備註：—</p>';
         const ledger = buildInvoiceLedgerPreview(r, txsAll);
         const ledgerDetails =
           ledger.lines.length > 0
-            ? `<div class="rounded-lg border border-amber-100/90 bg-white/75 text-left">
-  <p class="px-2 pt-2 pb-1 text-[11px] font-bold text-primary flex items-center gap-1"><span class="material-symbols-outlined text-base opacity-90">receipt_long</span>明細帳目（${ledger.lines.length} 項）</p>
-  <div class="px-2 pb-2 pt-0 max-h-48 overflow-y-auto overflow-x-auto">
+            ? `<details class="inv-ledger-details rounded-lg border border-amber-100/90 bg-white/75 text-left group">
+  <summary class="cursor-pointer list-none px-2 py-2 text-[11px] font-bold text-primary flex items-center justify-between gap-2 select-none hover:bg-amber-50/60 rounded-lg [&::-webkit-details-marker]:hidden">
+    <span class="flex items-center gap-1 min-w-0"><span class="material-symbols-outlined text-base opacity-90 shrink-0">receipt_long</span><span class="truncate">明細帳目（${ledger.lines.length} 項）</span></span>
+    <span class="material-symbols-outlined text-lg opacity-70 inv-ledger-chevron transition-transform shrink-0" aria-hidden="true">expand_more</span>
+  </summary>
+  <div class="px-2 pb-2 pt-0 max-h-48 overflow-y-auto overflow-x-auto border-t border-amber-100/70">
     <table class="w-full text-[11px] border-collapse table-fixed text-on-surface">
       <tbody>
     ${ledger.lines
@@ -7077,7 +7105,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       </tbody>
     </table>
   </div>
-</div>`
+</details>`
             : "";
         const ledgerBtn =
           ledger.invDisp !== ""
@@ -7095,7 +7123,6 @@ const CARRIER_KEY = "stitch_invoice_carrier";
               <input type="text" class="inv-store-input w-full text-sm font-bold text-secondary bg-white/90 border border-amber-200/80 rounded-lg px-2 py-1.5 mb-1 focus:outline-none focus:ring-2 focus:ring-primary/25" data-id="${escapeHtml(r.id)}" value="${escAttr(r.storeName || "未命名店家")}" maxlength="40" aria-label="發票名稱"/>
               <p class="text-xs text-on-surface-variant font-mono break-all">${numLine}</p>
               <p class="text-[11px] mt-1">${catLine}</p>
-              ${noteLine}
               <span class="inline-block mt-1 max-w-full truncate text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-invoice-blue border border-blue-100">${escapeHtml(r.carrierTag || "手機條碼")}</span>
             </div>
             <div class="font-extrabold text-on-surface shrink-0 text-sm sm:text-base tabular-nums text-right whitespace-nowrap pt-0.5">${Number(r.amount || 0).toLocaleString("zh-TW")}<span class="text-xs font-bold">元</span></div>
