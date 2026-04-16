@@ -3762,6 +3762,71 @@ const STORAGE_KEY = "stitch_transactions";
     return m ? (m[1] + m[2]).toUpperCase() : "";
   }
 
+  /** 與發票頁相同：Latin-1 位元組視圖還原 UTF-8／Big5，修正已存品項亂碼 */
+  function stitchLatin1CodeUnitsToBytesHist(s) {
+    const u8 = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c > 255) return null;
+      u8[i] = c;
+    }
+    return u8;
+  }
+
+  function stitchScoreTaiwanDetailTextHist(s) {
+    if (!s) return -1e9;
+    let cjk = 0;
+    let bopomofo = 0;
+    let replacement = 0;
+    let printableAscii = 0;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c === 0xfffd) {
+        replacement++;
+        continue;
+      }
+      if (c >= 0x20 && c <= 0x7e && /[0-9A-Za-z:*\-.,;，。、\s@＠×xX]/.test(s[i])) printableAscii++;
+      if ((c >= 0x4e00 && c <= 0x9fff) || (c >= 0x3400 && c <= 0x4dbf)) cjk++;
+      if (c >= 0x3100 && c <= 0x312f) bopomofo++;
+    }
+    return cjk * 18 + bopomofo * 6 + printableAscii * 0.02 - replacement * 80;
+  }
+
+  function stitchDecodeBytesWithLabelHist(u8, encoding) {
+    try {
+      return new TextDecoder(encoding, { fatal: false }).decode(u8);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function repairTaiwanInvoiceQrDetailEncodingHist(s) {
+    const str = String(s || "");
+    if (!str) return str;
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(str)) return str;
+    let hiLatin = 0;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (c >= 0x80 && c <= 0xff) hiLatin++;
+    }
+    if (hiLatin < 2) return str;
+    const u8 = stitchLatin1CodeUnitsToBytesHist(str);
+    if (!u8) return str;
+    const asUtf8 = stitchDecodeBytesWithLabelHist(u8, "utf-8");
+    const asBig5 = stitchDecodeBytesWithLabelHist(u8, "big5");
+    const cand = [
+      { t: str, sc: stitchScoreTaiwanDetailTextHist(str) },
+      { t: asUtf8, sc: stitchScoreTaiwanDetailTextHist(asUtf8) },
+      { t: asBig5, sc: stitchScoreTaiwanDetailTextHist(asBig5) },
+    ];
+    cand.sort((a, b) => b.sc - a.sc);
+    const best = cand[0];
+    const baseSc = stitchScoreTaiwanDetailTextHist(str);
+    if (!best || !best.t) return str;
+    if (best.sc > baseSc + 0.5) return best.t;
+    return str;
+  }
+
   function formatInvoiceLineDisplayMeta(x) {
     if (!x || typeof x !== "object") return "";
     const q = x.quantity != null ? Number(x.quantity) : NaN;
@@ -3776,7 +3841,8 @@ const STORAGE_KEY = "stitch_transactions";
     const out = [];
     for (const x of arr) {
       if (!x || typeof x !== "object") continue;
-      const name = String(x.name != null ? x.name : "").trim() || "品項";
+      let name = String(x.name != null ? x.name : "").trim() || "品項";
+      name = repairTaiwanInvoiceQrDetailEncodingHist(name) || name;
       const amount = Math.round(Number(x.amount) || 0);
       if (!name || amount <= 0) continue;
       const meta = formatInvoiceLineDisplayMeta(x);
@@ -7713,6 +7779,74 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     };
   }
 
+  /**
+   * 電子發票 QR 明細多為 UTF-8；若函式庫以位元組誤解為 Latin-1，會變成 ¬~¨®… 亂碼。
+   * 僅在字串可視為「每字一個位元組」且不含已解好的中日韓字元時嘗試還原，避免破壞正確 UTF-16 字串。
+   */
+  function stitchLatin1CodeUnitsToBytes(s) {
+    const u8 = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c > 255) return null;
+      u8[i] = c;
+    }
+    return u8;
+  }
+
+  function stitchScoreTaiwanDetailText(s) {
+    if (!s) return -1e9;
+    let cjk = 0;
+    let bopomofo = 0;
+    let replacement = 0;
+    let printableAscii = 0;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c === 0xfffd) {
+        replacement++;
+        continue;
+      }
+      if (c >= 0x20 && c <= 0x7e && /[0-9A-Za-z:*\-.,;，。、\s@＠×xX]/.test(s[i])) printableAscii++;
+      if ((c >= 0x4e00 && c <= 0x9fff) || (c >= 0x3400 && c <= 0x4dbf)) cjk++;
+      if (c >= 0x3100 && c <= 0x312f) bopomofo++;
+    }
+    return cjk * 18 + bopomofo * 6 + printableAscii * 0.02 - replacement * 80;
+  }
+
+  function stitchDecodeBytesWithLabel(u8, encoding) {
+    try {
+      return new TextDecoder(encoding, { fatal: false }).decode(u8);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function repairTaiwanInvoiceQrDetailEncoding(s) {
+    const str = String(s || "");
+    if (!str) return str;
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(str)) return str;
+    let hiLatin = 0;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (c >= 0x80 && c <= 0xff) hiLatin++;
+    }
+    if (hiLatin < 2) return str;
+    const u8 = stitchLatin1CodeUnitsToBytes(str);
+    if (!u8) return str;
+    const asUtf8 = stitchDecodeBytesWithLabel(u8, "utf-8");
+    const asBig5 = stitchDecodeBytesWithLabel(u8, "big5");
+    const cand = [
+      { t: str, sc: stitchScoreTaiwanDetailText(str) },
+      { t: asUtf8, sc: stitchScoreTaiwanDetailText(asUtf8) },
+      { t: asBig5, sc: stitchScoreTaiwanDetailText(asBig5) },
+    ];
+    cand.sort((a, b) => b.sc - a.sc);
+    const best = cand[0];
+    const baseSc = stitchScoreTaiwanDetailText(str);
+    if (!best || !best.t) return str;
+    if (best.sc > baseSc + 0.5) return best.t;
+    return str;
+  }
+
   /** 右側明細：除 :3:3:1: 等前��數字段後再解析 */
   function stripTaiwanDetailSegmentPrefix(seg) {
     let t = String(seg || "").trim();
@@ -7736,7 +7870,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       if (n2 === n) break;
       n = n2;
     }
-    return n.replace(/^:+\s*/, "").trim();
+    n = n.replace(/^:+\s*/, "").trim();
+    return repairTaiwanInvoiceQrDetailEncoding(n);
   }
 
   /** 品名:數量� 串接（小計�數量×����� name:qty 時用發���小計 */
@@ -7895,7 +8030,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
    * invoiceTotalHint：左側���，用於尾段�全�金��校正。
    */
   function parseInvoiceLineItemsFromTaiwanRaw(raw, invoiceTotalHint) {
-    const s = String(raw || "").trim();
+    const s = repairTaiwanInvoiceQrDetailEncoding(String(raw || "").trim());
     if (!s) return { items: [], storeHint: "" };
     const invOpt = invoiceTotalHint != null ? Math.round(Number(invoiceTotalHint) || 0) : 0;
     const hintArg = invOpt > 0 ? invOpt : null;
@@ -8033,6 +8168,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   window.saveRecord = saveRecord;
 
   window.__stitchParseTaiwanInvoiceLineItems = parseInvoiceLineItemsFromTaiwanRaw;
+  window.__stitchRepairTaiwanInvoiceQrDetailEncoding = repairTaiwanInvoiceQrDetailEncoding;
 
   void init().catch((err) => {
     console.error("[invoice init]", err);
