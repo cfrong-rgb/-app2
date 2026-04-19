@@ -3836,14 +3836,24 @@ const STORAGE_KEY = "stitch_transactions";
     return "";
   }
 
+  function stitchSmartInvoiceLineNameHist(name, amount) {
+    const t = String(name || "").trim();
+    const a = Math.round(Number(amount) || 0);
+    const generic = !t || t === "金額" || t === "品項";
+    if (!generic) return t;
+    if (a <= 0) return t || "品項";
+    return "發票消費 ($" + a.toLocaleString("zh-TW") + ")";
+  }
+
   function expandRowsFromStoredLineItems(raw) {
     const arr = Array.isArray(raw) ? raw : [];
     const out = [];
     for (const x of arr) {
       if (!x || typeof x !== "object") continue;
+      const amount = Math.round(Number(x.amount) || 0);
       let name = String(x.name != null ? x.name : "").trim() || "品項";
       name = repairTaiwanInvoiceQrDetailEncodingHist(name) || name;
-      const amount = Math.round(Number(x.amount) || 0);
+      name = stitchSmartInvoiceLineNameHist(name, amount);
       if (!name || amount <= 0) continue;
       const meta = formatInvoiceLineDisplayMeta(x);
       out.push({ name: name.slice(0, 120), amount, meta });
@@ -6529,6 +6539,45 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     return o;
   }
 
+  /** QR 未帶品名時的顯示（與智能回填一致） */
+  function formatSmartInvoiceConsumptionLabel(amount) {
+    const n = Math.round(Number(amount) || 0);
+    return "發票消費 ($" + (n <= 0 ? "0" : n.toLocaleString("zh-TW")) + ")";
+  }
+
+  function isGenericInvoiceLineDisplayName(name) {
+    const t = String(name || "").trim();
+    return !t || t === "金額" || t === "品項";
+  }
+
+  /** 無品項或僅占位名時改為「發票消費 ($金額)」 */
+  function applySmartInvoiceLineLabelFallback(items, totalAmount) {
+    const t = Math.round(Number(totalAmount) || 0);
+    const arr = Array.isArray(items) ? items.map((x) => (x && typeof x === "object" ? { ...x } : x)) : [];
+    if (t <= 0) {
+      return arr.filter((x) => x && !isGenericInvoiceLineDisplayName(x.name));
+    }
+    if (arr.length === 0) {
+      return [{ name: formatSmartInvoiceConsumptionLabel(t), amount: t }];
+    }
+    const allGeneric = arr.every((x) => !x || isGenericInvoiceLineDisplayName(x.name));
+    if (allGeneric) {
+      return [{ name: formatSmartInvoiceConsumptionLabel(t), amount: t }];
+    }
+    return arr.map((x) => {
+      if (!x) return x;
+      const a = Math.round(Number(x.amount) || 0);
+      if (isGenericInvoiceLineDisplayName(x.name)) {
+        const useAmt = a > 0 ? a : t;
+        const next = { ...x, name: formatSmartInvoiceConsumptionLabel(useAmt), amount: useAmt };
+        if (next.quantity != null) delete next.quantity;
+        if (next.unitPrice != null) delete next.unitPrice;
+        return next;
+      }
+      return x;
+    });
+  }
+
   function normalizeLineItemForStorage(x) {
     if (!x || typeof x !== "object") return null;
     const name = String(x.name != null ? x.name : "").trim().slice(0, 120);
@@ -7237,7 +7286,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       return { lines: fromTx, invDisp };
     }
     return {
-      lines: [{ name: "金額", amount: Math.round(Number(one.amount) || 0) }],
+      lines: [{ name: formatSmartInvoiceConsumptionLabel(one.amount), amount: Math.round(Number(one.amount) || 0) }],
       invDisp,
     };
   }
@@ -7421,7 +7470,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       invHtml5QrInstance = new Html5Qrcode(readerId);
       const vw = Math.min(window.innerWidth - 56, 300);
       const qh = Math.min(Math.round(vw * 0.92), 280);
-      const scanCfg = { fps: 8, qrbox: { width: vw, height: qh }, aspectRatio: 1 };
+      const scanCfg = { fps: 18, qrbox: { width: vw, height: qh }, aspectRatio: 1 };
       const onDecode = (decodedText) => {
         onInvCameraQrDecoded(decodedText);
       };
@@ -8026,14 +8075,18 @@ const CARRIER_KEY = "stitch_invoice_carrier";
   }
 
   /**
-   * 台��電子發票�：**分段；品項多為「品名:數量�」串接。避免將 :4:4:1: �入品名。
-   * invoiceTotalHint：左側���，用於尾段�全�金��校正。
+   * 台灣電子發票：** 分段；品名:數量:單價 串接。左側 QR 滿 77 碼後可依規格以冒號銜接品項（優先解析 leftAligned 第 77 碼之後）。
+   * invoiceTotalHint：左側總額，用於尾段金額校正。
    */
-  function parseInvoiceLineItemsFromTaiwanRaw(raw, invoiceTotalHint) {
+  function parseInvoiceLineItemsFromTaiwanRaw(raw, invoiceTotalHint, opt) {
     const s = repairTaiwanInvoiceQrDetailEncoding(String(raw || "").trim());
     if (!s) return { items: [], storeHint: "" };
     const invOpt = invoiceTotalHint != null ? Math.round(Number(invoiceTotalHint) || 0) : 0;
     const hintArg = invOpt > 0 ? invOpt : null;
+    const leftAligned =
+      opt && opt.leftAligned != null
+        ? String(opt.leftAligned).replace(/[\s\u200B-\u200D\uFEFF]/g, "")
+        : "";
 
     try {
       const seenKeys = new Set();
@@ -8048,14 +8101,25 @@ const CARRIER_KEY = "stitch_invoice_carrier";
         }
       }
 
-      const buckets = new Set();
+      const buckets = [];
+      const addBucket = (seg) => {
+        const t = String(seg || "").trim();
+        if (!t) return;
+        if (buckets.indexOf(t) >= 0) return;
+        buckets.push(t);
+      };
+
+      /** 財政部第一條 77 碼後為選載之冒號欄位（品項等），與右側 QR 一併解析時優先採用此前綴 */
+      if (leftAligned.length > 77) {
+        const tail = repairTaiwanInvoiceQrDetailEncoding(leftAligned.slice(77));
+        if (tail) addBucket(tail);
+      }
       if (s.indexOf("**") >= 0) {
         for (const p of s.split("**")) {
-          const t = p.trim();
-          if (t) buckets.add(t);
+          addBucket(p.trim());
         }
       }
-      buckets.add(s);
+      addBucket(s);
 
       for (const b of buckets) {
         if (/^[A-Z]{2}\d{8}$/i.test(b.replace(/[-\s]/g, ""))) continue;
@@ -8094,6 +8158,7 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     dateEl.value = "";
 
     const compact = raw.replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+    const leftAlignedEarly = invAlignCompactStandalone(compact) || invAlignCompactStandalone(raw) || "";
     const parseLeft =
       typeof window.__stitchParseTaiwanInvoiceLeftQr === "function"
         ? window.__stitchParseTaiwanInvoiceLeftQr
@@ -8150,7 +8215,8 @@ const CARRIER_KEY = "stitch_invoice_carrier";
     const invTotalForLines = Math.floor(Number(String(amtEl.value || "").replace(/,/g, "")));
     const parsedLines = parseInvoiceLineItemsFromTaiwanRaw(
       raw,
-      Number.isFinite(invTotalForLines) && invTotalForLines > 0 ? invTotalForLines : null
+      Number.isFinite(invTotalForLines) && invTotalForLines > 0 ? invTotalForLines : null,
+      { leftAligned: leftAlignedEarly }
     );
     invPendingLineItems = parsedLines.items;
 
@@ -8161,6 +8227,13 @@ const CARRIER_KEY = "stitch_invoice_carrier";
       const fix = raw.match(/\b([A-Z]{2})[\s-]?([0-9]{8})\b/i);
       numEl.value = fix ? fix[1].toUpperCase() + "-" + fix[2] : "";
     }
+
+    let totalForSmart = Number.isFinite(amtParsed) && amtParsed > 0 ? amtParsed : invTotalForLines;
+    if (!(totalForSmart > 0) && Array.isArray(invPendingLineItems)) {
+      const sum = invPendingLineItems.reduce((s, x) => s + Math.round(Number(x && x.amount) || 0), 0);
+      if (sum > 0) totalForSmart = sum;
+    }
+    invPendingLineItems = applySmartInvoiceLineLabelFallback(invPendingLineItems, totalForSmart);
 
     renderInvLineItemsPreview();
   }
